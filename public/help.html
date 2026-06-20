@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>帮助文档 - 鸭鸭图床 | 免费图床</title>
+    <meta name="description" content="鸭鸭图床使用指南、常见问题解答和技术支持">
+    <meta name="keywords" content="帮助文档,使用指南,FAQ,技术支持,鸭鸭图床">
+    <meta name="theme-color" content="#4361ee">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
+    <link rel="stylesheet" href="./css/animations-premium.css">
+    <link rel="stylesheet" href="./css/advanced-cards.css">
+    <link rel="stylesheet" href="./css/buttons-premium.css">
+    <link rel="stylesheet" href="./css/forms-premium.css">
+    <link rel="stylesheet" href="./css/modals-premium.css">
+    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="icon" type="image/svg+xml" href="./images/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 引入图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .help-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .help-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            background: var(--card-bg);
+            padding: 3rem 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        body.dark-mode .help-header {
+            background: var(--dark-card-bg);
+        }
+
+        .help-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(67, 97, 238, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+            pointer-events: none;
+        }
+
+        .help-title {
+            font-size: 2.5rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .help-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        body.dark-mode .help-subtitle {
+            color: var(--dark-text-light);
+        }
+
+        .help-search {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .help-search-input {
+            width: 100%;
+            padding: 1rem 1.5rem 1rem 3rem;
+            border: 2px solid var(--border-color);
+            border-radius: 50px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .help-search-input {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .help-search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(var(--primary-color-rgb), 0.1);
+        }
+
+        .help-search-icon {
+            position: absolute;
+            left: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 1.2rem;
+        }
+
+        .help-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .help-sidebar {
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
+        }
+
+        .help-nav {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        body.dark-mode .help-nav {
+            background: var(--dark-card-bg);
+        }
+
+        .help-nav-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+            font-size: 1.1rem;
+        }
+
+        body.dark-mode .help-nav-title {
+            color: var(--dark-text);
+        }
+
+        .help-nav-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s ease;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        body.dark-mode .help-nav-item {
+            color: var(--dark-text);
+        }
+
+        .help-nav-item:hover {
+            background: var(--primary-light);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .help-nav-item.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .help-main {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        body.dark-mode .help-main {
+            background: var(--dark-card-bg);
+        }
+
+        .help-section {
+            display: none;
+        }
+
+        .help-section.active {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .help-section-title {
+            font-size: 1.8rem;
+            color: var(--text-color);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        body.dark-mode .help-section-title {
+            color: var(--dark-text);
+        }
+
+        .help-section-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .faq-item {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .faq-item {
+            border-color: var(--dark-border);
+        }
+
+        .faq-item:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .faq-question {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .faq-question {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--dark-text);
+        }
+
+        .faq-question:hover {
+            background: var(--primary-light);
+            color: white;
+        }
+
+        .faq-toggle {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .faq-item.active .faq-toggle {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            padding: 0 1.5rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        body.dark-mode .faq-answer {
+            background: var(--dark-card-bg);
+            color: var(--dark-text);
+        }
+
+        .faq-item.active .faq-answer {
+            padding: 1.5rem;
+            max-height: 500px;
+        }
+
+        .guide-step {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .guide-step {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .guide-step:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .guide-step-number {
+            min-width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .guide-step-content h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        body.dark-mode .guide-step-content h4 {
+            color: var(--dark-text);
+        }
+
+        .guide-step-content p {
+            margin: 0;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        body.dark-mode .guide-step-content p {
+            color: var(--dark-text-light);
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .contact-item {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        body.dark-mode .contact-item {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .contact-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+            border-color: var(--primary-color);
+        }
+
+        .contact-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1rem;
+        }
+
+        .contact-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        body.dark-mode .contact-title {
+            color: var(--dark-text);
+        }
+
+        .contact-info {
+            color: var(--text-light);
+        }
+
+        body.dark-mode .contact-info {
+            color: var(--dark-text-light);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .feature-card {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        body.dark-mode .feature-title {
+            color: var(--dark-text);
+        }
+
+        .feature-desc {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        body.dark-mode .feature-desc {
+            color: var(--dark-text-light);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .help-content {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .help-sidebar {
+                position: static;
+            }
+
+            .help-nav {
+                margin-bottom: 1rem;
+            }
+
+            .help-title {
+                font-size: 2rem;
+            }
+
+            .help-subtitle {
+                font-size: 1rem;
+            }
+
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode-transition">
+    <!-- 页面加载动画 -->
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-content">
+            <div class="loader">
+                <div class="loader-circle"></div>
+                <div class="loader-circle"></div>
+                <div class="loader-circle"></div>
+                <div class="loader-dot"></div>
+            </div>
+            <div class="loader-brand">鸭鸭图床</div>
+        </div>
+    </div>
+
+    <!-- 页面过渡动画 -->
+    <div id="pageTransition" class="page-transition"></div>
+
+    <!-- 页面滚动进度条 -->
+    <div class="scroll-progress-container">
+        <div class="scroll-progress-bar" id="scrollProgress"></div>
+    </div>
+
+    <!-- 侧边菜单 -->
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-header">
+            <div class="menu-logo">
+                <img src="./images/logo.svg" alt="鸭鸭图床 Logo">
+                <h1>鸭鸭图床</h1>
+            </div>
+            <div class="menu-toggle" id="menuToggle">
+                <i class="ri-arrow-left-s-line"></i>
+            </div>
+        </div>
+        <div class="menu-content">
+            <div class="menu-category">主要功能</div>
+            <a href="/" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-home-5-line"></i></div>
+                <div class="menu-item-text">首页</div>
+                <div class="menu-tooltip">首页</div>
+            </a>
+            <a href="/dashboard.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-image-2-line"></i></div>
+                <div class="menu-item-text">我的图片</div>
+                <div class="menu-tooltip">我的图片</div>
+            </a>
+            <a href="#" class="menu-item" id="uploadMenuBtn">
+                <div class="menu-item-icon"><i class="ri-upload-cloud-2-line"></i></div>
+                <div class="menu-item-text">上传图片</div>
+                <div class="menu-tooltip">上传图片</div>
+            </a>
+
+            <div class="menu-category">图片管理</div>
+            <a href="/favorites.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-star-line"></i></div>
+                <div class="menu-item-text">收藏图片</div>
+                <div class="menu-tooltip">收藏图片</div>
+            </a>
+            <a href="#" class="menu-item" id="recentMenuItem">
+                <div class="menu-item-icon"><i class="ri-time-line"></i></div>
+                <div class="menu-item-text">最近上传</div>
+                <div class="menu-tooltip">最近上传</div>
+            </a>
+            <a href="/tags.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-price-tag-3-line"></i></div>
+                <div class="menu-item-text">标签管理</div>
+                <div class="menu-tooltip">标签管理</div>
+            </a>
+
+            <div class="menu-category">账户</div>
+            <a href="/login.html" class="menu-item" id="loginMenuItem" style="display: none;">
+                <div class="menu-item-icon"><i class="ri-login-box-line"></i></div>
+                <div class="menu-item-text">登录</div>
+                <div class="menu-tooltip">登录</div>
+            </a>
+            <a href="/profile.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-user-settings-line"></i></div>
+                <div class="menu-item-text">用户资料</div>
+                <div class="menu-tooltip">用户资料</div>
+            </a>
+            <a href="/settings.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-settings-3-line"></i></div>
+                <div class="menu-item-text">系统设置</div>
+                <div class="menu-tooltip">系统设置</div>
+            </a>
+            <a href="#" class="menu-item" id="logoutMenuItem">
+                <div class="menu-item-icon"><i class="ri-logout-box-line"></i></div>
+                <div class="menu-item-text">退出登录</div>
+                <div class="menu-tooltip">退出登录</div>
+            </a>
+
+            <div class="menu-category">更多</div>
+            <a href="https://github.com/QCEnjoyLL/DuckImg" target="_blank" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-github-line"></i></div>
+                <div class="menu-item-text">GitHub</div>
+                <div class="menu-tooltip">GitHub</div>
+            </a>
+            <a href="/help.html" class="menu-item active">
+                <div class="menu-item-icon"><i class="ri-question-line"></i></div>
+                <div class="menu-item-text">帮助文档</div>
+                <div class="menu-tooltip">帮助文档</div>
+            </a>
+            <a href="#" class="menu-item" id="themeMenuItem">
+                <div class="menu-item-icon"><i class="ri-moon-line"></i></div>
+                <div class="menu-item-text">切换主题</div>
+                <div class="menu-tooltip">切换主题</div>
+            </a>
+        </div>
+        <div class="menu-footer">
+            <i class="ri-copyright-line"></i>
+            <span>2025 鸭鸭图床</span>
+        </div>
+    </div>
+
+    <!-- 菜单遮罩层 -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <div class="app-container menu-expanded">
+        <header class="header">
+            <div class="header-left">
+                <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="打开菜单">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="logo">
+                    <img src="./images/logo.svg" alt="鸭鸭图床 Logo" class="logo-img">
+                    <h1>鸭鸭图床</h1>
+                </div>
+            </div>
+            <div class="header-center">
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-action-btn" id="uploadBtn" title="上传图片">
+                        <i class="ri-upload-cloud-2-line"></i>
+                    </button>
+                    <label class="theme-toggle" id="themeToggle" aria-label="切换暗色/亮色模式">
+                        <input id="switch" type="checkbox">
+                        <div class="theme-toggle-icon">
+                            <i class="ri-sun-line"></i>
+                            <i class="ri-moon-line"></i>
+                        </div>
+                    </label>
+                    <div id="userDropdown" class="user-dropdown">
+                        <button id="userDropdownBtn" class="user-dropdown-btn">
+                            <div class="user-avatar">
+                                <i class="ri-user-3-line"></i>
+                            </div>
+                            <span id="userDisplayName">用户</span>
+                            <i class="ri-arrow-down-s-line"></i>
+                        </button>
+                        <div class="user-dropdown-content">
+                            <a href="/profile.html" class="dropdown-item">
+                                <i class="ri-user-settings-line"></i>
+                                <span>用户资料</span>
+                            </a>
+                            <a href="/dashboard.html" class="dropdown-item">
+                                <i class="ri-image-2-line"></i>
+                                <span>我的图片</span>
+                            </a>
+                            <a href="#" class="dropdown-item" id="logoutBtn">
+                                <i class="ri-logout-box-line"></i>
+                                <span>退出登录</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="help-container">
+                <!-- 帮助页面头部 -->
+                <div class="help-header">
+                    <h1 class="help-title">帮助文档</h1>
+                    <p class="help-subtitle">欢迎使用 鸭鸭图床！在这里您可以找到使用指南、常见问题解答和技术支持。</p>
+                    <div class="help-search">
+                        <i class="ri-search-line help-search-icon"></i>
+                        <input type="text" class="help-search-input" placeholder="搜索帮助内容..." id="helpSearchInput">
+                    </div>
+                </div>
+
+                <!-- 帮助内容 -->
+                <div class="help-content">
+                    <!-- 侧边导航 -->
+                    <div class="help-sidebar">
+                        <div class="help-nav">
+                            <h3 class="help-nav-title">导航菜单</h3>
+                            <a href="#getting-started" class="help-nav-item active" data-section="getting-started">
+                                <i class="ri-rocket-line" style="margin-right: 0.5rem;"></i>
+                                快速开始
+                            </a>
+                            <a href="#features" class="help-nav-item" data-section="features">
+                                <i class="ri-star-line" style="margin-right: 0.5rem;"></i>
+                                功能介绍
+                            </a>
+                            <a href="#account" class="help-nav-item" data-section="account">
+                                <i class="ri-shield-user-line" style="margin-right: 0.5rem;"></i>
+                                账户与安全
+                            </a>
+                            <a href="#faq" class="help-nav-item" data-section="faq">
+                                <i class="ri-question-line" style="margin-right: 0.5rem;"></i>
+                                常见问题
+                            </a>
+                            <a href="#policy" class="help-nav-item" data-section="policy">
+                                <i class="ri-shield-check-line" style="margin-right: 0.5rem;"></i>
+                                合规与隐私
+                            </a>
+                            <a href="#contact" class="help-nav-item" data-section="contact">
+                                <i class="ri-customer-service-line" style="margin-right: 0.5rem;"></i>
+                                联系我们
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 主要内容 -->
+                    <div class="help-main">
+                        <!-- 快速开始 -->
+                        <div class="help-section active" id="getting-started">
+                            <div class="help-section-title">
+                                <div class="help-section-icon">
+                                    <i class="ri-rocket-line"></i>
+                                </div>
+                                快速开始
+                            </div>
+                            
+                            <p style="margin-bottom: 2rem; color: var(--text-light); line-height: 1.6;">
+                                鸭鸭图床 是一个基于 Telegram + Cloudflare 的图床服务，让您轻松上传、管理和分享图片。按以下步骤即可上手：
+                            </p>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number">1</div>
+                                <div class="guide-step-content">
+                                    <h4>注册账户</h4>
+                                    <p>打开登录页，切换到「注册」，填写用户名、邮箱和密码完成注册。上传需要登录后进行。</p>
+                                </div>
+                            </div>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number">2</div>
+                                <div class="guide-step-content">
+                                    <h4>验证邮箱</h4>
+                                    <p>注册后系统会向你的邮箱发送 6 位验证码，输入即可完成验证。若站点开启了「强制邮箱验证」，老用户重新登录时也需验证一次（管理员账户免验证）。</p>
+                                </div>
+                            </div>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number">3</div>
+                                <div class="guide-step-content">
+                                    <h4>上传图片</h4>
+                                    <p>在首页把图片拖到上传区，或点击选择文件；也可以直接 <kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴剪贴板里的图片。支持批量上传，JPG / PNG / GIF / WebP 等常见格式。</p>
+                                </div>
+                            </div>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number">4</div>
+                                <div class="guide-step-content">
+                                    <h4>复制链接</h4>
+                                    <p>上传成功后会生成四种链接：直接链接、预览链接、HTML 代码、Markdown 代码，点对应「复制」按钮即可在任意平台使用。点击预览图还能查看大图。</p>
+                                </div>
+                            </div>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number">5</div>
+                                <div class="guide-step-content">
+                                    <h4>管理图片</h4>
+                                    <p>在「我的图片」查看、搜索、收藏、打标签或删除你上传的全部图片，并能在「统计信息」中查看总数与占用空间。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 功能介绍 -->
+                        <div class="help-section" id="features">
+                            <div class="help-section-title">
+                                <div class="help-section-icon">
+                                    <i class="ri-star-line"></i>
+                                </div>
+                                功能介绍
+                            </div>
+
+                            <div class="feature-grid">
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="ri-upload-cloud-2-line"></i>
+                                    </div>
+                                    <h4 class="feature-title">多种上传方式</h4>
+                                    <p class="feature-desc">拖拽上传、点击选择、批量上传，以及 <kbd>Ctrl</kbd>+<kbd>V</kbd> 直接粘贴剪贴板图片，怎么顺手怎么来。</p>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="ri-link"></i>
+                                    </div>
+                                    <h4 class="feature-title">四种分享链接</h4>
+                                    <p class="feature-desc">上传后一键复制直接链接、预览链接、HTML 代码、Markdown 代码，适配论坛、博客、文档等各种场景。</p>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="ri-image-2-line"></i>
+                                    </div>
+                                    <h4 class="feature-title">多格式 · 原图质量</h4>
+                                    <p class="feature-desc">支持 JPG、PNG、GIF、WebP 等常见格式；以文档方式存储，尽量保留原图清晰度。</p>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="ri-star-line"></i>
+                                    </div>
+                                    <h4 class="feature-title">收藏与标签</h4>
+                                    <p class="feature-desc">给图片加收藏、打标签，在「收藏图片」「标签管理」中快速归类与查找。</p>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="ri-dashboard-line"></i>
+                                    </div>
+                                    <h4 class="feature-title">图片管理与统计</h4>
+                                    <p class="feature-desc">在「我的图片」搜索、查看大图、删除；「统计信息」展示总数、占用空间、最近上传与上传趋势。</p>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="ri-moon-line"></i>
+                                    </div>
+                                    <h4 class="feature-title">深色模式 · 响应式</h4>
+                                    <p class="feature-desc">支持明/暗主题切换，桌面与手机自适应；顶部「公告」按钮可随时查看站点公告。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 常见问题 -->
+                        <div class="help-section" id="faq">
+                            <div class="help-section-title">
+                                <div class="help-section-icon">
+                                    <i class="ri-question-line"></i>
+                                </div>
+                                常见问题
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>注册后收不到验证码，或一直提示验证失败？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>请先检查邮箱的「垃圾邮件 / 推广」文件夹。验证码为 6 位数字、数分钟内有效；可点弹窗里的「重新发送」（有 60 秒冷却）重新获取最新验证码（旧验证码可能已失效）。如果管理员尚未配置邮件服务，验证码会以提示形式直接显示在页面上（降级模式）。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>登录时提示"请先验证邮箱"怎么办？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>说明站点开启了「强制邮箱验证」。按弹出的输入框填写发送到你邮箱的验证码即可登录；验证一次后即可正常使用。管理员账户无需验证。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>每天能上传多少张？达到上限怎么办？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>每日上传上限由管理员设置（0 表示不限制）。上传区会显示「今日已上传 X / 上限」。达到上限请次日再传，或联系管理员为你单独调整上限。管理员账户不受限制。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>支持哪些格式？有大小限制吗？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>支持 JPG/JPEG、PNG、GIF、WebP 等主流图片格式。图片以「文档」方式存储以尽量保留原图质量；单张大小受 Telegram 限制（通常足够日常使用），过大的文件可能上传失败。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>如何用 Ctrl+V 粘贴上传？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>先用截图工具或在网页上「复制图片」，再回到首页上传区按 <kbd>Ctrl</kbd>+<kbd>V</kbd> 即可上传。注意：当光标在搜索框、密码框等输入框内时不会触发上传（以免干扰正常文本粘贴）。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>四种链接有什么区别？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p><strong>直接链接</strong>：图片的直链，可直接嵌入；<strong>预览链接</strong>：带精美预览页；<strong>HTML</strong>：<code>&lt;img&gt;</code> 标签代码；<strong>Markdown</strong>：<code>![](url)</code> 代码。按需复制对应格式即可。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>删除图片后，链接还能访问吗？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>删除会把图片从你的账户与统计中移除。本次升级之后<strong>新上传</strong>的图片，删除时会同时从 Telegram 删除原文件、直链随即失效；而更早的旧图由于 Telegram 仍保存着原文件，其直链可能仍可访问（这是 Telegram 存储的限制）。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>收藏、标签在哪里使用？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>在「我的图片」对单张图片进行收藏、或在编辑里添加标签；随后可在「收藏图片」查看收藏，在「标签管理」按标签聚合查看，点击某标签会跳到「我的图片」按该标签筛选。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>如何修改密码或重新绑定邮箱？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>进入「用户资料 → 账户安全」：修改密码需输入当前密码；换绑邮箱需输入密码并向新邮箱发送验证码确认。忘记密码且无法登录时，请联系管理员协助。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>为什么我的图片上传被拦截了？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>若管理员启用了「图片鉴黄」，命中违规内容的图片会在上传时被自动拦截、不予保存。请遵守站点的内容规范（详见「合规与隐私」）。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span>能批量管理吗？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p>可以。在「我的图片」可对图片进行删除、复制链接、打标签等操作；管理员在后台还能对用户进行批量封禁/解封/设上限/删除等管理。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 账户与安全 -->
+                        <div class="help-section" id="account">
+                            <div class="help-section-title">
+                                <div class="help-section-icon">
+                                    <i class="ri-shield-user-line"></i>
+                                </div>
+                                账户与安全
+                            </div>
+
+                            <p style="margin-bottom: 1.5rem; color: var(--text-light); line-height: 1.6;">
+                                与账户、邮箱、密码和上传额度相关的设置都在这里。账户安全设置位于「用户资料 → 账户安全」。
+                            </p>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number"><i class="ri-mail-check-line"></i></div>
+                                <div class="guide-step-content">
+                                    <h4>邮箱验证</h4>
+                                    <p>注册时需验证邮箱；若站点开启「强制邮箱验证」，老用户重新登录也需验证一次（管理员免验证）。收不到验证码请查看垃圾箱，或点「重新发送」（60 秒冷却）获取最新验证码。</p>
+                                </div>
+                            </div>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number"><i class="ri-lock-password-line"></i></div>
+                                <div class="guide-step-content">
+                                    <h4>修改密码</h4>
+                                    <p>在「用户资料 → 账户安全」输入当前密码与新密码即可修改，修改后请用新密码重新登录。</p>
+                                </div>
+                            </div>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number"><i class="ri-mail-send-line"></i></div>
+                                <div class="guide-step-content">
+                                    <h4>重新绑定邮箱</h4>
+                                    <p>输入当前密码与新邮箱，系统会向新邮箱发送验证码，输入验证码确认后完成换绑。</p>
+                                </div>
+                            </div>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number"><i class="ri-upload-2-line"></i></div>
+                                <div class="guide-step-content">
+                                    <h4>每日上传上限</h4>
+                                    <p>普通用户每天可上传的数量由管理员统一设置（0 表示不限）；管理员也可为单个用户单独设定上限。上传区会实时显示「今日已上传 X / 上限」。</p>
+                                </div>
+                            </div>
+
+                            <div class="guide-step">
+                                <div class="guide-step-number"><i class="ri-user-3-line"></i></div>
+                                <div class="guide-step-content">
+                                    <h4>头像</h4>
+                                    <p>在「用户资料」点击头像即可填写头像图片链接进行更换。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 合规与隐私 -->
+                        <div class="help-section" id="policy">
+                            <div class="help-section-title">
+                                <div class="help-section-icon">
+                                    <i class="ri-shield-check-line"></i>
+                                </div>
+                                合规与隐私
+                            </div>
+
+                            <p style="margin-bottom: 1.5rem; color: var(--text-light); line-height: 1.6;">
+                                请在使用前阅读以下内容规范。上传即视为同意本规范，并对所上传内容承担全部法律责任。
+                            </p>
+
+                            <div style="background: rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); border-radius: var(--radius); padding: 1.2rem 1.4rem; margin-bottom: 1.5rem; line-height: 1.9;">
+                                <p style="margin:0 0 0.5rem;"><strong style="color:#ef4444;">严禁上传任何违反法律法规的内容</strong>，包括但不限于：色情淫秽、暴力恐怖、血腥、涉政违规、赌博诈骗、侵犯他人隐私 / 肖像 / 版权等违法或不良信息。</p>
+                                <p style="margin:0;">本站对上传内容进行机器审核（鉴黄）与人工抽查；一经发现违规，将立即删除并封禁账号，情节严重者保留向有关部门举报的权利。</p>
+                            </div>
+
+                            <ul style="color: var(--text-light); line-height: 2; padding-left: 1.2rem;">
+                                <li>请勿上传重要或隐私文件，并请自行做好备份；图床不承诺作为唯一存储。</li>
+                                <li>图片直链对持有链接者可见，请勿用于存放敏感、私密内容。</li>
+                                <li>管理员可查看与清理用户上传的内容，以维护合规与安全。</li>
+                                <li>因违规上传导致的一切后果由上传者自行承担，与本站无关。</li>
+                            </ul>
+                        </div>
+
+                        <!-- 联系我们 -->
+                        <div class="help-section" id="contact">
+                            <div class="help-section-title">
+                                <div class="help-section-icon">
+                                    <i class="ri-customer-service-line"></i>
+                                </div>
+                                联系我们
+                            </div>
+
+                            <p style="margin-bottom: 2rem; color: var(--text-light); line-height: 1.6;">
+                                使用中遇到问题、或有建议与反馈，欢迎通过以下方式联系：
+                            </p>
+
+                            <div class="contact-grid">
+                                <div class="contact-item">
+                                    <div class="contact-icon">
+                                        <i class="ri-github-line"></i>
+                                    </div>
+                                    <h4 class="contact-title">GitHub</h4>
+                                    <p class="contact-info">提交 Issue 反馈问题或建议</p>
+                                </div>
+
+                                <div class="contact-item">
+                                    <div class="contact-icon">
+                                        <i class="ri-shield-star-line"></i>
+                                    </div>
+                                    <h4 class="contact-title">联系管理员</h4>
+                                    <p class="contact-info">账号、上限、违规申诉等请联系站点管理员</p>
+                                </div>
+
+                                <div class="contact-item">
+                                    <div class="contact-icon">
+                                        <i class="ri-notification-3-line"></i>
+                                    </div>
+                                    <h4 class="contact-title">站点公告</h4>
+                                    <p class="contact-info">点击顶部「公告」按钮查看最新通知</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024-2025 鸭鸭图床. 基于 <a href="https://telegram.org" target="_blank">Telegram</a> 提供技术支持</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript 文件 -->
+    <!-- 主题管理器 -->
+    <script src="./js/theme-manager.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/help.js"></script>
+    <script src="./js/menu-system.js"></script>
+    <script src="./js/announcement.js"></script>
+    <script src="./js/site-config.js"></script>
+</body>
+</html> 

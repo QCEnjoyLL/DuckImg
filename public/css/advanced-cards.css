@@ -1,0 +1,671 @@
+/* 鸭鸭图床 高级卡片系统 - 超级卡片库 */
+
+:root {
+  --card-primary: var(--primary-color);
+  --card-primary-light: var(--primary-light);
+  --card-primary-dark: var(--primary-dark);
+  --card-secondary: var(--secondary-color);
+  --card-accent: var(--accent-color);
+  --card-success: var(--success-color);
+  --card-warning: var(--warning-color);
+  --card-error: var(--error-color);
+  
+  --card-bg: var(--card-bg);
+  --card-border: var(--border-color);
+  --card-shadow: var(--shadow);
+  
+  --card-text: var(--text-color);
+  --card-text-light: var(--text-light);
+  
+  --card-radius: var(--radius);
+  --card-radius-lg: var(--radius-lg);
+  
+  --card-transition: var(--transition);
+  --card-transition-slow: var(--transition-slow);
+}
+
+body.dark-mode {
+  --card-bg: var(--dark-card-bg);
+  --card-border: var(--dark-border);
+  --card-text: var(--dark-text);
+  --card-text-light: var(--dark-text-light);
+}
+
+/* 基础卡片 */
+.advanced-card {
+  position: relative;
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  transition: all var(--card-transition);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.advanced-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .advanced-card:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* 卡片标题 */
+.advanced-card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--card-text);
+  margin-bottom: 0.5rem;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.advanced-card-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 50px;
+  background: var(--primary-gradient);
+  border-radius: 3px;
+  transition: width var(--card-transition);
+}
+
+.advanced-card:hover .advanced-card-title::after {
+  width: 80px;
+}
+
+/* 卡片内容 */
+.advanced-card-content {
+  color: var(--card-text-light);
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* 卡片图标 */
+.advanced-card-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--primary-gradient);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 8px 20px rgba(var(--primary-light-rgb), 0.3);
+  transition: all var(--card-transition);
+}
+
+.advanced-card:hover .advanced-card-icon {
+  transform: scale(1.1) rotate(10deg);
+}
+
+/* 卡片底部 */
+.advanced-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--card-border);
+}
+
+/* 卡片按钮 */
+.advanced-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius);
+  background: rgba(var(--primary-light-rgb), 0.1);
+  color: var(--primary-color);
+  font-weight: 600;
+  transition: all var(--card-transition);
+  position: relative;
+  overflow: hidden;
+  border: none;
+  cursor: pointer;
+}
+
+.advanced-card-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-gradient);
+  opacity: 0;
+  transition: opacity var(--card-transition);
+  z-index: -1;
+}
+
+.advanced-card-btn:hover {
+  color: white;
+  transform: translateY(-2px);
+}
+
+.advanced-card-btn:hover::before {
+  opacity: 1;
+}
+
+/* 卡片样式变体 */
+
+/* 1. 玻璃态卡片 */
+.advanced-card-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .advanced-card-glass {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 2. 霓虹边框卡片 */
+.advanced-card-neon {
+  border: none;
+  box-shadow: none;
+  position: relative;
+  background: var(--card-bg);
+  z-index: 1;
+}
+
+.advanced-card-neon::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(90deg, 
+    var(--primary-light), 
+    var(--secondary-light), 
+    var(--accent-light), 
+    var(--secondary-light), 
+    var(--primary-light)
+  );
+  background-size: 400% 400%;
+  animation: gradientMove 3s ease infinite;
+  z-index: -1;
+  border-radius: calc(var(--card-radius) + 2px);
+}
+
+.advanced-card-neon::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  z-index: -1;
+}
+
+body.dark-mode .advanced-card-neon::after {
+  background: var(--dark-card-bg);
+}
+
+/* 3. 悬停效果卡片 */
+.advanced-card-hover {
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.advanced-card-hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg,
+    rgba(var(--primary-light-rgb), 0.1),
+    rgba(var(--primary-dark-rgb), 0.05)
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: -1;
+  border-radius: var(--card-radius);
+}
+
+.advanced-card-hover:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(var(--primary-dark-rgb), 0.15);
+}
+
+.advanced-card-hover:hover::before {
+  opacity: 1;
+}
+
+body.dark-mode .advanced-card-hover:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* 4. 梯度边框卡片 */
+.advanced-card-gradient-border {
+  border: double 4px transparent;
+  background-image: linear-gradient(var(--card-bg), var(--card-bg)), 
+                    var(--primary-gradient);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+body.dark-mode .advanced-card-gradient-border {
+  background-image: linear-gradient(var(--dark-card-bg), var(--dark-card-bg)), 
+                    var(--primary-gradient);
+}
+
+/* 5. 3D卡片 */
+.advanced-card-3d {
+  transform-style: preserve-3d;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.advanced-card-3d .advanced-card-title,
+.advanced-card-3d .advanced-card-content,
+.advanced-card-3d .advanced-card-icon,
+.advanced-card-3d .advanced-card-footer {
+  transform: translateZ(30px);
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.advanced-card-3d:hover {
+  transform: rotateX(5deg) rotateY(5deg) scale(1.05);
+}
+
+.advanced-card-3d:hover .advanced-card-icon {
+  transform: translateZ(50px) scale(1.2);
+}
+
+/* 6. 纸片效果卡片 */
+.advanced-card-paper {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  border: none;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background: #fff;
+}
+
+.advanced-card-paper:hover {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.15), 0 10px 10px rgba(0, 0, 0, 0.12);
+}
+
+body.dark-mode .advanced-card-paper {
+  background: #2d3748;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.36);
+}
+
+body.dark-mode .advanced-card-paper:hover {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.3), 0 10px 10px rgba(0, 0, 0, 0.22);
+}
+
+/* 7. 折角卡片 */
+.advanced-card-folded {
+  position: relative;
+}
+
+.advanced-card-folded::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-style: solid;
+  border-width: 0 30px 30px 0;
+  border-color: transparent var(--card-primary-light) transparent transparent;
+  transition: all var(--card-transition);
+}
+
+.advanced-card-folded:hover::before {
+  border-width: 0 40px 40px 0;
+}
+
+/* 8. 浮动阴影卡片 */
+.advanced-card-floating {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.advanced-card-floating::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 5%;
+  width: 90%;
+  height: 15px;
+  background: rgba(0, 0, 0, 0.1);
+  filter: blur(10px);
+  border-radius: 50%;
+  transition: all var(--card-transition);
+  z-index: -1;
+}
+
+.advanced-card-floating:hover {
+  transform: translateY(-10px);
+}
+
+.advanced-card-floating:hover::after {
+  bottom: -25px;
+  width: 80%;
+  left: 10%;
+  opacity: 0.8;
+}
+
+body.dark-mode .advanced-card-floating::after {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 9. 磨砂效果卡片 */
+.advanced-card-frosted {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dark-mode .advanced-card-frosted {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 10. 能量光晕卡片 */
+.advanced-card-glow {
+  overflow: visible;
+  box-shadow: 0 0 20px rgba(var(--primary-light-rgb), 0.2);
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.advanced-card-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: var(--primary-gradient);
+  border-radius: calc(var(--card-radius) + 2px);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: -2;
+  filter: blur(10px);
+}
+
+.advanced-card-glow:hover {
+  box-shadow: 0 0 30px rgba(var(--primary-light-rgb), 0.4);
+}
+
+.advanced-card-glow:hover::before {
+  opacity: 0.8;
+}
+
+/* 11. 颜色主题卡片 */
+.advanced-card-primary {
+  border-top: 4px solid var(--card-primary);
+}
+
+.advanced-card-secondary {
+  border-top: 4px solid var(--card-secondary);
+}
+
+.advanced-card-accent {
+  border-top: 4px solid var(--card-accent);
+}
+
+.advanced-card-success {
+  border-top: 4px solid var(--card-success);
+}
+
+.advanced-card-warning {
+  border-top: 4px solid var(--card-warning);
+}
+
+.advanced-card-error {
+  border-top: 4px solid var(--card-error);
+}
+
+/* 12. 卡片内容布局变体 */
+.advanced-card-horizontal {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.advanced-card-horizontal .advanced-card-icon {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.advanced-card-horizontal .advanced-card-content {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .advanced-card-horizontal {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* 13. 图片卡片 */
+.advanced-card-image {
+  padding: 0;
+  overflow: hidden;
+}
+
+.advanced-card-image .card-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  transition: all var(--card-transition);
+}
+
+.advanced-card-image:hover .card-image {
+  transform: scale(1.05);
+}
+
+.advanced-card-image .card-content-wrapper {
+  padding: 1.5rem;
+}
+
+/* 14. 卡片悬停文本效果 */
+.advanced-card-reveal {
+  overflow: hidden;
+}
+
+.advanced-card-reveal .card-reveal-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card-bg);
+  padding: 1.5rem;
+  transform: translateY(100%);
+  transition: transform var(--card-transition);
+}
+
+body.dark-mode .advanced-card-reveal .card-reveal-content {
+  background: var(--dark-card-bg);
+}
+
+.advanced-card-reveal:hover .card-reveal-content {
+  transform: translateY(0);
+}
+
+/* 15. 扁平简约卡片 */
+.advanced-card-flat {
+  box-shadow: none;
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  transition: all var(--card-transition);
+}
+
+.advanced-card-flat:hover {
+  border-color: var(--card-primary);
+  background: rgba(var(--primary-light-rgb), 0.05);
+  transform: translateY(-5px);
+}
+
+body.dark-mode .advanced-card-flat:hover {
+  background: rgba(var(--primary-light-rgb), 0.1);
+}
+
+/* 16. 卡片集组布局 */
+.advanced-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .advanced-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 17. 卡片动画 */
+.advanced-card-animated .advanced-card-icon {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* 18. 计数卡片 */
+.advanced-card-counter {
+  text-align: center;
+}
+
+.advanced-card-counter .counter-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--card-primary);
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.advanced-card-counter .counter-label {
+  font-size: 1rem;
+  color: var(--card-text-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* 19. 渐变背景卡片 */
+.advanced-card-gradient-bg {
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+}
+
+.advanced-card-gradient-bg .advanced-card-title,
+.advanced-card-gradient-bg .advanced-card-content {
+  color: white;
+}
+
+.advanced-card-gradient-bg .advanced-card-title::after {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.advanced-card-gradient-bg .advanced-card-footer {
+  border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+.advanced-card-gradient-bg .advanced-card-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.advanced-card-gradient-bg .advanced-card-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 20. 互动式卡片 */
+.advanced-card-interactive {
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.advanced-card-interactive:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(var(--primary-dark-rgb), 0.2);
+}
+
+.advanced-card-interactive:active {
+  transform: translateY(-5px) scale(0.98);
+}
+
+body.dark-mode .advanced-card-interactive:hover {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+}
+
+/* 卡片组标签切换系统 */
+.card-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--card-border);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.card-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.card-tab {
+  padding: 0.75rem 1.25rem;
+  color: var(--card-text-light);
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: all var(--card-transition);
+}
+
+.card-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--primary-gradient);
+  transform: scaleX(0);
+  transition: transform var(--card-transition);
+}
+
+.card-tab.active {
+  color: var(--card-primary);
+}
+
+.card-tab.active::after {
+  transform: scaleX(1);
+}
+
+.card-tab-content {
+  display: none;
+}
+
+.card-tab-content.active {
+  display: block;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+} 

@@ -1,0 +1,39 @@
+name = "duckimg"
+compatibility_date = "2023-01-01"
+main = "src/index.js"
+
+[vars]
+# ===== 在此填写你自己的配置（复制本文件为 wrangler.toml 后修改）=====
+# Telegram Bot Token（找 @BotFather 创建机器人获取）
+TG_Bot_Token = "在此填入你的_Telegram_Bot_Token"
+# Telegram 频道/群组 ID（机器人需为该频道管理员；超级群/频道通常以 -100 开头）
+TG_Chat_ID = "在此填入你的频道ID"
+# JWT 签名密钥：务必改成一段足够长的随机字符串（用于登录令牌与邮箱验证码，必须保密）
+JWT_SECRET = "在此填入一段随机长字符串"
+
+# 管理员用户名：该用户名登录即拥有管理后台权限、且免邮箱验证
+ADMIN_USERNAME = "你的管理员用户名"
+# 邮件发件地址（用 Resend 时需验证发件域名），如 "鸭鸭图床 <noreply@yourdomain.com>"
+RESEND_FROM = "鸭鸭图床 <noreply@yourdomain.com>"
+# 站点对外访问地址（鉴黄需要可公网访问图片URL）；留空则按请求 origin 推导
+# SITE_URL = "https://your-domain.com"
+
+# 注意：RESEND_API_KEY 属于敏感信息，请用 secret 设置，不要写在此文件：
+#   npx wrangler secret put RESEND_API_KEY
+# 本地开发可在项目根目录创建 .dev.vars 文件写入：RESEND_API_KEY="re_xxx"
+
+# 部署前请先创建这两个 KV 命名空间，并把生成的 id 填到下面：
+#   npx wrangler kv namespace create "duckimg_img_url"
+#   npx wrangler kv namespace create "duckimg_users"
+# 或运行 npm run create-kv 自动创建并写入配置。
+
+[[kv_namespaces]]
+binding = "img_url"
+id = "在此填入你创建的_img_url_KV命名空间ID"
+
+[[kv_namespaces]]
+binding = "users"
+id = "在此填入你创建的_users_KV命名空间ID"
+
+[site]
+bucket = "./public"

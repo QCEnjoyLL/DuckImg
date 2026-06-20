@@ -1,0 +1,501 @@
+/* 仪表盘增强样式 - 现代设计系统 4.0 */
+
+/* 注意：主要CSS变量已在style.css中定义，这里只添加仪表盘特有的变量 */
+:root {
+  /* 仪表盘特有变量 */
+  --chart-grid-color: rgba(203, 213, 225, 0.2);
+  --chart-line-color: rgba(99, 102, 241, 0.8);
+  --chart-point-color: #4f46e5;
+  --chart-area-color: rgba(99, 102, 241, 0.2);
+
+  /* 数据可视化颜色 */
+  --data-color-1: #4f46e5;
+  --data-color-2: #8b5cf6;
+  --data-color-3: #ec4899;
+  --data-color-4: #f97316;
+  --data-color-5: #10b981;
+
+  /* 暗色模式数据可视化颜色 */
+  --dark-chart-grid-color: rgba(71, 85, 105, 0.2);
+  --dark-chart-line-color: rgba(129, 140, 248, 0.8);
+  --dark-chart-point-color: #6366f1;
+  --dark-chart-area-color: rgba(129, 140, 248, 0.2);
+}
+
+/* ===== 统计卡片增强 ===== */
+.stat-card-enhanced {
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  border: 1px solid var(--border-color);
+  z-index: 1;
+}
+
+body.dark-mode .stat-card-enhanced {
+  background: var(--dark-card-bg);
+  border-color: var(--dark-border);
+  box-shadow: var(--shadow);
+}
+
+.stat-card-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--primary-gradient);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.4s ease;
+}
+
+.stat-card-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--primary-gradient);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+
+.stat-card-enhanced:hover::after {
+  transform: scaleX(1);
+}
+
+.stat-card-enhanced:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-md);
+  border-color: transparent;
+}
+
+.stat-card-enhanced:hover::before {
+  opacity: 0.03;
+}
+
+body.dark-mode .stat-card-enhanced:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .stat-card-enhanced:hover::before {
+  opacity: 0.1;
+}
+
+.stat-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  background: var(--primary-gradient);
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 10px 20px rgba(var(--primary-dark-rgb), 0.3);
+  transition: all 0.4s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.stat-icon svg {
+  width: 32px;
+  height: 32px;
+  transition: all 0.4s ease;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+
+.stat-card-enhanced:hover .stat-icon {
+  transform: scale(1.1) rotate(10deg);
+  box-shadow: 0 15px 25px rgba(var(--primary-dark-rgb), 0.4);
+}
+
+.stat-card-enhanced:hover .stat-icon svg {
+  transform: scale(1.1);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+}
+
+.stat-value-enhanced {
+  font-size: 2.1rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+  white-space: nowrap;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transition: all 0.3s ease;
+  text-shadow: 0 2px 10px rgba(var(--primary-dark-rgb), 0.1);
+}
+
+.stat-card-enhanced:hover .stat-value-enhanced {
+  transform: scale(1.1);
+  text-shadow: 0 3px 15px rgba(var(--primary-dark-rgb), 0.2);
+}
+
+.stat-label-enhanced {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-light);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .stat-label-enhanced {
+  color: var(--dark-text-light);
+}
+
+.stat-card-enhanced:hover .stat-label-enhanced {
+  color: var(--text-color);
+}
+
+body.dark-mode .stat-card-enhanced:hover .stat-label-enhanced {
+  color: var(--dark-text);
+}
+
+/* ===== 图表容器增强 ===== */
+.chart-container-enhanced {
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  box-shadow: var(--shadow);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+  height: 320px;
+  border: 1px solid var(--border-color);
+  z-index: 1;
+}
+
+body.dark-mode .chart-container-enhanced {
+  background: var(--dark-card-bg);
+  border-color: var(--dark-border);
+  box-shadow: var(--shadow);
+}
+
+.chart-container-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(var(--primary-light-rgb), 0.05), rgba(var(--accent-light), 0.05));
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.4s ease;
+}
+
+.chart-container-enhanced:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-md);
+  border-color: transparent;
+}
+
+.chart-container-enhanced:hover::before {
+  opacity: 1;
+}
+
+body.dark-mode .chart-container-enhanced:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.75rem;
+  position: relative;
+  z-index: 2;
+}
+
+.chart-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  background: linear-gradient(135deg, var(--accent-light), var(--accent-dark));
+  color: white;
+  font-size: 1.2rem;
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.chart-icon svg {
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+  transition: all 0.4s ease;
+}
+
+.chart-container-enhanced:hover .chart-icon {
+  transform: rotate(10deg) scale(1.05);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+}
+
+.chart-container-enhanced:hover .chart-icon::before {
+  opacity: 1;
+}
+
+.chart-container-enhanced:hover .chart-icon svg {
+  transform: scale(1.1);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+}
+
+.chart-title-enhanced {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .chart-title-enhanced {
+  color: var(--dark-text);
+}
+
+.chart-container-enhanced:hover .chart-title-enhanced {
+  color: var(--accent-color);
+}
+
+body.dark-mode .chart-container-enhanced:hover .chart-title-enhanced {
+  color: var(--accent-light);
+}
+
+/* ===== 图片卡片增强 ===== */
+.image-card-enhanced {
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  z-index: 1;
+}
+
+body.dark-mode .image-card-enhanced {
+  background: var(--dark-card-bg);
+  border-color: var(--dark-border);
+  box-shadow: var(--shadow);
+}
+
+.image-card-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--primary-gradient);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+  z-index: 3;
+}
+
+.image-card-enhanced:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-md);
+  border-color: transparent;
+}
+
+.image-card-enhanced:hover::before {
+  transform: scaleX(1);
+}
+
+body.dark-mode .image-card-enhanced:hover {
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.image-preview-enhanced {
+  position: relative;
+  overflow: hidden;
+  height: 180px;
+  z-index: 1;
+}
+
+.image-preview-enhanced img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.215, 0.61, 0.355, 1);
+  will-change: transform;
+}
+
+.image-card-enhanced:hover .image-preview-enhanced img {
+  transform: scale(1.08);
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.6) 20%,
+    rgba(0, 0, 0, 0.4) 40%,
+    rgba(0, 0, 0, 0.2) 60%,
+    transparent 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.25rem;
+}
+
+.image-card-enhanced:hover .image-overlay {
+  opacity: 1;
+}
+
+.image-overlay-content {
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all 0.4s ease 0.1s;
+}
+
+.image-card-enhanced:hover .image-overlay-content {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ===== 动画效果 ===== */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+/* 应用动画 */
+.stat-card-enhanced {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.chart-container-enhanced {
+  animation: fadeIn 0.7s ease-out;
+}
+
+.image-card-enhanced {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.stat-icon {
+  animation: bounce 1s ease-out;
+}
+
+.image-preview-enhanced.clicked img {
+  animation: pulse 0.3s ease-in-out;
+}
+
+/* ===== 响应式调整 ===== */
+@media (max-width: 768px) {
+  .stat-card-enhanced {
+    padding: 1.25rem;
+    min-height: 140px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
+  .stat-value-enhanced {
+    font-size: 2rem;
+  }
+
+  .chart-container-enhanced {
+    height: 280px;
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .stat-card-enhanced {
+    padding: 1rem;
+    min-height: 120px;
+  }
+
+  .stat-icon {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+
+  .stat-value-enhanced {
+    font-size: 1.75rem;
+  }
+
+  .chart-container-enhanced {
+    height: 250px;
+    padding: 1rem;
+  }
+}

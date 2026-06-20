@@ -1,0 +1,15 @@
+# 依赖与构建缓存
+node_modules/
+.wrangler/
+
+# 本地真实配置（含密钥，切勿提交）
+wrangler.toml
+.dev.vars
+.env
+
+# 打包产物
+*.zip
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db

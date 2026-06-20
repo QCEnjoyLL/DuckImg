@@ -1,0 +1,295 @@
+/*
+ * 菜单统计信息样式 - 鸭鸭图床
+ */
+
+/* 菜单统计信息区域 */
+.menu-stats {
+  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0.5rem 1rem;
+  background-color: rgba(var(--primary-light-rgb), 0.05);
+  border-radius: var(--radius);
+  transition: all var(--transition);
+}
+
+body.dark-mode .menu-stats {
+  background-color: rgba(var(--primary-light-rgb), 0.08);
+}
+
+/* 菜单统计项 */
+.menu-stat-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid rgba(var(--primary-light-rgb), 0.1);
+  transition: all var(--transition);
+}
+
+.menu-stat-item:last-child {
+  border-bottom: none;
+}
+
+body.dark-mode .menu-stat-item {
+  border-bottom-color: rgba(var(--primary-light-rgb), 0.15);
+}
+
+.menu-stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.75rem;
+  color: white;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.menu-stat-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.menu-stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.dark-mode .menu-stat-value {
+  color: var(--dark-text);
+}
+
+.menu-stat-label {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.dark-mode .menu-stat-label {
+  color: var(--dark-text-light);
+}
+
+/* 图表切换按钮 */
+.menu-chart-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(var(--primary-light-rgb), 0.1);
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+body.dark-mode .menu-chart-toggle {
+  border-top-color: rgba(var(--primary-light-rgb), 0.15);
+}
+
+.menu-chart-toggle:hover {
+  background-color: rgba(var(--primary-light-rgb), 0.1);
+  transform: translateX(3px);
+}
+
+.menu-chart-toggle i {
+  font-size: 1.1rem;
+}
+
+/* 菜单折叠时的样式 */
+.side-menu.collapsed .menu-stats {
+  display: none;
+}
+
+/* 浮动图表面板 */
+.floating-charts-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 900px;
+  max-height: 80vh;
+  z-index: 1000;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+body.dark-mode .floating-charts-panel {
+  background-color: var(--dark-card-bg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.floating-charts-panel.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* 统计卡片容器 */
+.stats-cards-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .stats-cards-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-cards-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 图表面板头部 */
+.charts-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+body.dark-mode .charts-panel-header {
+  border-bottom-color: var(--dark-border);
+}
+
+.charts-panel-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+body.dark-mode .charts-panel-header h3 {
+  color: var(--dark-text);
+}
+
+.charts-panel-close {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+body.dark-mode .charts-panel-close {
+  color: var(--dark-text-light);
+}
+
+.charts-panel-close:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-color);
+}
+
+body.dark-mode .charts-panel-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--dark-text);
+}
+
+/* 图表面板内容 */
+.charts-panel-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+}
+
+/* 两个图表并排（窄屏单列） */
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* 图表容器固定高度，确保 Chart.js 完整渲染、不被裁切 */
+.charts-panel-content .chart-container-enhanced {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+.charts-panel-content .chart-container-enhanced canvas {
+  flex: 1;
+  max-height: 240px;
+}
+
+@media (max-width: 768px) {
+  .charts-panel-content {
+    padding: 1rem;
+  }
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 统计切换按钮 */
+.stats-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 响应式调整 */
+@media (max-width: 576px) {
+  .floating-charts-panel {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .charts-panel-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .charts-panel-content {
+    padding: 1rem;
+  }
+
+  .menu-stat-item {
+    padding: 0.5rem;
+  }
+
+  .menu-stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+
+  .menu-stat-value {
+    font-size: 1rem;
+  }
+
+  .menu-stat-label {
+    font-size: 0.75rem;
+  }
+}

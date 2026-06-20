@@ -1,0 +1,730 @@
+/* 鸭鸭图床高级图像系统 - 超级图像效果库 */
+
+:root {
+  --img-radius: var(--radius);
+  --img-radius-sm: var(--radius-sm);
+  --img-radius-lg: var(--radius-lg);
+  --img-radius-xl: var(--radius-xl);
+  --img-radius-full: var(--radius-full);
+  
+  --img-shadow: var(--shadow);
+  --img-shadow-sm: var(--shadow-sm);
+  --img-shadow-md: var(--shadow-md);
+  --img-shadow-lg: var(--shadow-lg);
+  --img-shadow-xl: var(--shadow-xl);
+  
+  --img-border-color: var(--border-color);
+  --img-border-color-dark: var(--dark-border);
+  
+  --img-transition: var(--transition);
+  --img-transition-slow: var(--transition-slow);
+  
+  --img-overlay-bg: rgba(0, 0, 0, 0.4);
+  --img-overlay-bg-gradient: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.7));
+  --img-overlay-text: white;
+  
+  --img-filter-blur: blur(5px);
+  --img-filter-grayscale: grayscale(100%);
+  --img-filter-sepia: sepia(80%);
+  --img-filter-saturate: saturate(200%);
+  --img-filter-hue-rotate: hue-rotate(90deg);
+  --img-filter-invert: invert(80%);
+  --img-filter-brightness: brightness(150%);
+  --img-filter-contrast: contrast(150%);
+  
+  --img-aspect-square: 1/1;
+  --img-aspect-video: 16/9;
+  --img-aspect-cinema: 21/9;
+  --img-aspect-portrait: 3/4;
+  --img-aspect-landscape: 4/3;
+}
+
+/* 基础图像容器 */
+.premium-img-container {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* 基础图像 */
+.premium-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  transition: all var(--img-transition);
+}
+
+/* 图像形状变体 */
+.premium-img-rounded {
+  border-radius: var(--img-radius);
+}
+
+.premium-img-rounded-sm {
+  border-radius: var(--img-radius-sm);
+}
+
+.premium-img-rounded-lg {
+  border-radius: var(--img-radius-lg);
+}
+
+.premium-img-rounded-xl {
+  border-radius: var(--img-radius-xl);
+}
+
+.premium-img-circle {
+  border-radius: var(--img-radius-full);
+}
+
+/* 图像阴影变体 */
+.premium-img-shadow {
+  box-shadow: var(--img-shadow);
+}
+
+.premium-img-shadow-sm {
+  box-shadow: var(--img-shadow-sm);
+}
+
+.premium-img-shadow-md {
+  box-shadow: var(--img-shadow-md);
+}
+
+.premium-img-shadow-lg {
+  box-shadow: var(--img-shadow-lg);
+}
+
+.premium-img-shadow-xl {
+  box-shadow: var(--img-shadow-xl);
+}
+
+/* 图像边框变体 */
+.premium-img-border {
+  border: 2px solid var(--img-border-color);
+}
+
+body.dark-mode .premium-img-border {
+  border-color: var(--img-border-color-dark);
+}
+
+.premium-img-border-thick {
+  border: 4px solid var(--img-border-color);
+}
+
+body.dark-mode .premium-img-border-thick {
+  border-color: var(--img-border-color-dark);
+}
+
+.premium-img-border-primary {
+  border: 2px solid var(--primary-color);
+}
+
+.premium-img-border-accent {
+  border: 2px solid var(--accent-color);
+}
+
+/* 图像填充模式 */
+.premium-img-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.premium-img-contain {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.premium-img-fill {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+/* 图像长宽比容器 */
+.premium-img-aspect-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.premium-img-aspect-container::before {
+  content: '';
+  display: block;
+  padding-top: calc(100% / (var(--img-aspect-ratio, 1)));
+}
+
+.premium-img-aspect-container > img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.premium-img-aspect-square {
+  --img-aspect-ratio: var(--img-aspect-square);
+}
+
+.premium-img-aspect-video {
+  --img-aspect-ratio: var(--img-aspect-video);
+}
+
+.premium-img-aspect-cinema {
+  --img-aspect-ratio: var(--img-aspect-cinema);
+}
+
+.premium-img-aspect-portrait {
+  --img-aspect-ratio: var(--img-aspect-portrait);
+}
+
+.premium-img-aspect-landscape {
+  --img-aspect-ratio: var(--img-aspect-landscape);
+}
+
+/* 图像悬停效果 */
+
+/* 1. 缩放效果 */
+.premium-img-zoom-container {
+  overflow: hidden;
+}
+
+.premium-img-zoom {
+  transition: transform var(--img-transition);
+}
+
+.premium-img-zoom:hover {
+  transform: scale(1.1);
+}
+
+.premium-img-zoom-slow {
+  transition: transform var(--img-transition-slow);
+}
+
+.premium-img-zoom-slow:hover {
+  transform: scale(1.15);
+}
+
+/* 2. 灰度到彩色效果 */
+.premium-img-grayscale {
+  filter: var(--img-filter-grayscale);
+  transition: filter var(--img-transition);
+}
+
+.premium-img-grayscale:hover {
+  filter: grayscale(0%);
+}
+
+/* 3. 模糊到清晰效果 */
+.premium-img-blur {
+  filter: var(--img-filter-blur);
+  transition: filter var(--img-transition);
+}
+
+.premium-img-blur:hover {
+  filter: blur(0);
+}
+
+/* 4. 旋转效果 */
+.premium-img-rotate:hover {
+  transform: rotate(5deg);
+}
+
+/* 5. 亮度变化效果 */
+.premium-img-brighten {
+  filter: brightness(80%);
+  transition: filter var(--img-transition);
+}
+
+.premium-img-brighten:hover {
+  filter: var(--img-filter-brightness);
+}
+
+/* 6. 对比度变化效果 */
+.premium-img-contrast {
+  filter: contrast(80%);
+  transition: filter var(--img-transition);
+}
+
+.premium-img-contrast:hover {
+  filter: var(--img-filter-contrast);
+}
+
+/* 7. 色相旋转效果 */
+.premium-img-hue-rotate:hover {
+  filter: var(--img-filter-hue-rotate);
+}
+
+/* 8. 复古效果 */
+.premium-img-sepia:hover {
+  filter: var(--img-filter-sepia);
+}
+
+/* 9. 颜色反转效果 */
+.premium-img-invert:hover {
+  filter: var(--img-filter-invert);
+}
+
+/* 图像叠加效果 */
+
+/* 1. 基础叠加 */
+.premium-img-overlay-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-img-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--img-overlay-bg);
+  opacity: 0;
+  transition: opacity var(--img-transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--img-overlay-text);
+}
+
+.premium-img-overlay-container:hover .premium-img-overlay {
+  opacity: 1;
+}
+
+/* 2. 渐变叠加 */
+.premium-img-overlay-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: var(--img-overlay-bg-gradient);
+  transition: opacity var(--img-transition);
+  opacity: 0;
+}
+
+.premium-img-overlay-container:hover .premium-img-overlay-gradient {
+  opacity: 1;
+}
+
+/* 3. 由下而上的叠加 */
+.premium-img-overlay-slide-up {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--img-overlay-bg);
+  color: var(--img-overlay-text);
+  padding: 1rem;
+  transform: translateY(100%);
+  transition: transform var(--img-transition);
+}
+
+.premium-img-overlay-container:hover .premium-img-overlay-slide-up {
+  transform: translateY(0);
+}
+
+/* 4. 由上而下的叠加 */
+.premium-img-overlay-slide-down {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--img-overlay-bg);
+  color: var(--img-overlay-text);
+  padding: 1rem;
+  transform: translateY(-100%);
+  transition: transform var(--img-transition);
+}
+
+.premium-img-overlay-container:hover .premium-img-overlay-slide-down {
+  transform: translateY(0);
+}
+
+/* 5. 由左而右的叠加 */
+.premium-img-overlay-slide-right {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: var(--img-overlay-bg);
+  color: var(--img-overlay-text);
+  padding: 1rem;
+  transform: translateX(-100%);
+  transition: transform var(--img-transition);
+  display: flex;
+  align-items: center;
+}
+
+.premium-img-overlay-container:hover .premium-img-overlay-slide-right {
+  transform: translateX(0);
+}
+
+/* 6. 由右而左的叠加 */
+.premium-img-overlay-slide-left {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  background-color: var(--img-overlay-bg);
+  color: var(--img-overlay-text);
+  padding: 1rem;
+  transform: translateX(100%);
+  transition: transform var(--img-transition);
+  display: flex;
+  align-items: center;
+}
+
+.premium-img-overlay-container:hover .premium-img-overlay-slide-left {
+  transform: translateX(0);
+}
+
+/* 特殊效果 */
+
+/* 1. 倒影效果 */
+.premium-img-reflection {
+  -webkit-box-reflect: below 0 linear-gradient(transparent, rgba(0, 0, 0, 0.4));
+}
+
+/* 2. 玻璃态效果 */
+.premium-img-glass {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dark-mode .premium-img-glass {
+  background: rgba(30, 41, 59, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 3. 3D透视效果 */
+.premium-img-perspective {
+  perspective: 1000px;
+  overflow: visible;
+}
+
+.premium-img-perspective img {
+  transform-style: preserve-3d;
+  transition: all var(--img-transition);
+}
+
+.premium-img-perspective:hover img {
+  transform: rotateY(15deg) rotateX(5deg);
+  box-shadow: -20px 20px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* 4. 裁剪路径效果 */
+.premium-img-clip-circle {
+  clip-path: circle(50% at 50% 50%);
+}
+
+.premium-img-clip-hex {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.premium-img-clip-triangle {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.premium-img-clip-diamond {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.premium-img-clip-message {
+  clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 75% 75%, 75% 100%, 50% 75%, 0% 75%);
+}
+
+/* 5. 交错图像网格 */
+.premium-img-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.premium-img-grid-item {
+  overflow: hidden;
+  position: relative;
+}
+
+.premium-img-grid-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all var(--img-transition);
+}
+
+.premium-img-grid-item:hover img {
+  transform: scale(1.1);
+}
+
+/* 6. 图像变形效果 */
+.premium-img-morph {
+  transition: clip-path var(--img-transition-slow);
+  clip-path: circle(50% at 50% 50%);
+}
+
+.premium-img-morph:hover {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+/* 7. 视差效果 */
+.premium-img-parallax-container {
+  overflow: hidden;
+  position: relative;
+}
+
+.premium-img-parallax {
+  height: calc(100% + 40px);
+  width: calc(100% + 40px);
+  top: -20px;
+  left: -20px;
+  position: absolute;
+  transition: transform 0.1s ease-out;
+  object-fit: cover;
+}
+
+/* 8. 放大镜效果 */
+.premium-img-magnify {
+  position: relative;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.premium-img-magnify-glass {
+  position: absolute;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  width: 150px;
+  height: 150px;
+  opacity: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.3s ease;
+}
+
+.premium-img-magnify:hover .premium-img-magnify-glass {
+  opacity: 1;
+}
+
+/* 9. 光晕效果 */
+.premium-img-glow {
+  position: relative;
+}
+
+.premium-img-glow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 25px rgba(var(--primary-light-rgb), 0.7);
+  opacity: 0;
+  transition: opacity var(--img-transition);
+}
+
+.premium-img-glow:hover::after {
+  opacity: 1;
+}
+
+/* 10. 交互式图像对比 */
+.premium-img-compare-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.premium-img-compare-before,
+.premium-img-compare-after {
+  width: 100%;
+  display: block;
+}
+
+.premium-img-compare-before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 50%;
+  overflow: hidden;
+}
+
+.premium-img-compare-slider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  background: #fff;
+  transform: translateX(-2px);
+  cursor: ew-resize;
+  z-index: 10;
+}
+
+.premium-img-compare-slider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.premium-img-compare-slider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 16px;
+  height: 16px;
+  border-left: 2px solid #333;
+  border-bottom: 2px solid #333;
+}
+
+/* 11. 灯箱画廊 */
+.premium-img-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.premium-img-gallery-item {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.premium-img-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all var(--img-transition);
+}
+
+.premium-img-gallery-item:hover img {
+  transform: scale(1.05);
+}
+
+.premium-img-lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--img-transition);
+}
+
+.premium-img-lightbox.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.premium-img-lightbox img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+}
+
+.premium-img-lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 1.5rem;
+  transition: all var(--img-transition);
+}
+
+.premium-img-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: rotate(90deg);
+}
+
+/* 媒体查询 - 响应式调整 */
+@media (max-width: 768px) {
+  .premium-img-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+  }
+  
+  .premium-img-lightbox img {
+    max-width: 95%;
+    max-height: 95%;
+  }
+  
+  .premium-img-magnify-glass {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .premium-img-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+/* 降级和辅助功能支持 */
+@supports not (clip-path: circle(50%)) {
+  .premium-img-clip-circle,
+  .premium-img-clip-hex,
+  .premium-img-clip-triangle,
+  .premium-img-clip-diamond,
+  .premium-img-clip-message,
+  .premium-img-morph {
+    clip-path: none;
+    border-radius: var(--img-radius);
+  }
+}
+
+@supports not (backdrop-filter: blur(10px)) {
+  .premium-img-glass {
+    background: rgba(255, 255, 255, 0.8);
+  }
+  
+  body.dark-mode .premium-img-glass {
+    background: rgba(30, 41, 59, 0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-img,
+  .premium-img-zoom,
+  .premium-img-zoom-slow,
+  .premium-img-overlay,
+  .premium-img-overlay-gradient,
+  .premium-img-overlay-slide-up,
+  .premium-img-overlay-slide-down,
+  .premium-img-overlay-slide-right,
+  .premium-img-overlay-slide-left,
+  .premium-img-perspective img,
+  .premium-img-morph,
+  .premium-img-glow::after {
+    transition: none !important;
+  }
+} 

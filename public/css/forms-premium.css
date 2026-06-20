@@ -1,0 +1,867 @@
+/* 鸭鸭图床高级表单系统 - 超级表单库 */
+
+:root {
+  --form-bg: var(--card-bg);
+  --form-bg-focus: var(--bg-color);
+  --form-text: var(--text-color);
+  --form-text-light: var(--text-light);
+  --form-border: var(--border-color);
+  --form-border-focus: var(--primary-color);
+  --form-shadow: var(--shadow-inner);
+  --form-shadow-focus: 0 0 0 3px rgba(var(--primary-light-rgb), 0.15);
+  --form-radius: var(--radius);
+  --form-radius-sm: var(--radius-sm);
+  --form-radius-lg: var(--radius-lg);
+  --form-transition: var(--transition);
+  --form-error: var(--error-color);
+  --form-success: var(--success-color);
+  --form-warning: var(--warning-color);
+  --form-disabled-bg: var(--divider-color);
+  --form-disabled-opacity: 0.6;
+  --form-font: var(--font-sans);
+}
+
+body.dark-mode {
+  --form-bg: var(--dark-card-bg);
+  --form-bg-focus: var(--dark-bg);
+  --form-text: var(--dark-text);
+  --form-text-light: var(--dark-text-light);
+  --form-border: var(--dark-border);
+  --form-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  --form-disabled-bg: var(--dark-divider);
+}
+
+/* 基础表单元素 */
+.premium-form-group {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.premium-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--form-text);
+  font-size: 0.95rem;
+  transition: color var(--form-transition);
+}
+
+body.dark-mode .premium-label {
+  color: var(--form-text);
+}
+
+.premium-input,
+.premium-select,
+.premium-textarea {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--form-text);
+  background-color: var(--form-bg);
+  border: 2px solid var(--form-border);
+  border-radius: var(--form-radius);
+  transition: all var(--form-transition);
+  box-shadow: var(--form-shadow);
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: var(--form-font);
+}
+
+.premium-input:focus,
+.premium-select:focus,
+.premium-textarea:focus {
+  outline: none;
+  border-color: var(--form-border-focus);
+  box-shadow: var(--form-shadow-focus);
+  background-color: var(--form-bg-focus);
+}
+
+.premium-input::placeholder,
+.premium-textarea::placeholder {
+  color: var(--form-text-light);
+  opacity: 0.7;
+}
+
+body.dark-mode .premium-input::placeholder,
+body.dark-mode .premium-textarea::placeholder {
+  color: var(--form-text-light);
+}
+
+/* 表单尺寸变体 */
+.premium-input-sm,
+.premium-select-sm,
+.premium-textarea-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: var(--form-radius-sm);
+}
+
+.premium-input-lg,
+.premium-select-lg,
+.premium-textarea-lg {
+  padding: 1rem 1.25rem;
+  font-size: 1.05rem;
+  border-radius: var(--form-radius-lg);
+}
+
+/* 表单状态变体 */
+.premium-input-success,
+.premium-select-success,
+.premium-textarea-success {
+  border-color: var(--form-success);
+}
+
+.premium-input-success:focus,
+.premium-select-success:focus,
+.premium-textarea-success:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.premium-input-error,
+.premium-select-error,
+.premium-textarea-error {
+  border-color: var(--form-error);
+}
+
+.premium-input-error:focus,
+.premium-select-error:focus,
+.premium-textarea-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.premium-input-warning,
+.premium-select-warning,
+.premium-textarea-warning {
+  border-color: var(--form-warning);
+}
+
+.premium-input-warning:focus,
+.premium-select-warning:focus,
+.premium-textarea-warning:focus {
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+/* 禁用状态 */
+.premium-input:disabled,
+.premium-select:disabled,
+.premium-textarea:disabled,
+.premium-input.disabled,
+.premium-select.disabled,
+.premium-textarea.disabled {
+  opacity: var(--form-disabled-opacity);
+  cursor: not-allowed;
+  background-color: var(--form-disabled-bg);
+}
+
+/* 浮动标签效果 */
+.premium-form-group-float {
+  position: relative;
+}
+
+.premium-form-group-float .premium-label {
+  position: absolute;
+  top: 0.75rem;
+  left: 1rem;
+  margin: 0;
+  padding: 0 0.25rem;
+  background-color: var(--form-bg);
+  font-size: 0.95rem;
+  opacity: 0.7;
+  transition: all var(--form-transition);
+  pointer-events: none;
+  transform-origin: left top;
+}
+
+.premium-form-group-float .premium-input:focus + .premium-label,
+.premium-form-group-float .premium-textarea:focus + .premium-label,
+.premium-form-group-float .premium-select:focus + .premium-label,
+.premium-form-group-float .premium-input:not(:placeholder-shown) + .premium-label,
+.premium-form-group-float .premium-textarea:not(:placeholder-shown) + .premium-label,
+.premium-form-group-float .premium-select:not([value=""]):not(:focus) + .premium-label {
+  transform: translateY(-1.4rem) scale(0.85);
+  opacity: 1;
+  color: var(--form-border-focus);
+  background-color: var(--form-bg-focus);
+}
+
+.premium-form-group-float .premium-input,
+.premium-form-group-float .premium-textarea,
+.premium-form-group-float .premium-select {
+  padding-top: 1.25rem;
+  padding-bottom: 0.25rem;
+}
+
+/* 下拉选择框 */
+.premium-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 16px 16px;
+  padding-right: 2.5rem;
+}
+
+.premium-select:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* 复选框和单选框 */
+.premium-checkbox-group,
+.premium-radio-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  position: relative;
+  cursor: pointer;
+}
+
+.premium-checkbox,
+.premium-radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.premium-checkbox-mark,
+.premium-radio-mark {
+  position: relative;
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.5rem;
+  background-color: var(--form-bg);
+  border: 2px solid var(--form-border);
+  transition: all var(--form-transition);
+  flex-shrink: 0;
+}
+
+.premium-checkbox-mark {
+  border-radius: var(--form-radius-sm);
+}
+
+.premium-radio-mark {
+  border-radius: 50%;
+}
+
+.premium-checkbox:focus + .premium-checkbox-mark,
+.premium-radio:focus + .premium-radio-mark {
+  border-color: var(--form-border-focus);
+  box-shadow: var(--form-shadow-focus);
+}
+
+.premium-checkbox:checked + .premium-checkbox-mark,
+.premium-radio:checked + .premium-radio-mark {
+  background-color: var(--form-border-focus);
+  border-color: var(--form-border-focus);
+}
+
+.premium-checkbox:checked + .premium-checkbox-mark::after,
+.premium-radio:checked + .premium-radio-mark::after {
+  content: '';
+  position: absolute;
+  display: block;
+}
+
+.premium-checkbox:checked + .premium-checkbox-mark::after {
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.premium-radio:checked + .premium-radio-mark::after {
+  top: 3px;
+  left: 3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: white;
+}
+
+.premium-checkbox:disabled + .premium-checkbox-mark,
+.premium-radio:disabled + .premium-radio-mark,
+.premium-checkbox.disabled + .premium-checkbox-mark,
+.premium-radio.disabled + .premium-radio-mark {
+  opacity: var(--form-disabled-opacity);
+  cursor: not-allowed;
+  background-color: var(--form-disabled-bg);
+}
+
+/* 开关样式 */
+.premium-switch {
+  position: relative;
+  display: inline-block;
+  width: 3rem;
+  height: 1.5rem;
+}
+
+.premium-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.premium-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--form-border);
+  border-radius: 1.5rem;
+  transition: all var(--form-transition);
+}
+
+.premium-switch-slider::before {
+  position: absolute;
+  content: '';
+  height: 1.1rem;
+  width: 1.1rem;
+  left: 0.2rem;
+  bottom: 0.2rem;
+  background-color: white;
+  border-radius: 50%;
+  transition: all var(--form-transition);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.premium-switch input:checked + .premium-switch-slider {
+  background-color: var(--form-border-focus);
+}
+
+.premium-switch input:focus + .premium-switch-slider {
+  box-shadow: var(--form-shadow-focus);
+}
+
+.premium-switch input:checked + .premium-switch-slider::before {
+  transform: translateX(1.5rem);
+}
+
+.premium-switch input:disabled + .premium-switch-slider {
+  opacity: var(--form-disabled-opacity);
+  cursor: not-allowed;
+}
+
+/* 范围滑块 */
+.premium-range {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--form-border);
+  outline: none;
+  padding: 0;
+  margin: 0;
+}
+
+.premium-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--form-border-focus);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all var(--form-transition);
+}
+
+.premium-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--form-border-focus);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all var(--form-transition);
+  border: none;
+}
+
+.premium-range::-webkit-slider-thumb:hover {
+  background: var(--primary-light);
+  transform: scale(1.1);
+}
+
+.premium-range::-moz-range-thumb:hover {
+  background: var(--primary-light);
+  transform: scale(1.1);
+}
+
+.premium-range:focus {
+  outline: none;
+}
+
+.premium-range:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(var(--primary-light-rgb), 0.3);
+}
+
+.premium-range:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(var(--primary-light-rgb), 0.3);
+}
+
+.premium-range:disabled {
+  opacity: var(--form-disabled-opacity);
+  cursor: not-allowed;
+}
+
+/* 文件上传 */
+.premium-file {
+  position: relative;
+  display: inline-block;
+}
+
+.premium-file-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.premium-file-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  color: var(--form-text);
+  background-color: var(--form-bg);
+  border: 2px solid var(--form-border);
+  border-radius: var(--form-radius);
+  cursor: pointer;
+  transition: all var(--form-transition);
+}
+
+.premium-file-label:hover {
+  border-color: var(--form-border-focus);
+  color: var(--form-border-focus);
+}
+
+.premium-file-label svg {
+  margin-right: 0.5rem;
+}
+
+.premium-file-input:focus + .premium-file-label {
+  outline: none;
+  border-color: var(--form-border-focus);
+  box-shadow: var(--form-shadow-focus);
+}
+
+.premium-file-input:disabled + .premium-file-label {
+  opacity: var(--form-disabled-opacity);
+  cursor: not-allowed;
+  background-color: var(--form-disabled-bg);
+}
+
+/* 输入框组 */
+.premium-input-group {
+  display: flex;
+  position: relative;
+}
+
+.premium-input-group .premium-input {
+  flex: 1 1 auto;
+  width: 1%;
+}
+
+.premium-input-group-prepend,
+.premium-input-group-append {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--form-text-light);
+  background-color: var(--form-bg);
+  border: 2px solid var(--form-border);
+  border-radius: 0;
+}
+
+.premium-input-group-prepend {
+  border-right: 0;
+  border-top-left-radius: var(--form-radius);
+  border-bottom-left-radius: var(--form-radius);
+}
+
+.premium-input-group-append {
+  border-left: 0;
+  border-top-right-radius: var(--form-radius);
+  border-bottom-right-radius: var(--form-radius);
+}
+
+.premium-input-group .premium-input:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.premium-input-group .premium-input:not(:first-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* 表单反馈消息 */
+.premium-form-feedback {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.premium-form-feedback-error {
+  color: var(--form-error);
+}
+
+.premium-form-feedback-success {
+  color: var(--form-success);
+}
+
+.premium-form-feedback-warning {
+  color: var(--form-warning);
+}
+
+.premium-form-feedback svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 玻璃态表单 */
+.premium-form-glass .premium-input,
+.premium-form-glass .premium-select,
+.premium-form-glass .premium-textarea {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .premium-form-glass .premium-input,
+body.dark-mode .premium-form-glass .premium-select,
+body.dark-mode .premium-form-glass .premium-textarea {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 表单行内布局 */
+.premium-form-inline {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.premium-form-inline .premium-form-group {
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+
+/* 搜索输入框 */
+.premium-search {
+  position: relative;
+}
+
+.premium-search .premium-input {
+  padding-left: 2.5rem;
+}
+
+.premium-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  color: var(--form-text-light);
+  pointer-events: none;
+}
+
+/* 可清除输入框 */
+.premium-input-clearable {
+  position: relative;
+}
+
+.premium-input-clearable .premium-input {
+  padding-right: 2.5rem;
+}
+
+.premium-input-clear-button {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  color: var(--form-text-light);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--form-transition);
+  opacity: 0.7;
+}
+
+.premium-input-clear-button:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+body.dark-mode .premium-input-clear-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 密码显示切换 */
+.premium-password {
+  position: relative;
+}
+
+.premium-password .premium-input {
+  padding-right: 2.5rem;
+}
+
+.premium-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  color: var(--form-text-light);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--form-transition);
+  opacity: 0.7;
+}
+
+.premium-password-toggle:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+body.dark-mode .premium-password-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 数量输入器 */
+.premium-number-input {
+  display: flex;
+  border: 2px solid var(--form-border);
+  border-radius: var(--form-radius);
+  overflow: hidden;
+}
+
+.premium-number-input-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  background: var(--form-bg);
+  border: none;
+  color: var(--form-text);
+  cursor: pointer;
+  transition: all var(--form-transition);
+}
+
+.premium-number-input-button:hover {
+  background: rgba(var(--primary-light-rgb), 0.1);
+  color: var(--form-border-focus);
+}
+
+.premium-number-input .premium-input {
+  border: none;
+  border-radius: 0;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.premium-number-input .premium-input::-webkit-outer-spin-button,
+.premium-number-input .premium-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 颜色选择器 */
+.premium-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.premium-color-input {
+  -webkit-appearance: none;
+  width: 40px;
+  height: 40px;
+  border: none;
+  cursor: pointer;
+  background: none;
+}
+
+.premium-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.premium-color-input::-webkit-color-swatch {
+  border-radius: var(--form-radius-sm);
+  border: 2px solid var(--form-border);
+}
+
+.premium-color-input::-moz-color-swatch {
+  border-radius: var(--form-radius-sm);
+  border: 2px solid var(--form-border);
+}
+
+.premium-color-value {
+  flex: 1;
+}
+
+/* 标签输入 */
+.premium-tags-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0.5rem;
+  gap: 0.5rem;
+  background-color: var(--form-bg);
+  border: 2px solid var(--form-border);
+  border-radius: var(--form-radius);
+  transition: all var(--form-transition);
+}
+
+.premium-tags-input:focus-within {
+  border-color: var(--form-border-focus);
+  box-shadow: var(--form-shadow-focus);
+}
+
+.premium-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: rgba(var(--primary-light-rgb), 0.1);
+  color: var(--form-border-focus);
+  border-radius: var(--form-radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.premium-tag-remove {
+  margin-left: 0.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+}
+
+.premium-tag-remove:hover {
+  background: rgba(var(--primary-light-rgb), 0.2);
+}
+
+.premium-tags-input-field {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.95rem;
+  color: var(--form-text);
+  font-family: var(--form-font);
+}
+
+/* 自动完成 */
+.premium-autocomplete {
+  position: relative;
+}
+
+.premium-autocomplete-items {
+  position: absolute;
+  border: 1px solid var(--form-border);
+  border-radius: var(--form-radius-sm);
+  z-index: 99;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: var(--form-bg);
+  box-shadow: var(--shadow);
+  margin-top: 0.25rem;
+}
+
+.premium-autocomplete-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all var(--form-transition);
+}
+
+.premium-autocomplete-item:hover {
+  background-color: rgba(var(--primary-light-rgb), 0.1);
+}
+
+.premium-autocomplete-item.active {
+  background-color: rgba(var(--primary-light-rgb), 0.2);
+  color: var(--form-border-focus);
+}
+
+/* 媒体查询 - 响应式表单 */
+@media (max-width: 768px) {
+  .premium-input,
+  .premium-select,
+  .premium-textarea {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9rem;
+  }
+  
+  .premium-input-lg,
+  .premium-select-lg,
+  .premium-textarea-lg {
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
+  }
+  
+  .premium-form-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .premium-form-inline .premium-form-group {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+}
+
+/* 降级和辅助功能支持 */
+@supports not (backdrop-filter: blur(10px)) {
+  .premium-form-glass .premium-input,
+  .premium-form-glass .premium-select,
+  .premium-form-glass .premium-textarea {
+    background: rgba(255, 255, 255, 0.8);
+  }
+  
+  body.dark-mode .premium-form-glass .premium-input,
+  body.dark-mode .premium-form-glass .premium-select,
+  body.dark-mode .premium-form-glass .premium-textarea {
+    background: rgba(30, 41, 59, 0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-input,
+  .premium-select,
+  .premium-textarea,
+  .premium-checkbox-mark,
+  .premium-radio-mark,
+  .premium-switch-slider,
+  .premium-file-label,
+  .premium-range {
+    transition: none !important;
+  }
+} 

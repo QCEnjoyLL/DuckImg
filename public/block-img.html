@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>内容已屏蔽 - 鸭鸭图床</title>
+    <link rel="icon" type="image/svg+xml" href="./images/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/animations-premium.css">
+    <link rel="stylesheet" href="./css/buttons-premium.css">
+    <link rel="stylesheet" href="./css/modals-premium.css">
+    <style>
+        :root {
+            /* 主色调 */
+            --primary-color: #4f46e5;
+            --primary-light: #6366f1;
+            --primary-dark: #4338ca;
+            --primary-gradient: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+
+            /* 辅助色 */
+            --error-color: #ef4444;
+            --error-light: #f87171;
+            --error-dark: #dc2626;
+            --error-gradient: linear-gradient(135deg, var(--error-light), var(--error-dark));
+
+            /* 文本和背景 */
+            --text-color: #1e293b;
+            --text-light: #64748b;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+
+            /* 暗色模式 */
+            --dark-bg: #0f172a;
+            --dark-card-bg: #1e293b;
+            --dark-text: #f1f5f9;
+            --dark-text-light: #cbd5e1;
+
+            /* 设计元素 */
+            --radius: 16px;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+
+            /* 动画 */
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            transition: background-color var(--transition), color var(--transition);
+        }
+
+        body.dark-mode {
+            background-color: var(--dark-bg);
+            color: var(--dark-text);
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.6s ease-out;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        body.dark-mode .container {
+            background-color: var(--dark-card-bg);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--error-gradient);
+        }
+
+        h1 {
+            color: var(--error-color);
+            margin: 0 0 16px;
+            font-weight: 700;
+            font-size: 28px;
+        }
+
+        body.dark-mode h1 {
+            color: var(--error-light);
+        }
+
+        p {
+            color: var(--text-light);
+            line-height: 1.7;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        body.dark-mode p {
+            color: var(--dark-text-light);
+        }
+
+        .icon-container {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: var(--error-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+
+        .icon {
+            font-size: 40px;
+            color: white;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-decoration: none;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.6s;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 24px;
+            transition: color var(--transition);
+        }
+
+        body.dark-mode .theme-toggle {
+            color: var(--dark-text-light);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .icon-container {
+                width: 70px;
+                height: 70px;
+            }
+
+            .icon {
+                font-size: 35px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            p {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="theme-toggle" id="themeToggle" aria-label="切换暗色/亮色模式">
+            🌓
+        </button>
+        <div class="icon-container">
+            <div class="icon">⚠️</div>
+        </div>
+        <h1>内容已被屏蔽</h1>
+        <p>该图片内容不符合我们的社区准则，已被系统屏蔽。如果您认为这是一个错误，请联系管理员进行审核。</p>
+        <a href="/" class="btn premium-btn premium-btn-primary premium-btn-lg premium-btn-pulse">返回首页</a>
+    </div>
+
+    <!-- 主题管理器 -->
+    <script src="./js/theme-manager.js"></script>
+    <script>
+        // 后续代码会由 theme-manager.js 处理主题切换
+        // 其他功能代码保留
+    </script>
+</body>
+</html>

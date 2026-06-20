@@ -1,0 +1,470 @@
+/* 
+ * 现代化上传区域样式 - 鸭鸭图床
+ */
+
+/* 上传容器 */
+.upload-container {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  margin: 2rem auto;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition);
+  position: relative;
+  z-index: 10;
+  max-width: 850px;
+  border: 1px solid rgba(var(--primary-light-rgb), 0.1);
+  overflow: hidden;
+}
+
+body.dark-mode .upload-container {
+  background-color: var(--dark-card-bg);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 上传区域标题 */
+.upload-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.upload-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+body.dark-mode .upload-title {
+  color: var(--dark-text);
+}
+
+.upload-title i {
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.upload-subtitle {
+  color: var(--text-light);
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
+}
+
+body.dark-mode .upload-subtitle {
+  color: var(--dark-text-light);
+}
+
+/* 上传区域 */
+.upload-area {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg,
+    rgba(var(--primary-light-rgb), 0.03) 0%,
+    rgba(var(--primary-dark-rgb), 0.03) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+}
+
+body.dark-mode .upload-area {
+  border-color: var(--dark-border);
+  background: linear-gradient(135deg,
+    rgba(var(--primary-light-rgb), 0.05) 0%,
+    rgba(var(--primary-dark-rgb), 0.05) 100%);
+}
+
+.upload-area::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg,
+    rgba(var(--primary-light-rgb), 0.08),
+    rgba(var(--primary-dark-rgb), 0.08));
+  opacity: 0;
+  transition: opacity var(--transition);
+  z-index: -1;
+}
+
+.upload-area::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0));
+  transform: skewX(-15deg);
+  transition: all 0.8s;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.upload-area:hover::before,
+.upload-area.drag-over::before {
+  opacity: 1;
+}
+
+.upload-area:hover::after {
+  left: 100%;
+}
+
+.upload-area:hover,
+.upload-area.drag-over {
+  border-color: var(--primary-color);
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px rgba(var(--primary-light-rgb), 0.25);
+}
+
+/* 上传图标 */
+.upload-icon {
+  color: white;
+  margin-bottom: 1.5rem;
+  transition: all var(--transition);
+  background: var(--primary-gradient);
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(var(--primary-light-rgb), 0.3);
+}
+
+.upload-icon i {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.upload-area:hover .upload-icon {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 15px 30px rgba(var(--primary-light-rgb), 0.4);
+}
+
+/* 上传文本 */
+.upload-text {
+  margin-top: 1.5rem;
+  font-size: 1.25rem;
+  color: var(--text-color);
+  font-weight: 600;
+  transition: all var(--transition);
+}
+
+body.dark-mode .upload-text {
+  color: var(--dark-text);
+}
+
+.browse-text {
+  color: var(--primary-color);
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 700;
+  transition: all var(--transition-fast);
+}
+
+.browse-text:hover {
+  color: var(--primary-dark);
+}
+
+/* 上传提示 */
+.upload-hint {
+  margin-top: 1rem;
+  color: var(--text-light);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+body.dark-mode .upload-hint {
+  color: var(--dark-text-light);
+}
+
+.upload-hint-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.upload-hint-item i {
+  color: var(--primary-light);
+  font-size: 1.1rem;
+}
+
+kbd {
+  background-color: var(--card-bg-hover);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  color: var(--text-color);
+  display: inline-block;
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.2em 0.4em;
+  margin: 0 0.1em;
+  vertical-align: middle;
+}
+
+body.dark-mode kbd {
+  background-color: var(--dark-card-bg-hover);
+  border-color: var(--dark-border);
+  color: var(--dark-text);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* 结果容器 */
+.result-container {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+  transition: all var(--transition);
+  animation: fadeIn 0.5s ease-out;
+  max-width: 850px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(var(--primary-light-rgb), 0.1);
+}
+
+body.dark-mode .result-container {
+  background-color: var(--dark-card-bg);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 结果标题 */
+.result-header {
+  margin-bottom: 1.5rem;
+}
+
+.result-header h3 {
+  color: var(--success-color);
+  font-size: 1.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.result-header h3 i {
+  font-size: 1.6rem;
+  background: linear-gradient(135deg, var(--success-color), #0ea5e9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.result-subtitle {
+  color: var(--text-light);
+  font-size: 1rem;
+}
+
+body.dark-mode .result-subtitle {
+  color: var(--dark-text-light);
+}
+
+/* 图片预览 */
+.image-preview {
+  margin: 1.5rem auto;
+  max-width: 500px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition);
+  position: relative;
+  border: 3px solid var(--card-bg);
+  cursor: pointer;
+}
+
+body.dark-mode .image-preview {
+  border-color: var(--dark-card-bg);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.image-preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent 70%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 1rem;
+  opacity: 0;
+  transition: opacity var(--transition);
+  color: white;
+  gap: 0.5rem;
+}
+
+.image-preview:hover .image-preview-overlay {
+  opacity: 1;
+}
+
+.image-preview-overlay i {
+  font-size: 1.5rem;
+}
+
+.image-preview:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(var(--primary-light-rgb), 0.3);
+}
+
+/* 结果操作按钮 */
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* 统一上传成功后的三个操作按钮：同形同尺寸，仅配色不同 */
+.result-actions .action-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 160px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.result-actions .action-btn i { font-size: 1.6rem; line-height: 1; }
+.result-actions .action-btn span { font-size: 0.85rem; font-weight: 600; opacity: 1; }
+.result-actions .action-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.18); }
+
+/* 配色：编辑=主色实心，再次上传=次色实心，分享=描边中性 */
+.result-actions .action-btn-primary { background: linear-gradient(135deg, #4361ee, #3b51d8); color: #fff; }
+.result-actions .action-btn-secondary { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; }
+.result-actions .action-btn-accent { background: linear-gradient(135deg, #8b5cf6, #6d5ef0); color: #fff; }
+.result-actions .action-btn-outline {
+  background: var(--card-bg);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+body.dark-mode .result-actions .action-btn-outline {
+  background: var(--dark-card-bg);
+  color: var(--dark-text);
+  border-color: var(--dark-border);
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .upload-container {
+    padding: 1.5rem;
+    margin: 1rem auto;
+  }
+  
+  .upload-title {
+    font-size: 1.5rem;
+  }
+  
+  .upload-title i {
+    font-size: 1.5rem;
+  }
+  
+  .upload-subtitle {
+    font-size: 1rem;
+  }
+  
+  .upload-area {
+    padding: 1.5rem 1rem;
+    min-height: 200px;
+  }
+  
+  .upload-icon {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 1rem;
+  }
+  
+  .upload-icon i {
+    font-size: 2rem;
+  }
+  
+  .upload-text {
+    font-size: 1.1rem;
+    margin-top: 1rem;
+  }
+  
+  .upload-hint {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .result-header h3 {
+    font-size: 1.4rem;
+  }
+  
+  .result-header h3 i {
+    font-size: 1.4rem;
+  }
+  
+  .result-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .result-actions .action-btn {
+    flex: none;
+    max-width: none;
+    width: 100%;
+    min-height: 56px;
+    flex-direction: row;
+  }
+  .result-actions .action-btn i { font-size: 1.3rem; }
+
+  .upload-again-btn,
+  .share-btn {
+    width: 100%;
+  }
+}

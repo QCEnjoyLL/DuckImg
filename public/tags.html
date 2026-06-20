@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>标签管理 - 鸭鸭图床 | 免费图床</title>
+    <meta name="description" content="管理您在鸭鸭图床的图片标签">
+    <meta name="keywords" content="标签管理,图片标签,分类管理,鸭鸭图床">
+    <meta name="theme-color" content="#4361ee">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
+    <link rel="stylesheet" href="./css/animations-premium.css">
+    <link rel="stylesheet" href="./css/advanced-cards.css">
+    <link rel="stylesheet" href="./css/buttons-premium.css">
+    <link rel="stylesheet" href="./css/forms-premium.css">
+    <link rel="stylesheet" href="./css/modals-premium.css">
+    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="icon" type="image/svg+xml" href="./images/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 引入图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .tags-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tags-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tags-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+            pointer-events: none;
+        }
+
+        body.dark-mode .tags-header {
+            background: var(--dark-card-bg);
+        }
+
+        .tags-title {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1;
+        }
+
+        .tags-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            border-radius: 3px;
+        }
+
+        .tags-stats {
+            display: flex;
+            gap: 1rem;
+            z-index: 1;
+            position: relative;
+        }
+
+        .tags-stat {
+            text-align: center;
+            padding: 0.75rem 1rem;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .tags-stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #8b5cf6;
+            margin-bottom: 0.25rem;
+        }
+
+        .tags-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        body.dark-mode .tags-stat-label {
+            color: var(--dark-text-light);
+        }
+
+        .tags-actions {
+            display: flex;
+            gap: 1rem;
+            z-index: 1;
+            position: relative;
+        }
+
+        .search-create-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all var(--transition);
+        }
+
+        body.dark-mode .search-input {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .create-tag-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+
+        .create-tag-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .filter-sort-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-dropdown {
+            position: relative;
+        }
+
+        .filter-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+
+        body.dark-mode .filter-btn {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .filter-btn:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: #8b5cf6;
+        }
+
+        .filter-dropdown-content {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            min-width: 200px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            z-index: 10;
+            display: none;
+            margin-top: 0.25rem;
+        }
+
+        body.dark-mode .filter-dropdown-content {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+        }
+
+        .filter-dropdown.active .filter-dropdown-content {
+            display: block;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        body.dark-mode .filter-option {
+            border-bottom-color: var(--dark-border);
+        }
+
+        .filter-option:last-child {
+            border-bottom: none;
+        }
+
+        .filter-option:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .filter-option.active {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
+        .tags-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .tag-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: all var(--transition);
+            position: relative;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        body.dark-mode .tag-card {
+            background: var(--dark-card-bg);
+        }
+
+        .tag-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            border-color: #8b5cf6;
+        }
+
+        .tag-card.selected {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+
+        .tag-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .tag-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        body.dark-mode .tag-name {
+            color: var(--dark-text);
+        }
+
+        .tag-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .tag-actions {
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .tag-card:hover .tag-actions {
+            opacity: 1;
+        }
+
+        .tag-action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        body.dark-mode .tag-action-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--dark-text);
+        }
+
+        .tag-action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .tag-action-btn.edit {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .tag-action-btn.delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .tag-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        body.dark-mode .tag-stats {
+            color: var(--dark-text-light);
+        }
+
+        .tag-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .tag-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        body.dark-mode .tag-description {
+            color: var(--dark-text-light);
+        }
+
+        .tag-images-preview {
+            display: flex;
+            gap: 0.5rem;
+            overflow: hidden;
+        }
+
+        .tag-image-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            border: 2px solid var(--border-color);
+            transition: all var(--transition);
+        }
+
+        body.dark-mode .tag-image-thumb {
+            border-color: var(--dark-border);
+        }
+
+        .tag-image-thumb:hover {
+            transform: scale(1.1);
+            border-color: #8b5cf6;
+        }
+
+        .tag-more-count {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-secondary);
+            color: var(--text-color);
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 2px solid var(--border-color);
+        }
+
+        body.dark-mode .tag-more-count {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--dark-text);
+            border-color: var(--dark-border);
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin: 2rem 0;
+            border: 2px dashed var(--border-color);
+        }
+
+        body.dark-mode .empty-state {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: #8b5cf6;
+            margin-bottom: 1rem;
+        }
+
+        .empty-title {
+            font-size: 1.5rem;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+
+        body.dark-mode .empty-title {
+            color: var(--dark-text);
+        }
+
+        .empty-text {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+        }
+
+        body.dark-mode .empty-text {
+            color: var(--dark-text-light);
+        }
+
+        .empty-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all var(--transition);
+        }
+
+        .empty-action:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        /* 创建/编辑标签模态框 */
+        .tag-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .tag-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .tag-modal-content {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+            transform: scale(0.9);
+            transition: transform var(--transition);
+        }
+
+        .tag-modal.active .tag-modal-content {
+            transform: scale(1);
+        }
+
+        body.dark-mode .tag-modal-content {
+            background: var(--dark-card-bg);
+        }
+
+        .tag-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        body.dark-mode .tag-modal-header {
+            border-color: var(--dark-border);
+        }
+
+        .tag-modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #8b5cf6;
+            margin: 0;
+        }
+
+        .tag-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all var(--transition);
+        }
+
+        .tag-modal-close:hover {
+            background: var(--bg-secondary);
+            color: var(--text-color);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        body.dark-mode .form-label {
+            color: var(--dark-text);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all var(--transition);
+        }
+
+        body.dark-mode .form-control {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .color-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition);
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            border-color: white;
+            box-shadow: 0 0 0 2px var(--border-color);
+        }
+
+        .color-option.selected {
+            border-color: white;
+            box-shadow: 0 0 0 3px #8b5cf6;
+        }
+
+        .color-option::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .color-option.selected::after {
+            opacity: 1;
+        }
+
+        .tag-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        body.dark-mode .tag-modal-footer {
+            border-color: var(--dark-border);
+        }
+
+        .modal-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-btn-primary {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+            border: none;
+        }
+
+        .modal-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .modal-btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .modal-btn-secondary:hover {
+            background: var(--bg-secondary);
+        }
+
+        body.dark-mode .modal-btn-secondary {
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        /* 批量操作工具栏 */
+        .batch-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            transform: translateY(100%);
+            transition: transform var(--transition);
+            border-top: 3px solid #8b5cf6;
+        }
+
+        .batch-toolbar.active {
+            transform: translateY(0);
+        }
+
+        body.dark-mode .batch-toolbar {
+            background: var(--dark-card-bg);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .batch-info {
+            font-weight: 600;
+            color: #8b5cf6;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .batch-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition);
+            font-weight: 500;
+        }
+
+        body.dark-mode .batch-btn {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .batch-btn:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: #8b5cf6;
+        }
+
+        .batch-btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .batch-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .tags-container {
+                padding: 0.5rem;
+            }
+
+            .tags-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .tags-title {
+                font-size: 1.5rem;
+            }
+
+            .tags-stats {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .search-create-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+
+            .tags-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .color-picker-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            .batch-toolbar {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .batch-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tags-stats {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .tags-stat {
+                text-align: left;
+            }
+
+            .color-picker-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode-transition">
+    <!-- 页面加载动画 -->
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-content">
+            <div class="loader">
+                <div class="loader-circle"></div>
+                <div class="loader-circle"></div>
+                <div class="loader-circle"></div>
+                <div class="loader-dot"></div>
+            </div>
+            <div class="loader-brand">鸭鸭图床</div>
+        </div>
+    </div>
+
+    <!-- 页面过渡动画 -->
+    <div id="pageTransition" class="page-transition"></div>
+
+    <!-- 页面滚动进度条 -->
+    <div class="scroll-progress-container">
+        <div class="scroll-progress-bar" id="scrollProgress"></div>
+    </div>
+
+    <!-- 侧边菜单 -->
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-header">
+            <div class="menu-logo">
+                <img src="./images/logo.svg" alt="鸭鸭图床 Logo">
+                <h1>鸭鸭图床</h1>
+            </div>
+            <div class="menu-toggle" id="menuToggle">
+                <i class="ri-arrow-left-s-line"></i>
+            </div>
+        </div>
+        <div class="menu-content">
+            <div class="menu-category">主要功能</div>
+            <a href="/" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-home-5-line"></i></div>
+                <div class="menu-item-text">首页</div>
+                <div class="menu-tooltip">首页</div>
+            </a>
+            <a href="/dashboard.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-image-2-line"></i></div>
+                <div class="menu-item-text">我的图片</div>
+                <div class="menu-tooltip">我的图片</div>
+            </a>
+            <a href="#" class="menu-item" id="uploadMenuBtn">
+                <div class="menu-item-icon"><i class="ri-upload-cloud-2-line"></i></div>
+                <div class="menu-item-text">上传图片</div>
+                <div class="menu-tooltip">上传图片</div>
+            </a>
+
+            <div class="menu-category">图片管理</div>
+            <a href="/favorites.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-star-line"></i></div>
+                <div class="menu-item-text">收藏图片</div>
+                <div class="menu-tooltip">收藏图片</div>
+            </a>
+            <a href="#" class="menu-item" id="recentMenuItem">
+                <div class="menu-item-icon"><i class="ri-time-line"></i></div>
+                <div class="menu-item-text">最近上传</div>
+                <div class="menu-tooltip">最近上传</div>
+            </a>
+            <a href="/tags.html" class="menu-item active">
+                <div class="menu-item-icon"><i class="ri-price-tag-3-line"></i></div>
+                <div class="menu-item-text">标签管理</div>
+                <div class="menu-tooltip">标签管理</div>
+            </a>
+
+            <div class="menu-category">账户</div>
+            <a href="/login.html" class="menu-item" id="loginMenuItem" style="display: none;">
+                <div class="menu-item-icon"><i class="ri-login-box-line"></i></div>
+                <div class="menu-item-text">登录</div>
+                <div class="menu-tooltip">登录</div>
+            </a>
+            <a href="/profile.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-user-settings-line"></i></div>
+                <div class="menu-item-text">用户资料</div>
+                <div class="menu-tooltip">用户资料</div>
+            </a>
+            <a href="/settings.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-settings-3-line"></i></div>
+                <div class="menu-item-text">系统设置</div>
+                <div class="menu-tooltip">系统设置</div>
+            </a>
+            <a href="#" class="menu-item" id="logoutMenuItem">
+                <div class="menu-item-icon"><i class="ri-logout-box-line"></i></div>
+                <div class="menu-item-text">退出登录</div>
+                <div class="menu-tooltip">退出登录</div>
+            </a>
+
+            <div class="menu-category">更多</div>
+            <a href="https://github.com/QCEnjoyLL/DuckImg" target="_blank" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-github-line"></i></div>
+                <div class="menu-item-text">GitHub</div>
+                <div class="menu-tooltip">GitHub</div>
+            </a>
+            <a href="/help.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-question-line"></i></div>
+                <div class="menu-item-text">帮助文档</div>
+                <div class="menu-tooltip">帮助文档</div>
+            </a>
+            <a href="#" class="menu-item" id="themeMenuItem">
+                <div class="menu-item-icon"><i class="ri-moon-line"></i></div>
+                <div class="menu-item-text">切换主题</div>
+                <div class="menu-tooltip">切换主题</div>
+            </a>
+        </div>
+        <div class="menu-footer">
+            <i class="ri-copyright-line"></i>
+            <span>2025 鸭鸭图床</span>
+        </div>
+    </div>
+
+    <!-- 菜单遮罩层 -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <div class="app-container menu-expanded">
+        <header class="header">
+            <div class="header-left">
+                <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="打开菜单">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="logo">
+                    <img src="./images/logo.svg" alt="鸭鸭图床 Logo" class="logo-img">
+                    <h1>鸭鸭图床</h1>
+                </div>
+            </div>
+            <div class="header-center">
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-action-btn" id="uploadBtn" title="上传图片">
+                        <i class="ri-upload-cloud-2-line"></i>
+                    </button>
+                    <label class="theme-toggle" id="themeToggle" aria-label="切换暗色/亮色模式">
+                        <input id="switch" type="checkbox">
+                        <div class="theme-toggle-icon">
+                            <i class="ri-sun-line"></i>
+                            <i class="ri-moon-line"></i>
+                        </div>
+                    </label>
+                    <div id="userDropdown" class="user-dropdown">
+                        <button id="userDropdownBtn" class="user-dropdown-btn">
+                            <div class="user-avatar">
+                                <i class="ri-user-3-line"></i>
+                            </div>
+                            <span id="userDisplayName">用户</span>
+                            <i class="ri-arrow-down-s-line"></i>
+                        </button>
+                        <div class="user-dropdown-content">
+                            <a href="/profile.html" class="dropdown-item">
+                                <i class="ri-user-settings-line"></i>
+                                <span>用户资料</span>
+                            </a>
+                            <a href="/dashboard.html" class="dropdown-item">
+                                <i class="ri-image-2-line"></i>
+                                <span>我的图片</span>
+                            </a>
+                            <a href="#" class="dropdown-item" id="logoutBtn">
+                                <i class="ri-logout-box-line"></i>
+                                <span>退出登录</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="tags-container">
+                <div class="tags-header">
+                    <div>
+                        <h1 class="tags-title">
+                            <i class="ri-price-tag-3-fill"></i>
+                            标签管理
+                        </h1>
+                        <p style="margin: 0.5rem 0 0; color: var(--text-light); position: relative; z-index: 1;">创建和管理您的图片标签</p>
+                    </div>
+                    <div class="tags-stats">
+                        <div class="tags-stat">
+                            <div class="tags-stat-value" id="totalTags">0</div>
+                            <div class="tags-stat-label">标签总数</div>
+                        </div>
+                        <div class="tags-stat">
+                            <div class="tags-stat-value" id="totalImages">0</div>
+                            <div class="tags-stat-label">已标记图片</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="search-create-bar">
+                    <div class="search-box">
+                        <i class="ri-search-line search-icon"></i>
+                        <input type="text" class="search-input" placeholder="搜索标签..." id="searchInput">
+                    </div>
+                    
+                    <button class="create-tag-btn" id="createTagBtn">
+                        <i class="ri-add-line"></i>
+                        <span>创建标签</span>
+                    </button>
+                </div>
+
+                <div class="filter-sort-bar">
+                    <div class="filter-dropdown" id="sortDropdown">
+                        <button class="filter-btn" id="sortBtn">
+                            <i class="ri-sort-desc"></i>
+                            <span>按名称排序</span>
+                            <i class="ri-arrow-down-s-line"></i>
+                        </button>
+                        <div class="filter-dropdown-content">
+                            <div class="filter-option active" data-sort="name">
+                                <i class="ri-font-size"></i>
+                                <span>按名称排序</span>
+                            </div>
+                            <div class="filter-option" data-sort="count">
+                                <i class="ri-image-line"></i>
+                                <span>按图片数量</span>
+                            </div>
+                            <div class="filter-option" data-sort="date">
+                                <i class="ri-calendar-line"></i>
+                                <span>按创建时间</span>
+                            </div>
+                            <div class="filter-option" data-sort="color">
+                                <i class="ri-palette-line"></i>
+                                <span>按颜色分组</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-dropdown" id="filterDropdown">
+                        <button class="filter-btn" id="filterBtn">
+                            <i class="ri-filter-line"></i>
+                            <span>全部标签</span>
+                            <i class="ri-arrow-down-s-line"></i>
+                        </button>
+                        <div class="filter-dropdown-content">
+                            <div class="filter-option active" data-filter="all">
+                                <i class="ri-stack-line"></i>
+                                <span>全部标签</span>
+                            </div>
+                            <div class="filter-option" data-filter="used">
+                                <i class="ri-image-line"></i>
+                                <span>已使用标签</span>
+                            </div>
+                            <div class="filter-option" data-filter="unused">
+                                <i class="ri-ghost-line"></i>
+                                <span>未使用标签</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tags-grid" id="tagsGrid">
+                    <!-- 标签卡片将通过JavaScript动态生成 -->
+                </div>
+
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="ri-price-tag-3-line"></i>
+                    </div>
+                    <h3 class="empty-title">还没有标签</h3>
+                    <p class="empty-text">创建您的第一个标签来更好地组织和管理您的图片。</p>
+                    <button class="empty-action" id="emptyCreateTagBtn">
+                        <i class="ri-add-line"></i>
+                        创建标签
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024-2025 鸭鸭图床. 基于 <a href="https://telegram.org" target="_blank">Telegram</a> 提供技术支持</p>
+        </footer>
+    </div>
+
+    <!-- 创建/编辑标签模态框 -->
+    <div class="tag-modal" id="tagModal">
+        <div class="tag-modal-content">
+            <div class="tag-modal-header">
+                <h3 class="tag-modal-title" id="tagModalTitle">创建标签</h3>
+                <button class="tag-modal-close" id="tagModalClose">&times;</button>
+            </div>
+            
+            <form id="tagForm">
+                <div class="form-group">
+                    <label for="tagName" class="form-label">标签名称</label>
+                    <input type="text" id="tagName" class="form-control" placeholder="输入标签名称..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tagDescription" class="form-label">标签描述</label>
+                    <textarea id="tagDescription" class="form-control" rows="3" placeholder="输入标签描述（可选）..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">标签颜色</label>
+                    <div class="color-picker-grid" id="colorPicker">
+                        <!-- 颜色选项将通过JavaScript生成 -->
+                    </div>
+                </div>
+            </form>
+            
+            <div class="tag-modal-footer">
+                <button type="button" class="modal-btn modal-btn-secondary" id="tagModalCancel">
+                    <i class="ri-close-line"></i>
+                    取消
+                </button>
+                <button type="submit" form="tagForm" class="modal-btn modal-btn-primary" id="tagModalSubmit">
+                    <i class="ri-save-line"></i>
+                    保存标签
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量操作工具栏 -->
+    <div class="batch-toolbar" id="batchToolbar">
+        <div class="batch-info">已选择 <span id="selectedCount">0</span> 个标签</div>
+        <div class="batch-actions">
+            <button class="batch-btn" id="batchMerge">
+                <i class="ri-merge-cells-horizontal"></i>
+                <span>合并标签</span>
+            </button>
+            <button class="batch-btn batch-btn-danger" id="batchDelete">
+                <i class="ri-delete-bin-line"></i>
+                <span>删除标签</span>
+            </button>
+            <button class="batch-btn" id="batchCancel">
+                <i class="ri-close-line"></i>
+                <span>取消选择</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript 文件 -->
+    <!-- 主题管理器 -->
+    <script src="./js/theme-manager.js"></script>
+    <script src="./js/menu-system.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/tags.js"></script>
+    <script src="./js/announcement.js"></script>
+    <script src="./js/site-config.js"></script>
+</body>
+</html> 

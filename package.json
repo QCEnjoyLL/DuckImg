@@ -1,0 +1,27 @@
+{
+  "name": "duckimg",
+  "version": "1.0.0",
+  "description": "鸭鸭图床 — 基于 Telegram + Cloudflare 的免费图床服务",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "create-kv": "node create-kv.js",
+    "setup": "npm run create-kv && npm run deploy"
+  },
+  "keywords": [
+    "图床",
+    "鸭鸭图床",
+    "DuckImg",
+    "telegram",
+    "cloudflare"
+  ],
+  "author": "",
+  "license": "AGPL-3.0-with-Commons-Clause",
+  "dependencies": {
+    "hono": "^3.1.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.100.0"
+  }
+}

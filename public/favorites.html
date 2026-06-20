@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>收藏图片 - 鸭鸭图床 | 免费图床</title>
+    <meta name="description" content="管理您在鸭鸭图床收藏的图片">
+    <meta name="keywords" content="收藏图片,图片管理,鸭鸭图床,图床">
+    <meta name="theme-color" content="#4361ee">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
+    <link rel="stylesheet" href="./css/animations-premium.css">
+    <link rel="stylesheet" href="./css/advanced-cards.css">
+    <link rel="stylesheet" href="./css/buttons-premium.css">
+    <link rel="stylesheet" href="./css/forms-premium.css">
+    <link rel="stylesheet" href="./css/images-premium.css">
+    <link rel="stylesheet" href="./css/modals-premium.css">
+    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="icon" type="image/svg+xml" href="./images/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 引入图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .favorites-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .favorites-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .favorites-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(251, 191, 36, 0.05) 100%);
+            pointer-events: none;
+        }
+
+        body.dark-mode .favorites-header {
+            background: var(--dark-card-bg);
+        }
+
+        .favorites-title {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1;
+        }
+
+        .favorites-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            border-radius: 3px;
+        }
+
+        .favorites-stats {
+            display: flex;
+            gap: 1rem;
+            z-index: 1;
+            position: relative;
+        }
+
+        .favorites-stat {
+            text-align: center;
+            padding: 0.75rem 1rem;
+            background: rgba(245, 158, 11, 0.1);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .favorites-stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f59e0b;
+            margin-bottom: 0.25rem;
+        }
+
+        .favorites-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        body.dark-mode .favorites-stat-label {
+            color: var(--dark-text-light);
+        }
+
+        .search-filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all var(--transition);
+        }
+
+        body.dark-mode .search-input {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .filter-dropdown {
+            position: relative;
+        }
+
+        .filter-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+
+        body.dark-mode .filter-btn {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .filter-btn:hover {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+        }
+
+        .filter-dropdown-content {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            min-width: 200px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            z-index: 10;
+            display: none;
+            margin-top: 0.25rem;
+        }
+
+        body.dark-mode .filter-dropdown-content {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+        }
+
+        .filter-dropdown.active .filter-dropdown-content {
+            display: block;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        body.dark-mode .filter-option {
+            border-bottom-color: var(--dark-border);
+        }
+
+        .filter-option:last-child {
+            border-bottom: none;
+        }
+
+        .filter-option:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .filter-option.active {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .view-toggle {
+            display: flex;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        body.dark-mode .view-toggle {
+            border-color: var(--dark-border);
+        }
+
+        .view-btn {
+            padding: 0.75rem;
+            background: var(--card-bg);
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.dark-mode .view-btn {
+            background: var(--dark-card-bg);
+            color: var(--dark-text-light);
+        }
+
+        .view-btn:hover,
+        .view-btn.active {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .favorites-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .favorites-grid.list-view {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .favorite-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all var(--transition);
+            position: relative;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        body.dark-mode .favorite-card {
+            background: var(--dark-card-bg);
+        }
+
+        .favorite-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: #f59e0b;
+        }
+
+        .favorite-card.selected {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+        }
+
+        .favorite-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #f59e0b;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        .image-checkbox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 3;
+        }
+
+        .checkbox-input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkbox-label {
+            display: block;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition);
+        }
+
+        .checkbox-label::after {
+            content: '';
+            position: absolute;
+            display: none;
+            left: 7px;
+            top: 3px;
+            width: 6px;
+            height: 12px;
+            border: solid #f59e0b;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-input:checked + .checkbox-label {
+            background: white;
+        }
+
+        .checkbox-input:checked + .checkbox-label::after {
+            display: block;
+        }
+
+        .favorite-image {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .favorite-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform var(--transition);
+        }
+
+        .favorite-card:hover .favorite-image img {
+            transform: scale(1.05);
+        }
+
+        .favorite-info {
+            padding: 1rem;
+        }
+
+        .favorite-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        body.dark-mode .favorite-name {
+            color: var(--dark-text);
+        }
+
+        .favorite-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        body.dark-mode .favorite-meta {
+            color: var(--dark-text-light);
+        }
+
+        .favorite-date {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .favorite-size {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .favorite-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .favorite-tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border-radius: 12px;
+            transition: all var(--transition);
+        }
+
+        .favorite-tag:hover {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .favorite-actions {
+            display: flex;
+            gap: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        body.dark-mode .favorite-actions {
+            border-top-color: var(--dark-border);
+        }
+
+        .favorite-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            font-weight: 500;
+        }
+
+        .btn-copy {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-unfavorite {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-unfavorite:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .btn-view {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        /* 列表视图样式 */
+        .favorites-grid.list-view .favorite-card {
+            display: grid;
+            grid-template-columns: 120px 1fr auto;
+            height: 120px;
+        }
+
+        .favorites-grid.list-view .favorite-image {
+            height: 100%;
+            width: 120px;
+        }
+
+        .favorites-grid.list-view .favorite-info {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .favorites-grid.list-view .favorite-actions {
+            display: flex;
+            flex-direction: column;
+            padding: 0.5rem;
+            border-top: none;
+            border-left: 1px solid var(--border-color);
+            justify-content: center;
+            min-width: 120px;
+        }
+
+        body.dark-mode .favorites-grid.list-view .favorite-actions {
+            border-left-color: var(--dark-border);
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin: 2rem 0;
+            border: 2px dashed var(--border-color);
+        }
+
+        body.dark-mode .empty-state {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: #f59e0b;
+            margin-bottom: 1rem;
+        }
+
+        .empty-title {
+            font-size: 1.5rem;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+
+        body.dark-mode .empty-title {
+            color: var(--dark-text);
+        }
+
+        .empty-text {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+        }
+
+        body.dark-mode .empty-text {
+            color: var(--dark-text-light);
+        }
+
+        .empty-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all var(--transition);
+        }
+
+        .empty-action:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        /* 批量操作工具栏 */
+        .batch-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            transform: translateY(100%);
+            transition: transform var(--transition);
+            border-top: 3px solid #f59e0b;
+        }
+
+        .batch-toolbar.active {
+            transform: translateY(0);
+        }
+
+        body.dark-mode .batch-toolbar {
+            background: var(--dark-card-bg);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .batch-info {
+            font-weight: 600;
+            color: #f59e0b;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .batch-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition);
+            font-weight: 500;
+        }
+
+        body.dark-mode .batch-btn {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .batch-btn:hover {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+        }
+
+        .batch-btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .batch-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+            gap: 0.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition);
+            min-width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.dark-mode .page-btn {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .page-btn:hover:not(.disabled) {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+        }
+
+        .page-btn.active {
+            background: #f59e0b;
+            color: white;
+            border-color: #f59e0b;
+        }
+
+        .page-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .favorites-container {
+                padding: 0.5rem;
+            }
+
+            .favorites-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .favorites-title {
+                font-size: 1.5rem;
+            }
+
+            .favorites-stats {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .search-filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+
+            .favorites-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+
+            .batch-toolbar {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .batch-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .favorites-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .favorites-stats {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .favorites-stat {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode-transition">
+    <!-- 页面加载动画 -->
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-content">
+            <div class="loader">
+                <div class="loader-circle"></div>
+                <div class="loader-circle"></div>
+                <div class="loader-circle"></div>
+                <div class="loader-dot"></div>
+            </div>
+            <div class="loader-brand">鸭鸭图床</div>
+        </div>
+    </div>
+
+    <!-- 页面过渡动画 -->
+    <div id="pageTransition" class="page-transition"></div>
+
+    <!-- 页面滚动进度条 -->
+    <div class="scroll-progress-container">
+        <div class="scroll-progress-bar" id="scrollProgress"></div>
+    </div>
+
+    <!-- 侧边菜单 -->
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-header">
+            <div class="menu-logo">
+                <img src="./images/logo.svg" alt="鸭鸭图床 Logo">
+                <h1>鸭鸭图床</h1>
+            </div>
+            <div class="menu-toggle" id="menuToggle">
+                <i class="ri-arrow-left-s-line"></i>
+            </div>
+        </div>
+        <div class="menu-content">
+            <div class="menu-category">主要功能</div>
+            <a href="/" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-home-5-line"></i></div>
+                <div class="menu-item-text">首页</div>
+                <div class="menu-tooltip">首页</div>
+            </a>
+            <a href="/dashboard.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-image-2-line"></i></div>
+                <div class="menu-item-text">我的图片</div>
+                <div class="menu-tooltip">我的图片</div>
+            </a>
+            <a href="#" class="menu-item" id="uploadMenuBtn">
+                <div class="menu-item-icon"><i class="ri-upload-cloud-2-line"></i></div>
+                <div class="menu-item-text">上传图片</div>
+                <div class="menu-tooltip">上传图片</div>
+            </a>
+
+            <div class="menu-category">图片管理</div>
+            <a href="/favorites.html" class="menu-item active">
+                <div class="menu-item-icon"><i class="ri-star-line"></i></div>
+                <div class="menu-item-text">收藏图片</div>
+                <div class="menu-tooltip">收藏图片</div>
+            </a>
+            <a href="#" class="menu-item" id="recentMenuItem">
+                <div class="menu-item-icon"><i class="ri-time-line"></i></div>
+                <div class="menu-item-text">最近上传</div>
+                <div class="menu-tooltip">最近上传</div>
+            </a>
+            <a href="/tags.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-price-tag-3-line"></i></div>
+                <div class="menu-item-text">标签管理</div>
+                <div class="menu-tooltip">标签管理</div>
+            </a>
+
+            <div class="menu-category">账户</div>
+            <a href="/login.html" class="menu-item" id="loginMenuItem" style="display: none;">
+                <div class="menu-item-icon"><i class="ri-login-box-line"></i></div>
+                <div class="menu-item-text">登录</div>
+                <div class="menu-tooltip">登录</div>
+            </a>
+            <a href="/profile.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-user-settings-line"></i></div>
+                <div class="menu-item-text">用户资料</div>
+                <div class="menu-tooltip">用户资料</div>
+            </a>
+            <a href="/settings.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-settings-3-line"></i></div>
+                <div class="menu-item-text">系统设置</div>
+                <div class="menu-tooltip">系统设置</div>
+            </a>
+            <a href="#" class="menu-item" id="logoutMenuItem">
+                <div class="menu-item-icon"><i class="ri-logout-box-line"></i></div>
+                <div class="menu-item-text">退出登录</div>
+                <div class="menu-tooltip">退出登录</div>
+            </a>
+
+            <div class="menu-category">更多</div>
+            <a href="https://github.com/QCEnjoyLL/DuckImg" target="_blank" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-github-line"></i></div>
+                <div class="menu-item-text">GitHub</div>
+                <div class="menu-tooltip">GitHub</div>
+            </a>
+            <a href="/help.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-question-line"></i></div>
+                <div class="menu-item-text">帮助文档</div>
+                <div class="menu-tooltip">帮助文档</div>
+            </a>
+            <a href="#" class="menu-item" id="themeMenuItem">
+                <div class="menu-item-icon"><i class="ri-moon-line"></i></div>
+                <div class="menu-item-text">切换主题</div>
+                <div class="menu-tooltip">切换主题</div>
+            </a>
+        </div>
+        <div class="menu-footer">
+            <i class="ri-copyright-line"></i>
+            <span>2025 鸭鸭图床</span>
+        </div>
+    </div>
+
+    <!-- 菜单遮罩层 -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <div class="app-container menu-expanded">
+        <header class="header">
+            <div class="header-left">
+                <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="打开菜单">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="logo">
+                    <img src="./images/logo.svg" alt="鸭鸭图床 Logo" class="logo-img">
+                    <h1>鸭鸭图床</h1>
+                </div>
+            </div>
+            <div class="header-center">
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-action-btn" id="uploadBtn" title="上传图片">
+                        <i class="ri-upload-cloud-2-line"></i>
+                    </button>
+                    <label class="theme-toggle" id="themeToggle" aria-label="切换暗色/亮色模式">
+                        <input id="switch" type="checkbox">
+                        <div class="theme-toggle-icon">
+                            <i class="ri-sun-line"></i>
+                            <i class="ri-moon-line"></i>
+                        </div>
+                    </label>
+                    <div id="userDropdown" class="user-dropdown">
+                        <button id="userDropdownBtn" class="user-dropdown-btn">
+                            <div class="user-avatar">
+                                <i class="ri-user-3-line"></i>
+                            </div>
+                            <span id="userDisplayName">用户</span>
+                            <i class="ri-arrow-down-s-line"></i>
+                        </button>
+                        <div class="user-dropdown-content">
+                            <a href="/profile.html" class="dropdown-item">
+                                <i class="ri-user-settings-line"></i>
+                                <span>用户资料</span>
+                            </a>
+                            <a href="/dashboard.html" class="dropdown-item">
+                                <i class="ri-image-2-line"></i>
+                                <span>我的图片</span>
+                            </a>
+                            <a href="#" class="dropdown-item" id="logoutBtn">
+                                <i class="ri-logout-box-line"></i>
+                                <span>退出登录</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="favorites-container">
+                <div class="favorites-header">
+                    <div>
+                        <h1 class="favorites-title">
+                            <i class="ri-star-fill"></i>
+                            收藏图片
+                        </h1>
+                        <p style="margin: 0.5rem 0 0; color: var(--text-light); position: relative; z-index: 1;">管理您收藏的所有图片</p>
+                    </div>
+                    <div class="favorites-stats">
+                        <div class="favorites-stat">
+                            <div class="favorites-stat-value" id="totalFavorites">0</div>
+                            <div class="favorites-stat-label">收藏总数</div>
+                        </div>
+                        <div class="favorites-stat">
+                            <div class="favorites-stat-value" id="totalSize">0 MB</div>
+                            <div class="favorites-stat-label">总大小</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="search-filter-bar">
+                    <div class="search-box">
+                        <i class="ri-search-line search-icon"></i>
+                        <input type="text" class="search-input" placeholder="搜索收藏的图片..." id="searchInput">
+                    </div>
+                    
+                    <div class="filter-dropdown" id="sortDropdown">
+                        <button class="filter-btn" id="sortBtn">
+                            <i class="ri-sort-desc"></i>
+                            <span>收藏时间</span>
+                            <i class="ri-arrow-down-s-line"></i>
+                        </button>
+                        <div class="filter-dropdown-content">
+                            <div class="filter-option active" data-sort="favorite-date">
+                                <i class="ri-time-line"></i>
+                                <span>收藏时间</span>
+                            </div>
+                            <div class="filter-option" data-sort="upload-date">
+                                <i class="ri-calendar-line"></i>
+                                <span>上传时间</span>
+                            </div>
+                            <div class="filter-option" data-sort="name">
+                                <i class="ri-file-text-line"></i>
+                                <span>文件名</span>
+                            </div>
+                            <div class="filter-option" data-sort="size">
+                                <i class="ri-hard-drive-line"></i>
+                                <span>文件大小</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="view-toggle">
+                        <button class="view-btn active" id="gridViewBtn" title="网格视图">
+                            <i class="ri-grid-line"></i>
+                        </button>
+                        <button class="view-btn" id="listViewBtn" title="列表视图">
+                            <i class="ri-list-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="favorites-grid" id="favoritesGrid">
+                    <!-- 收藏图片将通过JavaScript动态生成 -->
+                </div>
+
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="ri-star-line"></i>
+                    </div>
+                    <h3 class="empty-title">还没有收藏的图片</h3>
+                    <p class="empty-text">快去收藏一些喜欢的图片吧！在任何图片上点击星星图标即可收藏。</p>
+                    <a href="/dashboard.html" class="empty-action">
+                        <i class="ri-image-2-line"></i>
+                        查看我的图片
+                    </a>
+                </div>
+
+                <div class="pagination" id="pagination">
+                    <!-- 分页将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024-2025 鸭鸭图床. 基于 <a href="https://telegram.org" target="_blank">Telegram</a> 提供技术支持</p>
+        </footer>
+    </div>
+
+    <!-- 批量操作工具栏 -->
+    <div class="batch-toolbar" id="batchToolbar">
+        <div class="batch-info">已选择 <span id="selectedCount">0</span> 张图片</div>
+        <div class="batch-actions">
+            <button class="batch-btn" id="batchCopy">
+                <i class="ri-file-copy-line"></i>
+                <span>复制链接</span>
+            </button>
+            <button class="batch-btn batch-btn-danger" id="batchUnfavorite">
+                <i class="ri-star-line"></i>
+                <span>取消收藏</span>
+            </button>
+            <button class="batch-btn" id="batchCancel">
+                <i class="ri-close-line"></i>
+                <span>取消选择</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript 文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+    <!-- 主题管理器 -->
+    <script src="./js/theme-manager.js"></script>
+    <script src="./js/menu-system.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/favorites.js"></script>
+    <script src="./js/announcement.js"></script>
+    <script src="./js/site-config.js"></script>
+</body>
+</html> 

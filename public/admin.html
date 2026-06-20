@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 鸭鸭图床</title>
+    <meta name="theme-color" content="#4361ee">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
+    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="icon" type="image/svg+xml" href="./images/logo.svg">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .admin-container { max-width: 1320px; margin: 1.5rem auto; padding: 1rem; }
+        .admin-title { font-size: 1.6rem; margin-bottom: 1.2rem; color: var(--primary-color); }
+        .admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .admin-stat-card { background: var(--card-bg); border-radius: var(--radius); padding: 1.2rem; box-shadow: var(--shadow); text-align: center; }
+        body.dark-mode .admin-stat-card { background: var(--dark-card-bg); }
+        .admin-stat-value { font-size: 1.8rem; font-weight: 700; color: var(--primary-color); }
+        .admin-stat-label { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; }
+        .admin-stat-card[data-userfilter] { transition: outline .15s, transform .15s; }
+        .admin-stat-card[data-userfilter]:hover { transform: translateY(-2px); }
+        .admin-stat-card[data-userfilter].active { outline: 2px solid var(--primary-color); }
+        .admin-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+        .admin-table th.sortable:hover { color: var(--primary-color); }
+        .admin-table th .sort-ind { font-size: 0.75em; color: var(--primary-color); }
+        .admin-section { background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+        body.dark-mode .admin-section { background: var(--dark-card-bg); }
+        .admin-section h3 { margin: 0 0 1rem; font-size: 1.15rem; color: var(--primary-color); display:flex; align-items:center; gap:8px; }
+        table.admin-table { width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 0.9rem; }
+        .admin-table th, .admin-table td { padding: 0.7rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; vertical-align: middle; }
+        .admin-table th { color: var(--text-light); font-weight: 600; }
+        .admin-table td.col-email { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+        .admin-table tbody tr:hover { background: rgba(67,97,238,0.05); }
+        .admin-table-wrap { overflow-x: auto; }
+        .badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:0.75rem; white-space:nowrap; line-height:1.4; }
+        .badge-active { background:#dcfce7; color:#166534; }
+        .badge-banned { background:#fee2e2; color:#991b1b; }
+        .badge-admin { background:#dbeafe; color:#1e40af; }
+        .badge-unverified { background:#fef3c7; color:#92400e; }
+        .row-actions { display:flex; gap:6px; flex-wrap:nowrap; }
+        .admin-btn { display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:30px; padding:0 12px; border:none; border-radius:6px; cursor:pointer; font-size:0.78rem; color:#fff; transition:opacity .15s; }
+        .admin-btn:hover { opacity:0.85; }
+        .btn-ban { background:#ef4444; } .btn-unban { background:#10b981; }
+        .btn-del { background:#6b7280; } .btn-limit { background:#4361ee; }
+        .btn-images { background:#0ea5e9; }
+        .btn-warn { background:#f59e0b; }
+        /* 查看用户图片弹层 */
+        .admin-img-modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; display:flex; align-items:center; justify-content:center; padding:1rem; }
+        .admin-img-box { background:var(--card-bg); color:var(--text-color); width:min(900px,96vw); max-height:86vh; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.4); }
+        body.dark-mode .admin-img-box { background:var(--dark-card-bg); color:var(--dark-text); }
+        .admin-img-head { display:flex; align-items:center; justify-content:space-between; padding:0.9rem 1.1rem; border-bottom:1px solid var(--border-color); font-size:0.95rem; }
+        .admin-img-close { background:none; border:none; font-size:1.6rem; line-height:1; cursor:pointer; color:var(--text-light); }
+        .admin-img-grid { padding:1rem; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; }
+        .admin-img-cell { position:relative; display:block; aspect-ratio:1/1; border-radius:8px; overflow:hidden; background:rgba(127,127,127,0.12); border:1px solid var(--border-color); }
+        .admin-img-cell img { width:100%; height:100%; object-fit:cover; display:block; }
+        .admin-img-del { position:absolute; top:4px; right:4px; background:rgba(239,68,68,0.92); color:#fff; border:none; border-radius:6px; padding:2px 8px; font-size:0.72rem; cursor:pointer; opacity:0; transition:opacity .15s; }
+        .admin-img-cell:hover .admin-img-del { opacity:1; }
+        @media (hover:none){ .admin-img-del { opacity:1; } }
+        /* 图片审核网格（缩略图 + 上传者 + 操作） */
+        .audit-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+        /* 最近上传：限高约 2~3 行，超出滚动，避免一股脑撑满页面 */
+        #recentUploads { max-height:560px; overflow-y:auto; align-content:start; padding-right:6px; }
+        .audit-cell { border:1px solid var(--border-color); border-radius:10px; overflow:hidden; background:rgba(127,127,127,0.06); display:flex; flex-direction:column; }
+        .audit-thumb { position:relative; width:100%; padding-top:100%; overflow:hidden; background:rgba(127,127,127,0.12); display:block; }
+        .audit-thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+        .audit-thumb-fail { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-light); font-size:0.78rem; background:rgba(127,127,127,0.12); text-align:center; }
+        .audit-meta { padding:8px 10px; font-size:0.78rem; line-height:1.6; }
+        .audit-meta .af-user, .audit-meta .af-time, .audit-meta .af-size { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .audit-meta .af-user { color:var(--primary-color); font-weight:600; cursor:pointer; }
+        .audit-meta .af-time, .audit-meta .af-size { color:var(--text-light); }
+        .audit-actions { display:flex; gap:6px; padding:0 10px 10px; }
+        .audit-actions a, .audit-actions button { flex:1; text-align:center; font-size:0.76rem; padding:4px 0; border-radius:6px; border:none; cursor:pointer; text-decoration:none; }
+        .audit-view { background:#4361ee; color:#fff; }
+        .audit-del { background:#ef4444; color:#fff; }
+        /* 大图预览灯箱（点击缩略图在页面内放大，避免直链下载） */
+        .admin-preview-modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:4000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; cursor:zoom-out; }
+        .admin-preview-inner { flex:1; display:flex; align-items:center; justify-content:center; min-height:0; width:100%; }
+        .admin-preview-inner img { max-width:92vw; max-height:82vh; object-fit:contain; border-radius:8px; box-shadow:0 10px 40px rgba(0,0,0,0.5); background:#fff; }
+        .admin-preview-bar { display:flex; align-items:center; gap:14px; margin-top:14px; color:#fff; font-size:0.85rem; max-width:92vw; }
+        .admin-preview-bar span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:50vw; }
+        .admin-preview-bar a { color:#9ec1ff; text-decoration:none; }
+        .admin-preview-bar button { background:rgba(255,255,255,0.15); color:#fff; border:none; border-radius:6px; padding:5px 14px; cursor:pointer; }
+        .section-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }
+        .section-head h3 { margin:0; }
+        .sort-control { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--text-light); }
+        .sort-control select { padding:0.45rem 0.7rem; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-color); color:var(--text-color); font-size:0.85rem; }
+        body.dark-mode .sort-control select { background:var(--dark-bg); border-color:var(--dark-border); color:var(--dark-text); }
+        .batch-bar { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+            padding:0.6rem 0.9rem; margin-bottom:0.8rem; border-radius:8px;
+            background:rgba(67,97,238,0.08); border:1px solid var(--border-color); }
+        .batch-bar .batch-count { font-size:0.9rem; color:var(--text-color); }
+        .batch-actions { display:flex; gap:6px; flex-wrap:wrap; }
+        .admin-table .user-check { width:16px; height:16px; cursor:pointer; }
+        .user-pagination { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px; margin-top:1rem; }
+        .user-pagination button { min-width:34px; height:34px; padding:0 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--card-bg); color:var(--text-color); cursor:pointer; font-size:0.85rem; }
+        body.dark-mode .user-pagination button { background:var(--dark-card-bg); border-color:var(--dark-border); color:var(--dark-text); }
+        .user-pagination button.active { background:var(--primary-color,#4361ee); color:#fff; border-color:var(--primary-color,#4361ee); }
+        .user-pagination button:disabled { opacity:0.5; cursor:not-allowed; }
+        .user-pagination .page-info { color:var(--text-light); font-size:0.85rem; margin:0 8px; }
+        .form-row { display:flex; flex-direction:column; gap:6px; margin-bottom:1rem; }
+        .form-row label { font-weight:500; font-size:0.9rem; }
+        .form-row input, .form-row textarea, .form-row select {
+            padding:0.6rem 0.8rem; border:1px solid var(--border-color); border-radius:8px;
+            background: var(--bg-color); color: var(--text-color); font-size:0.9rem;
+        }
+        body.dark-mode .form-row input, body.dark-mode .form-row textarea, body.dark-mode .form-row select {
+            background: var(--dark-bg); border-color: var(--dark-border); color: var(--dark-text);
+        }
+        .form-row textarea { min-height: 90px; resize: vertical; }
+        .form-inline { display:flex; gap:1rem; flex-wrap:wrap; }
+        .form-inline .form-row { flex:1; min-width:160px; }
+        .save-btn { padding:0.7rem 1.4rem; background:var(--primary-gradient,#4361ee); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:500; }
+        .switch-row { display:flex; align-items:center; gap:8px; margin-bottom:1rem; }
+    </style>
+</head>
+<body class="dark-mode-transition">
+    <!-- 侧边菜单 -->
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-header">
+            <div class="menu-logo">
+                <img src="./images/logo.svg" alt="鸭鸭图床 Logo">
+                <h1>鸭鸭图床</h1>
+            </div>
+            <div class="menu-toggle" id="menuToggle"><i class="ri-arrow-left-s-line"></i></div>
+        </div>
+        <div class="menu-content">
+            <div class="menu-category">主要功能</div>
+            <a href="/" class="menu-item"><div class="menu-item-icon"><i class="ri-home-5-line"></i></div><div class="menu-item-text">首页</div></a>
+            <a href="/dashboard.html" class="menu-item"><div class="menu-item-icon"><i class="ri-image-2-line"></i></div><div class="menu-item-text">我的图片</div></a>
+            <div class="menu-category">账户</div>
+            <a href="/profile.html" class="menu-item"><div class="menu-item-icon"><i class="ri-user-settings-line"></i></div><div class="menu-item-text">用户资料</div></a>
+            <a href="/admin.html" class="menu-item active" id="adminMenuItem"><div class="menu-item-icon"><i class="ri-shield-star-line"></i></div><div class="menu-item-text">管理后台</div></a>
+            <a href="#" class="menu-item" id="logoutMenuItem"><div class="menu-item-icon"><i class="ri-logout-box-line"></i></div><div class="menu-item-text">退出登录</div></a>
+        </div>
+        <div class="menu-footer">&copy; 2025 鸭鸭图床</div>
+    </div>
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <div class="app-container menu-expanded">
+        <header class="header">
+            <div class="header-left">
+                <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="打开菜单"><i class="ri-menu-line"></i></button>
+                <div class="logo"><img src="./images/logo.svg" alt="Logo" class="logo-img"><h1>鸭鸭图床 管理后台</h1></div>
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <label class="theme-toggle" id="themeToggle" aria-label="切换主题">
+                        <input id="switch" type="checkbox">
+                        <div class="theme-toggle-icon"><i class="ri-sun-line"></i><i class="ri-moon-line"></i></div>
+                    </label>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="admin-container">
+                <h2 class="admin-title">管理后台</h2>
+
+                <!-- 概览 -->
+                <div class="admin-stats" id="adminStats">
+                    <div class="admin-stat-card" data-userfilter="all" style="cursor:pointer" title="点击查看全部用户"><div class="admin-stat-value" id="statTotalUsers">-</div><div class="admin-stat-label">注册用户</div></div>
+                    <div class="admin-stat-card"><div class="admin-stat-value" id="statTotalImages">-</div><div class="admin-stat-label">图片总数</div></div>
+                    <div class="admin-stat-card" data-userfilter="verified" style="cursor:pointer" title="点击筛选已验证用户"><div class="admin-stat-value" id="statVerified">-</div><div class="admin-stat-label">已验证用户</div></div>
+                    <div class="admin-stat-card" data-userfilter="banned" style="cursor:pointer" title="点击筛选被封禁用户"><div class="admin-stat-value" id="statBanned">-</div><div class="admin-stat-label">被封禁</div></div>
+                </div>
+
+                <!-- 用户管理 -->
+                <div class="admin-section">
+                    <div class="section-head">
+                        <h3><i class="ri-team-line"></i> 用户管理</h3>
+                        <div class="sort-control">
+                            <input type="search" id="userSearch" placeholder="搜索用户名 / 邮箱" style="height:34px;box-sizing:border-box;padding:0 0.7rem;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-color);color:var(--text-color);min-width:180px;">
+                            <label for="userSort">排序</label>
+                            <select id="userSort">
+                                <option value="created_desc">注册时间（新→旧）</option>
+                                <option value="created_asc">注册时间（旧→新）</option>
+                                <option value="name_asc">用户名（A→Z）</option>
+                                <option value="name_desc">用户名（Z→A）</option>
+                                <option value="images_desc">图片数（多→少）</option>
+                                <option value="images_asc">图片数（少→多）</option>
+                                <option value="status">状态（封禁/未验证优先）</option>
+                            </select>
+                            <label for="userPageSize">每页</label>
+                            <select id="userPageSize">
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="all">全部</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- 批量操作工具条（选中用户后显示） -->
+                    <div id="batchBar" class="batch-bar" style="display:none;">
+                        <span class="batch-count">已选 <b id="batchCount">0</b> 个用户</span>
+                        <div class="batch-actions">
+                            <button class="admin-btn btn-ban" data-batch="ban">批量封禁</button>
+                            <button class="admin-btn btn-unban" data-batch="unban">批量解封</button>
+                            <button class="admin-btn btn-limit" data-batch="limit">批量设上限</button>
+                            <button class="admin-btn btn-del" data-batch="delete">批量删除</button>
+                            <button class="admin-btn" data-batch="cancel" style="background:#9ca3af;">取消选择</button>
+                        </div>
+                    </div>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead><tr>
+                                <th style="width:36px;"><input type="checkbox" id="selectAllUsers" title="全选本页"></th>
+                                <th class="sortable" data-sortkey="name">用户名 <span class="sort-ind"></span></th>
+                                <th class="sortable" data-sortkey="email">邮箱 <span class="sort-ind"></span></th>
+                                <th class="sortable" data-sortkey="created">注册时间 <span class="sort-ind"></span></th>
+                                <th class="sortable" data-sortkey="status">状态 <span class="sort-ind"></span></th>
+                                <th class="sortable" data-sortkey="images">图片数 <span class="sort-ind"></span></th>
+                                <th>每日上限</th><th>操作</th>
+                            </tr></thead>
+                            <tbody id="userTableBody"><tr><td colspan="8">加载中...</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div id="userPagination" class="user-pagination"></div>
+                </div>
+
+                <!-- 图片审核 / 最近上传 -->
+                <div class="admin-section">
+                    <h3><i class="ri-shield-flash-line"></i> 图片审核 / 最近上传</h3>
+                    <p style="font-size:0.85rem;color:var(--text-light);margin:-0.4rem 0 0.9rem;">
+                        在 TG 频道发现违规图片后，把它的<b>文件名</b>填到下面即可查出上传者；下方「最近上传」可一览近期各用户上传。新上传的图片，频道帖子标题会标注上传者。
+                    </p>
+                    <div class="form-inline" style="align-items:flex-end;">
+                        <div class="form-row" style="flex:1;margin-bottom:0;">
+                            <label>按文件名查上传者</label>
+                            <input type="text" id="imgSearchInput" placeholder="输入频道里看到的图片文件名（支持部分匹配）" style="height:42px;box-sizing:border-box;">
+                        </div>
+                        <button class="save-btn" id="imgSearchBtn" style="height:42px;">查询</button>
+                        <button class="save-btn" id="recentRefreshBtn" style="height:42px;background:#10b981;">刷新最近上传</button>
+                    </div>
+                    <div id="imgSearchResult" style="margin-top:0.5rem;"></div>
+                    <h4 style="margin:1.2rem 0 0.6rem;font-size:1rem;color:var(--text-color);">最近上传</h4>
+                    <div id="recentUploads" class="audit-grid"><p style="color:var(--text-light);">加载中...</p></div>
+                </div>
+
+                <!-- 公告设置 -->
+                <div class="admin-section">
+                    <h3><i class="ri-notification-3-line"></i> 网站公告</h3>
+                    <div class="switch-row">
+                        <input type="checkbox" id="annEnabled"><label for="annEnabled">启用公告弹窗</label>
+                    </div>
+                    <div class="form-row"><label>公告标题</label><input type="text" id="annTitle" placeholder="公告标题"></div>
+                    <div class="form-row"><label>公告内容</label><textarea id="annContent" placeholder="支持换行的公告正文"></textarea></div>
+                    <button class="save-btn" id="saveAnnouncement">保存公告</button>
+                </div>
+
+                <!-- 上传与验证设置 -->
+                <div class="admin-section">
+                    <h3><i class="ri-settings-3-line"></i> 上传与验证</h3>
+                    <div class="form-inline">
+                        <div class="form-row"><label>每日上传上限（0 = 不限制）</label><input type="number" id="dailyLimit" min="0" placeholder="0"></div>
+                    </div>
+                    <div class="switch-row">
+                        <input type="checkbox" id="requireVerify"><label for="requireVerify">强制邮箱验证才能登录/上传</label>
+                    </div>
+                    <div class="switch-row">
+                        <input type="checkbox" id="allowSvg"><label for="allowSvg">允许上传 SVG 图片（出于安全可关闭；SVG 始终以附件方式返回防 XSS）</label>
+                    </div>
+                    <button class="save-btn" id="saveUploadSettings">保存设置</button>
+                </div>
+
+                <!-- 鉴黄设置 -->
+                <div class="admin-section">
+                    <h3><i class="ri-eye-off-line"></i> 图片鉴黄</h3>
+                    <div class="switch-row">
+                        <input type="checkbox" id="nsfwEnabled"><label for="nsfwEnabled">启用图片鉴黄</label>
+                    </div>
+                    <div class="form-row"><label>接口地址 (API URL)</label><input type="text" id="nsfwApiUrl" placeholder="https://api.example.com/moderate"></div>
+                    <div class="form-inline">
+                        <div class="form-row"><label>请求方式</label>
+                            <select id="nsfwMethod">
+                                <option value="POST">POST (JSON + Bearer)</option>
+                                <option value="GET">GET (查询参数，多数免费服务)</option>
+                            </select>
+                        </div>
+                        <div class="form-row"><label>接口密钥 (Bearer Token，可留空)</label><input type="text" id="nsfwApiKey" placeholder="可选"></div>
+                    </div>
+                    <div class="form-row"><label>附加查询参数 (GET 时拼到URL，如 key=xxx 或 api_user=..&api_secret=..)</label><input type="text" id="nsfwExtraParams" placeholder="key=YOUR_KEY"></div>
+                    <div class="form-inline">
+                        <div class="form-row"><label>图片URL字段名</label><input type="text" id="nsfwImageParam" placeholder="url"></div>
+                        <div class="form-row"><label>分数取值路径</label><input type="text" id="nsfwScorePath" placeholder="如 predictions.adult / score"></div>
+                        <div class="form-row"><label>违规阈值</label><input type="number" id="nsfwThreshold" min="0" step="0.01" placeholder="0.8"></div>
+                    </div>
+                    <p style="font-size:0.8rem;color:var(--text-light);margin:4px 0 10px;">免费示例·ModerateContent：GET，URL=https://api.moderatecontent.com/moderate/，附加参数 key=你的KEY，字段名 url，分数路径 predictions.adult，阈值 60。</p>
+                    <button class="save-btn" id="saveNsfw">保存鉴黄配置</button>
+                </div>
+
+                <!-- 邮件发送设置 -->
+                <div class="admin-section">
+                    <h3><i class="ri-mail-send-line"></i> 邮件发送设置</h3>
+                    <div class="form-row">
+                        <label>发信方式</label>
+                        <select id="emailProvider">
+                            <option value="resend">Resend API</option>
+                            <option value="smtp">SMTP（企业邮箱等）</option>
+                        </select>
+                    </div>
+
+                    <!-- Resend 配置 -->
+                    <div id="resendFields">
+                        <div class="form-inline">
+                            <div class="form-row"><label>Resend API Key（留空保持不变 / 回退环境变量）</label><input type="password" id="resendApiKey" placeholder="留空保持不变" autocomplete="new-password"></div>
+                            <div class="form-row"><label>发件地址 From</label><input type="text" id="resendFrom" placeholder='如 鸭鸭图床 <noreply@yourdomain>'></div>
+                        </div>
+                    </div>
+
+                    <!-- SMTP 配置 -->
+                    <div id="smtpFields" style="display:none;">
+                        <div class="form-inline">
+                            <div class="form-row"><label>SMTP 主机</label><input type="text" id="smtpHost" placeholder="smtp.exmail.qq.com"></div>
+                            <div class="form-row"><label>端口</label><input type="number" id="smtpPort" placeholder="465"></div>
+                            <div class="form-row"><label>加密方式</label>
+                                <select id="smtpEncryption">
+                                    <option value="ssl">SSL/TLS（隐式，常用 465）</option>
+                                    <option value="starttls">STARTTLS（常用 587）</option>
+                                    <option value="none">无加密（25，多被封禁）</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-inline">
+                            <div class="form-row"><label>用户名（登录账号）</label><input type="text" id="smtpUsername" placeholder="发信邮箱账号" autocomplete="off"></div>
+                            <div class="form-row"><label>密码 / 授权码（留空保持不变）</label><input type="password" id="smtpPassword" placeholder="留空保持不变" autocomplete="new-password"></div>
+                        </div>
+                        <div class="form-inline">
+                            <div class="form-row"><label>发件地址</label><input type="text" id="smtpFromAddress" placeholder="noreply@yourdomain.com"></div>
+                            <div class="form-row"><label>发件人名称</label><input type="text" id="smtpFromName" placeholder="鸭鸭图床"></div>
+                        </div>
+                    </div>
+
+                    <button class="save-btn" id="saveEmail">保存邮件配置</button>
+
+                    <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px dashed var(--border-color);">
+                        <div class="form-inline" style="align-items:flex-end;">
+                            <div class="form-row"><label>测试发信到</label><input type="email" id="testEmailTo" placeholder="收件邮箱"></div>
+                            <button class="save-btn" id="sendTestEmail" style="background:#10b981;">发送测试邮件</button>
+                        </div>
+                        <p style="font-size:0.8rem;color:var(--text-light);margin-top:8px;">提示：请先「保存邮件配置」，再测试发信。Cloudflare 通常封禁 25 端口，企业邮箱建议用 465(SSL) 或 587(STARTTLS)。</p>
+                    </div>
+                </div>
+
+                <!-- 站点设置 -->
+                <div class="admin-section">
+                    <h3><i class="ri-palette-line"></i> 站点设置</h3>
+                    <div class="form-row"><label>网站名称 / 标题</label><input type="text" id="siteName" placeholder="鸭鸭图床"></div>
+                    <div class="form-row"><label>Logo 图标链接（留空使用默认）</label><input type="text" id="siteLogoUrl" placeholder="https://your-domain/logo.png"></div>
+                    <div class="form-inline">
+                        <div class="form-row"><label>GitHub 链接</label><input type="text" id="siteGithubUrl" placeholder="https://github.com/..."></div>
+                        <div class="form-row"><label>帮助文档链接</label><input type="text" id="siteHelpUrl" placeholder="/help.html"></div>
+                    </div>
+                    <div class="form-row"><label>侧边栏底部文字</label><input type="text" id="siteMenuFooter" placeholder="© 2025 鸭鸭图床"></div>
+                    <div class="form-row"><label>页面底部文字（支持 HTML，如 &lt;a&gt;、&lt;b&gt;）</label><input type="text" id="sitePageFooter" placeholder="© 2024-2025 鸭鸭图床 · <a href='/help.html'>帮助</a>"></div>
+                    <button class="save-btn" id="saveSite">保存站点设置</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="./js/theme-manager.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/menu-system.js"></script>
+    <script src="./js/admin.js"></script>
+    <script src="./js/announcement.js"></script>
+    <script src="./js/site-config.js"></script>
+</body>
+</html>

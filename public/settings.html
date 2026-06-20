@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>系统设置 - 鸭鸭图床 | 免费图床</title>
+    <meta name="description" content="管理您的鸭鸭图床系统设置和偏好">
+    <meta name="keywords" content="系统设置,主题设置,存储设置,鸭鸭图床">
+    <meta name="theme-color" content="#4361ee">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
+    <link rel="stylesheet" href="./css/animations-premium.css">
+    <link rel="stylesheet" href="./css/advanced-cards.css">
+    <link rel="stylesheet" href="./css/buttons-premium.css">
+    <link rel="stylesheet" href="./css/forms-premium.css">
+    <link rel="stylesheet" href="./css/modals-premium.css">
+    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="icon" type="image/svg+xml" href="./images/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 引入图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .settings-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        body.dark-mode .settings-header {
+            background: var(--dark-card-bg);
+        }
+
+        .settings-title {
+            font-size: 1.8rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            position: relative;
+            display: inline-block;
+        }
+
+        .settings-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: var(--primary-gradient);
+            border-radius: 3px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .settings-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: all var(--transition);
+            border: 1px solid var(--border-color);
+        }
+
+        body.dark-mode .settings-card {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+        }
+
+        .settings-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .settings-card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        body.dark-mode .settings-card-header {
+            border-bottom-color: var(--dark-border);
+        }
+
+        .settings-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .settings-card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        body.dark-mode .settings-card-title {
+            color: var(--dark-text);
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        body.dark-mode .settings-item {
+            border-bottom-color: var(--dark-border);
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item-info {
+            flex: 1;
+        }
+
+        .settings-item-title {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 0.25rem;
+        }
+
+        body.dark-mode .settings-item-title {
+            color: var(--dark-text);
+        }
+
+        .settings-item-desc {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        body.dark-mode .settings-item-desc {
+            color: var(--dark-text-light);
+        }
+
+        .settings-toggle {
+            position: relative;
+            width: 56px;
+            height: 28px;
+            background: #cbd0d8;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        body.dark-mode .settings-toggle {
+            background: #3a3f4b;
+        }
+
+        .settings-toggle.active {
+            background: #34c759;
+        }
+
+        body.dark-mode .settings-toggle.active {
+            background: #34c759;
+        }
+
+        .settings-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .settings-toggle.active::after {
+            transform: translateX(28px);
+        }
+
+        .settings-select {
+            min-width: 150px;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        body.dark-mode .settings-select {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .settings-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+        }
+
+        .storage-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        body.dark-mode .storage-info {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .storage-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        body.dark-mode .storage-bar {
+            background: var(--dark-border);
+        }
+
+        .storage-progress {
+            height: 100%;
+            background: var(--primary-gradient);
+            transition: width 0.3s ease;
+        }
+
+        .storage-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+        }
+
+        body.dark-mode .storage-text {
+            color: var(--dark-text-light);
+        }
+
+        .danger-zone {
+            border: 2px solid var(--error-color);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-top: 2rem;
+            background: rgba(var(--error-color-rgb), 0.05);
+        }
+
+        .danger-zone-title {
+            color: var(--error-color);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .danger-btn {
+            background: var(--error-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .danger-btn:hover {
+            background: var(--error-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .save-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+
+        body.dark-mode .save-actions {
+            background: var(--dark-card-bg);
+            border-color: var(--dark-border);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .settings-container {
+                padding: 0.5rem;
+            }
+
+            .settings-header {
+                padding: 1rem;
+            }
+
+            .settings-title {
+                font-size: 1.5rem;
+            }
+
+            .settings-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .save-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode-transition">
+    <!-- 页面加载动画 -->
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-content">
+            <div class="loader">
+                <div class="loader-circle"></div>
+                <div class="loader-circle"></div>
+                <div class="loader-circle"></div>
+                <div class="loader-dot"></div>
+            </div>
+            <div class="loader-brand">鸭鸭图床</div>
+        </div>
+    </div>
+
+    <!-- 页面过渡动画 -->
+    <div id="pageTransition" class="page-transition"></div>
+
+    <!-- 页面滚动进度条 -->
+    <div class="scroll-progress-container">
+        <div class="scroll-progress-bar" id="scrollProgress"></div>
+    </div>
+
+    <!-- 侧边菜单 -->
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-header">
+            <div class="menu-logo">
+                <img src="./images/logo.svg" alt="鸭鸭图床 Logo">
+                <h1>鸭鸭图床</h1>
+            </div>
+            <div class="menu-toggle" id="menuToggle">
+                <i class="ri-arrow-left-s-line"></i>
+            </div>
+        </div>
+        <div class="menu-content">
+            <div class="menu-category">主要功能</div>
+            <a href="/" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-home-5-line"></i></div>
+                <div class="menu-item-text">首页</div>
+                <div class="menu-tooltip">首页</div>
+            </a>
+            <a href="/dashboard.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-image-2-line"></i></div>
+                <div class="menu-item-text">我的图片</div>
+                <div class="menu-tooltip">我的图片</div>
+            </a>
+            <a href="#" class="menu-item" id="uploadMenuBtn">
+                <div class="menu-item-icon"><i class="ri-upload-cloud-2-line"></i></div>
+                <div class="menu-item-text">上传图片</div>
+                <div class="menu-tooltip">上传图片</div>
+            </a>
+
+            <div class="menu-category">图片管理</div>
+            <a href="/favorites.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-star-line"></i></div>
+                <div class="menu-item-text">收藏图片</div>
+                <div class="menu-tooltip">收藏图片</div>
+            </a>
+            <a href="#" class="menu-item" id="recentMenuItem">
+                <div class="menu-item-icon"><i class="ri-time-line"></i></div>
+                <div class="menu-item-text">最近上传</div>
+                <div class="menu-tooltip">最近上传</div>
+            </a>
+            <a href="/tags.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-price-tag-3-line"></i></div>
+                <div class="menu-item-text">标签管理</div>
+                <div class="menu-tooltip">标签管理</div>
+            </a>
+
+            <div class="menu-category">账户</div>
+            <a href="/login.html" class="menu-item" id="loginMenuItem" style="display: none;">
+                <div class="menu-item-icon"><i class="ri-login-box-line"></i></div>
+                <div class="menu-item-text">登录</div>
+                <div class="menu-tooltip">登录</div>
+            </a>
+            <a href="/profile.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-user-settings-line"></i></div>
+                <div class="menu-item-text">用户资料</div>
+                <div class="menu-tooltip">用户资料</div>
+            </a>
+            <a href="/settings.html" class="menu-item active">
+                <div class="menu-item-icon"><i class="ri-settings-3-line"></i></div>
+                <div class="menu-item-text">系统设置</div>
+                <div class="menu-tooltip">系统设置</div>
+            </a>
+            <a href="/admin.html" class="menu-item" id="adminMenuItem" style="display: none;">
+                <div class="menu-item-icon"><i class="ri-shield-star-line"></i></div>
+                <div class="menu-item-text">管理后台</div>
+                <div class="menu-tooltip">管理后台</div>
+            </a>
+            <a href="#" class="menu-item" id="logoutMenuItem">
+                <div class="menu-item-icon"><i class="ri-logout-box-line"></i></div>
+                <div class="menu-item-text">退出登录</div>
+                <div class="menu-tooltip">退出登录</div>
+            </a>
+
+            <div class="menu-category">更多</div>
+            <a href="https://github.com/QCEnjoyLL/DuckImg" target="_blank" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-github-line"></i></div>
+                <div class="menu-item-text">GitHub</div>
+                <div class="menu-tooltip">GitHub</div>
+            </a>
+            <a href="/help.html" class="menu-item">
+                <div class="menu-item-icon"><i class="ri-question-line"></i></div>
+                <div class="menu-item-text">帮助文档</div>
+                <div class="menu-tooltip">帮助文档</div>
+            </a>
+            <a href="#" class="menu-item" id="themeMenuItem">
+                <div class="menu-item-icon"><i class="ri-moon-line"></i></div>
+                <div class="menu-item-text">切换主题</div>
+                <div class="menu-tooltip">切换主题</div>
+            </a>
+        </div>
+        <div class="menu-footer">
+            <i class="ri-copyright-line"></i>
+            <span>2025 鸭鸭图床</span>
+        </div>
+    </div>
+
+    <!-- 菜单遮罩层 -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <div class="app-container menu-expanded">
+        <header class="header">
+            <div class="header-left">
+                <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="打开菜单">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="logo">
+                    <img src="./images/logo.svg" alt="鸭鸭图床 Logo" class="logo-img">
+                    <h1>鸭鸭图床</h1>
+                </div>
+            </div>
+            <div class="header-center">
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-action-btn" id="uploadBtn" title="上传图片">
+                        <i class="ri-upload-cloud-2-line"></i>
+                    </button>
+                    <label class="theme-toggle" id="themeToggle" aria-label="切换暗色/亮色模式">
+                        <input id="switch" type="checkbox">
+                        <div class="theme-toggle-icon">
+                            <i class="ri-sun-line"></i>
+                            <i class="ri-moon-line"></i>
+                        </div>
+                    </label>
+                    <div id="userDropdown" class="user-dropdown">
+                        <button id="userDropdownBtn" class="user-dropdown-btn">
+                            <div class="user-avatar">
+                                <i class="ri-user-3-line"></i>
+                            </div>
+                            <span id="userDisplayName">用户</span>
+                            <i class="ri-arrow-down-s-line"></i>
+                        </button>
+                        <div class="user-dropdown-content">
+                            <a href="/profile.html" class="dropdown-item">
+                                <i class="ri-user-settings-line"></i>
+                                <span>用户资料</span>
+                            </a>
+                            <a href="/dashboard.html" class="dropdown-item">
+                                <i class="ri-image-2-line"></i>
+                                <span>我的图片</span>
+                            </a>
+                            <a href="#" class="dropdown-item" id="logoutBtn">
+                                <i class="ri-logout-box-line"></i>
+                                <span>退出登录</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="settings-container">
+                <div class="settings-header">
+                    <div>
+                        <h1 class="settings-title">系统设置</h1>
+                        <p style="margin: 0.5rem 0 0; color: var(--text-light);">管理您的个人偏好和应用程序设置</p>
+                    </div>
+                    <div>
+                        <i class="ri-settings-3-line" style="font-size: 2rem; color: var(--primary-color);"></i>
+                    </div>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- 外观设置 -->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <div class="settings-card-icon">
+                                <i class="ri-palette-line"></i>
+                            </div>
+                            <h3 class="settings-card-title">外观设置</h3>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">深色模式</div>
+                                <div class="settings-item-desc">启用深色主题，减少眼睛疲劳</div>
+                            </div>
+                            <div class="settings-toggle" id="darkModeToggle">
+                            </div>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">语言设置</div>
+                                <div class="settings-item-desc">选择您的首选语言</div>
+                            </div>
+                            <select class="settings-select" id="languageSelect">
+                                <option value="zh-CN">简体中文</option>
+                                <option value="zh-TW">繁體中文</option>
+                                <option value="en-US">English</option>
+                                <option value="ja-JP">日本語</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">动画效果</div>
+                                <div class="settings-item-desc">启用页面过渡和动画效果</div>
+                            </div>
+                            <div class="settings-toggle active" id="animationToggle">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 上传设置 -->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <div class="settings-card-icon">
+                                <i class="ri-upload-cloud-2-line"></i>
+                            </div>
+                            <h3 class="settings-card-title">上传设置</h3>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">自动压缩</div>
+                                <div class="settings-item-desc">上传时自动压缩大文件</div>
+                            </div>
+                            <div class="settings-toggle active" id="autoCompressToggle">
+                            </div>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">默认图片质量</div>
+                                <div class="settings-item-desc">设置上传图片的默认质量</div>
+                            </div>
+                            <select class="settings-select" id="qualitySelect">
+                                <option value="high">高质量 (原始)</option>
+                                <option value="medium" selected>中等质量 (推荐)</option>
+                                <option value="low">低质量 (节省空间)</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">水印设置</div>
+                                <div class="settings-item-desc">自动为上传的图片添加水印</div>
+                            </div>
+                            <div class="settings-toggle" id="watermarkToggle">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 隐私安全 -->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <div class="settings-card-icon">
+                                <i class="ri-shield-check-line"></i>
+                            </div>
+                            <h3 class="settings-card-title">隐私安全</h3>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">图片公开可见</div>
+                                <div class="settings-item-desc">允许其他用户通过链接访问您的图片</div>
+                            </div>
+                            <div class="settings-toggle active" id="publicToggle">
+                            </div>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">EXIF信息</div>
+                                <div class="settings-item-desc">上传时保留图片的元数据信息</div>
+                            </div>
+                            <div class="settings-toggle" id="exifToggle">
+                            </div>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">登录提醒</div>
+                                <div class="settings-item-desc">新设备登录时发送邮件通知</div>
+                            </div>
+                            <div class="settings-toggle active" id="loginNotifyToggle">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 存储管理 -->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <div class="settings-card-icon">
+                                <i class="ri-hard-drive-2-line"></i>
+                            </div>
+                            <h3 class="settings-card-title">存储管理</h3>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">自动清理</div>
+                                <div class="settings-item-desc">定期清理过期和无效的图片</div>
+                            </div>
+                            <div class="settings-toggle" id="autoCleanToggle">
+                            </div>
+                        </div>
+
+                        <div class="storage-info">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="font-weight: 600;">存储使用情况</span>
+                                <span style="color: var(--primary-color); font-weight: 600;">128.5 MB / 2 GB</span>
+                            </div>
+                            <div class="storage-bar">
+                                <div class="storage-progress" style="width: 6.4%;"></div>
+                            </div>
+                            <div class="storage-text">
+                                <span>已使用 6.4%</span>
+                                <span>剩余 1.87 GB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 危险操作区域 -->
+                <div class="danger-zone">
+                    <div class="danger-zone-title">
+                        <i class="ri-error-warning-line"></i>
+                        危险操作
+                    </div>
+                    <p style="margin-bottom: 1rem; color: var(--text-light);">
+                        以下操作将永久删除您的数据，请谨慎操作。
+                    </p>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="danger-btn" id="clearCacheBtn">
+                            <i class="ri-delete-bin-line" style="margin-right: 0.5rem;"></i>
+                            清空缓存
+                        </button>
+                        <button class="danger-btn" id="deleteAllBtn">
+                            <i class="ri-delete-bin-2-line" style="margin-right: 0.5rem;"></i>
+                            删除所有图片
+                        </button>
+                        <button class="danger-btn" id="deleteAccountBtn">
+                            <i class="ri-user-unfollow-line" style="margin-right: 0.5rem;"></i>
+                            删除账户
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 保存操作 -->
+                <div class="save-actions">
+                    <button class="premium-btn premium-btn-outline-secondary" id="resetBtn">
+                        <i class="ri-refresh-line"></i>
+                        重置设置
+                    </button>
+                    <button class="premium-btn premium-btn-primary premium-btn-icon-left" id="saveBtn">
+                        <i class="ri-save-line"></i>
+                        保存设置
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024-2025 鸭鸭图床. 基于 <a href="https://telegram.org" target="_blank">Telegram</a> 提供技术支持</p>
+        </footer>
+    </div>
+
+    <!-- 确认删除模态框 -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="confirmTitle">确认操作</h3>
+                <button class="modal-close" id="closeConfirmModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">您确定要执行此操作吗？此操作无法撤销。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" id="cancelConfirm">取消</button>
+                <button class="modal-btn modal-btn-danger" id="confirmAction">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入脚本 -->
+    <!-- 主题管理器 -->
+    <script src="./js/theme-manager.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/menu-system.js"></script>
+    <script src="./js/settings.js"></script>
+    <script src="./js/announcement.js"></script>
+    <script src="./js/site-config.js"></script>
+</body>
+</html> 

@@ -1,0 +1,183 @@
+/* 
+ * 分享功能样式 - 鸭鸭图床
+ */
+
+/* 分享菜单 */
+.share-menu {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 400px;
+  z-index: 1000;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-mode .share-menu {
+  background-color: var(--dark-card-bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.share-menu.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* 分享菜单头部 */
+.share-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+body.dark-mode .share-menu-header {
+  border-bottom-color: var(--dark-border);
+}
+
+.share-menu-header h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+body.dark-mode .share-menu-header h4 {
+  color: var(--dark-text);
+}
+
+.share-menu-close {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+body.dark-mode .share-menu-close {
+  color: var(--dark-text-light);
+}
+
+.share-menu-close:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-color);
+}
+
+body.dark-mode .share-menu-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--dark-text);
+}
+
+/* 分享菜单内容 */
+.share-menu-content {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+/* 分享菜单项 */
+.share-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-menu-item:hover {
+  background-color: rgba(var(--primary-light-rgb), 0.1);
+  transform: translateY(-3px);
+}
+
+body.dark-mode .share-menu-item:hover {
+  background-color: rgba(var(--primary-light-rgb), 0.15);
+}
+
+.share-menu-item i {
+  font-size: 1.75rem;
+  color: var(--primary-color);
+}
+
+body.dark-mode .share-menu-item i {
+  color: var(--primary-light);
+}
+
+.share-menu-item span {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+body.dark-mode .share-menu-item span {
+  color: var(--dark-text);
+}
+
+/* 平台特定颜色 */
+.share-menu-item[data-platform="weibo"] i {
+  color: #e6162d;
+}
+
+.share-menu-item[data-platform="wechat"] i {
+  color: #07c160;
+}
+
+.share-menu-item[data-platform="qq"] i {
+  color: #12b7f5;
+}
+
+.share-menu-item[data-platform="twitter"] i {
+  color: #1da1f2;
+}
+
+.share-menu-item[data-platform="facebook"] i {
+  color: #1877f2;
+}
+
+/* Toast提示 */
+.share-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(1rem);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  z-index: 1001;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.share-toast.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 响应式设计 */
+@media (max-width: 576px) {
+  .share-menu-content {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

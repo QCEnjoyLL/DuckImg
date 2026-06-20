@@ -1,0 +1,36 @@
+GNU Affero General Public License v3.0 with Commons Clause
+
+This software is licensed under the GNU Affero General Public License version 3.0 (AGPL-3.0) with the Commons Clause restriction.
+
+# Commons Clause - Restriction
+
+"Commons Clause" License Condition v1.0
+
+The Software is provided to you by the Licensor under the License, as defined below, subject to the following condition.
+
+Without limiting other conditions in the License, the grant of rights under the License will not include, and the License does not grant to you, the right to Sell the Software.
+
+For purposes of the foregoing, "Sell" means practicing any or all of the rights granted to you under the License to provide to third parties, for a fee or other consideration (including without limitation fees for hosting or consulting/support services related to the Software), a product or service whose value derives, entirely or substantially, from the functionality of the Software. Any license notice or attribution required by the License must also include this Commons Clause License Condition notice.
+
+# GNU Affero General Public License v3.0
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+# Summary of Key Terms
+
+This is a human-readable summary of (and not a substitute for) the license:
+
+- **强制开源**：任何对本软件的修改或衍生作品必须以相同的许可证（AGPL-3.0）开源
+- **网络使用也视为分发**：即使通过网络提供服务，也必须开源您的修改
+- **禁止商业使用**：根据Commons Clause限制，禁止将本软件或其任何部分用于商业目的
+- **专利授权**：授予使用者在该软件相关的专利上的权利
+- **无担保声明**：软件按"原样"提供，不提供任何形式的担保
+
+注意：如需商业使用，请联系项目作者获取商业许可。
+
+For the full license text of the GNU Affero General Public License v3.0, please visit:
+https://www.gnu.org/licenses/agpl-3.0.html

@@ -1,0 +1,829 @@
+/* 鸭鸭图床高级弹窗系统 - 超级弹窗库 */
+
+:root {
+  --modal-bg: var(--card-bg);
+  --modal-bg-dark: var(--dark-card-bg);
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --modal-overlay-dark: rgba(0, 0, 0, 0.7);
+  --modal-text: var(--text-color);
+  --modal-text-dark: var(--dark-text);
+  --modal-border: var(--border-color);
+  --modal-border-dark: var(--dark-border);
+  --modal-shadow: var(--shadow-lg);
+  --modal-shadow-dark: 0 25px 50px rgba(0, 0, 0, 0.3);
+  --modal-radius: var(--radius-lg);
+  --modal-radius-sm: var(--radius);
+  --modal-radius-lg: var(--radius-xl);
+  --modal-transition: var(--transition);
+  --modal-transition-slow: var(--transition-slow);
+  --modal-z-index: 1000;
+  --modal-max-width-sm: 400px;
+  --modal-max-width: 600px;
+  --modal-max-width-lg: 800px;
+  --modal-max-width-xl: 1000px;
+  --modal-max-height: 90vh;
+  --modal-padding: 1.5rem;
+  --modal-padding-sm: 1rem;
+  --modal-padding-lg: 2rem;
+  --modal-header-padding: 1.25rem;
+  --modal-footer-padding: 1.25rem;
+  --modal-title-size: 1.5rem;
+  --modal-close-size: 2rem;
+  --modal-backdrop-blur: blur(5px);
+}
+
+/* 基础弹窗覆盖层 */
+.premium-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--modal-overlay);
+  z-index: var(--modal-z-index);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--modal-transition), visibility var(--modal-transition);
+  backdrop-filter: var(--modal-backdrop-blur);
+  -webkit-backdrop-filter: var(--modal-backdrop-blur);
+}
+
+body.dark-mode .premium-modal-overlay {
+  background-color: var(--modal-overlay-dark);
+}
+
+/* 显示弹窗 */
+.premium-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 基础弹窗容器 */
+.premium-modal {
+  position: relative;
+  background-color: var(--modal-bg);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
+  width: 100%;
+  max-width: var(--modal-max-width);
+  max-height: var(--modal-max-height);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(30px) scale(0.95);
+  opacity: 0;
+  transition: transform var(--modal-transition), opacity var(--modal-transition);
+  border: 1px solid var(--modal-border);
+}
+
+body.dark-mode .premium-modal {
+  background-color: var(--modal-bg-dark);
+  box-shadow: var(--modal-shadow-dark);
+  border-color: var(--modal-border-dark);
+}
+
+/* 显示弹窗 */
+.premium-modal-overlay.active .premium-modal {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* 弹窗尺寸 */
+.premium-modal-sm {
+  max-width: var(--modal-max-width-sm);
+}
+
+.premium-modal-lg {
+  max-width: var(--modal-max-width-lg);
+}
+
+.premium-modal-xl {
+  max-width: var(--modal-max-width-xl);
+}
+
+.premium-modal-full {
+  max-width: 95%;
+  max-height: 95vh;
+}
+
+/* 弹窗头部 */
+.premium-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--modal-header-padding);
+  border-bottom: 1px solid var(--modal-border);
+}
+
+body.dark-mode .premium-modal-header {
+  border-bottom-color: var(--modal-border-dark);
+}
+
+.premium-modal-title {
+  font-size: var(--modal-title-size);
+  font-weight: 700;
+  color: var(--modal-text);
+  margin: 0;
+}
+
+body.dark-mode .premium-modal-title {
+  color: var(--modal-text-dark);
+}
+
+.premium-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  font-size: var(--modal-close-size);
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  transition: all var(--modal-transition);
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.premium-modal-close:hover {
+  color: var(--error-color);
+  background-color: rgba(var(--error-light-rgb), 0.1);
+  transform: rotate(90deg);
+}
+
+body.dark-mode .premium-modal-close {
+  color: var(--dark-text-light);
+}
+
+body.dark-mode .premium-modal-close:hover {
+  background-color: rgba(var(--error-light-rgb), 0.2);
+}
+
+/* 弹窗内容 */
+.premium-modal-body {
+  padding: var(--modal-padding);
+  overflow-y: auto;
+  color: var(--modal-text);
+  flex: 1;
+}
+
+body.dark-mode .premium-modal-body {
+  color: var(--modal-text-dark);
+}
+
+/* 弹窗底部 */
+.premium-modal-footer {
+  padding: var(--modal-footer-padding);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  border-top: 1px solid var(--modal-border);
+}
+
+body.dark-mode .premium-modal-footer {
+  border-top-color: var(--modal-border-dark);
+}
+
+/* 弹窗动画变体 */
+
+/* 缩放效果 */
+.premium-modal-scale .premium-modal {
+  transform: scale(0.7);
+}
+
+.premium-modal-scale.active .premium-modal {
+  transform: scale(1);
+}
+
+/* 从顶部滑入 */
+.premium-modal-slide-top .premium-modal {
+  transform: translateY(-100px);
+}
+
+.premium-modal-slide-top.active .premium-modal {
+  transform: translateY(0);
+}
+
+/* 从底部滑入 */
+.premium-modal-slide-bottom .premium-modal {
+  transform: translateY(100px);
+}
+
+.premium-modal-slide-bottom.active .premium-modal {
+  transform: translateY(0);
+}
+
+/* 从左侧滑入 */
+.premium-modal-slide-left .premium-modal {
+  transform: translateX(-100px);
+}
+
+.premium-modal-slide-left.active .premium-modal {
+  transform: translateX(0);
+}
+
+/* 从右侧滑入 */
+.premium-modal-slide-right .premium-modal {
+  transform: translateX(100px);
+}
+
+.premium-modal-slide-right.active .premium-modal {
+  transform: translateX(0);
+}
+
+/* 旋转效果 */
+.premium-modal-rotate .premium-modal {
+  transform: rotate(-15deg) scale(0.7);
+}
+
+.premium-modal-rotate.active .premium-modal {
+  transform: rotate(0) scale(1);
+}
+
+/* 3D翻转效果 */
+.premium-modal-flip {
+  perspective: 1300px;
+}
+
+.premium-modal-flip .premium-modal {
+  transform-style: preserve-3d;
+  transform: rotateX(-70deg);
+}
+
+.premium-modal-flip.active .premium-modal {
+  transform: rotateX(0deg);
+}
+
+/* 弹性弹出效果 */
+.premium-modal-bounce .premium-modal {
+  transform: scale(0.6);
+  transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.premium-modal-bounce.active .premium-modal {
+  transform: scale(1);
+}
+
+/* 弹窗主题变体 */
+
+/* 圆角变体 */
+.premium-modal-rounded {
+  border-radius: var(--modal-radius-lg);
+}
+
+.premium-modal-rounded-sm {
+  border-radius: var(--modal-radius-sm);
+}
+
+/* 无边框变体 */
+.premium-modal-borderless {
+  border: none;
+}
+
+/* 纯色主题 */
+.premium-modal-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.premium-modal-primary .premium-modal-title,
+.premium-modal-primary .premium-modal-body {
+  color: white;
+}
+
+.premium-modal-primary .premium-modal-header,
+.premium-modal-primary .premium-modal-footer {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.premium-modal-primary .premium-modal-close {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.premium-modal-primary .premium-modal-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 成功主题 */
+.premium-modal-success {
+  background: var(--success-color);
+  color: white;
+}
+
+.premium-modal-success .premium-modal-title,
+.premium-modal-success .premium-modal-body {
+  color: white;
+}
+
+.premium-modal-success .premium-modal-header,
+.premium-modal-success .premium-modal-footer {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.premium-modal-success .premium-modal-close {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.premium-modal-success .premium-modal-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 警告主题 */
+.premium-modal-warning {
+  background: var(--warning-color);
+  color: white;
+}
+
+.premium-modal-warning .premium-modal-title,
+.premium-modal-warning .premium-modal-body {
+  color: white;
+}
+
+.premium-modal-warning .premium-modal-header,
+.premium-modal-warning .premium-modal-footer {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.premium-modal-warning .premium-modal-close {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.premium-modal-warning .premium-modal-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 错误主题 */
+.premium-modal-error {
+  background: var(--error-color);
+  color: white;
+}
+
+.premium-modal-error .premium-modal-title,
+.premium-modal-error .premium-modal-body {
+  color: white;
+}
+
+.premium-modal-error .premium-modal-header,
+.premium-modal-error .premium-modal-footer {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.premium-modal-error .premium-modal-close {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.premium-modal-error .premium-modal-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 带边框变体 */
+.premium-modal-bordered {
+  border-width: 3px;
+}
+
+.premium-modal-bordered-primary {
+  border-color: var(--primary-color);
+}
+
+.premium-modal-bordered-success {
+  border-color: var(--success-color);
+}
+
+.premium-modal-bordered-warning {
+  border-color: var(--warning-color);
+}
+
+.premium-modal-bordered-error {
+  border-color: var(--error-color);
+}
+
+/* 带标题栏变体 */
+.premium-modal-title-primary .premium-modal-header {
+  background-color: var(--primary-color);
+  color: white;
+  border-bottom: none;
+}
+
+.premium-modal-title-primary .premium-modal-title {
+  color: white;
+}
+
+.premium-modal-title-primary .premium-modal-close {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.premium-modal-title-primary .premium-modal-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.premium-modal-title-success .premium-modal-header {
+  background-color: var(--success-color);
+  color: white;
+  border-bottom: none;
+}
+
+.premium-modal-title-success .premium-modal-title {
+  color: white;
+}
+
+.premium-modal-title-success .premium-modal-close {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.premium-modal-title-success .premium-modal-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.premium-modal-title-warning .premium-modal-header {
+  background-color: var(--warning-color);
+  color: white;
+  border-bottom: none;
+}
+
+.premium-modal-title-warning .premium-modal-title {
+  color: white;
+}
+
+.premium-modal-title-warning .premium-modal-close {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.premium-modal-title-warning .premium-modal-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.premium-modal-title-error .premium-modal-header {
+  background-color: var(--error-color);
+  color: white;
+  border-bottom: none;
+}
+
+.premium-modal-title-error .premium-modal-title {
+  color: white;
+}
+
+.premium-modal-title-error .premium-modal-close {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.premium-modal-title-error .premium-modal-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 特殊弹窗样式 */
+
+/* 玻璃态弹窗 */
+.premium-modal-glass {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dark-mode .premium-modal-glass {
+  background: rgba(15, 23, 42, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.premium-modal-glass .premium-modal-header,
+.premium-modal-glass .premium-modal-footer {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .premium-modal-glass .premium-modal-header,
+body.dark-mode .premium-modal-glass .premium-modal-footer {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 渐变背景弹窗 */
+.premium-modal-gradient {
+  background: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+  color: white;
+}
+
+.premium-modal-gradient .premium-modal-title,
+.premium-modal-gradient .premium-modal-body {
+  color: white;
+}
+
+.premium-modal-gradient .premium-modal-header,
+.premium-modal-gradient .premium-modal-footer {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.premium-modal-gradient .premium-modal-close {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.premium-modal-gradient .premium-modal-close:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.premium-modal-gradient-accent {
+  background: linear-gradient(135deg, var(--accent-light), var(--accent-dark));
+}
+
+/* 带图标弹窗 */
+.premium-modal-icon {
+  padding-top: 2.5rem;
+}
+
+.premium-modal-icon-wrapper {
+  width: 5rem;
+  height: 5rem;
+  background: var(--primary-gradient);
+  border-radius: 50%;
+  position: absolute;
+  top: -2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2.5rem;
+  box-shadow: 0 5px 15px rgba(var(--primary-dark-rgb), 0.3);
+}
+
+.premium-modal-icon-success {
+  background: linear-gradient(135deg, var(--success-light), var(--success-color));
+  box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+}
+
+.premium-modal-icon-warning {
+  background: linear-gradient(135deg, var(--warning-light), var(--warning-color));
+  box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+}
+
+.premium-modal-icon-error {
+  background: linear-gradient(135deg, var(--error-light), var(--error-color));
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+}
+
+/* 全屏弹窗 */
+.premium-modal-fullscreen {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  margin: 0;
+}
+
+/* 侧边弹窗 */
+.premium-modal-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  max-width: 400px;
+  max-height: 100%;
+  border-radius: 0;
+  margin: 0;
+  height: 100%;
+}
+
+.premium-modal-sidebar-right {
+  right: 0;
+  transform: translateX(100%);
+}
+
+.premium-modal-overlay.active .premium-modal-sidebar-right {
+  transform: translateX(0);
+}
+
+.premium-modal-sidebar-left {
+  left: 0;
+  transform: translateX(-100%);
+}
+
+.premium-modal-overlay.active .premium-modal-sidebar-left {
+  transform: translateX(0);
+}
+
+/* 带步骤的弹窗 */
+.premium-modal-steps {
+  position: relative;
+}
+
+.premium-modal-steps-header {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.premium-modal-steps-header::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--modal-border);
+  z-index: 0;
+}
+
+body.dark-mode .premium-modal-steps-header::before {
+  background-color: var(--modal-border-dark);
+}
+
+.premium-modal-step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.premium-modal-step-number {
+  width: 30px;
+  height: 30px;
+  background-color: var(--modal-bg);
+  border: 2px solid var(--modal-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--modal-text);
+  transition: all var(--modal-transition);
+}
+
+body.dark-mode .premium-modal-step-number {
+  background-color: var(--modal-bg-dark);
+  border-color: var(--modal-border-dark);
+  color: var(--modal-text-dark);
+}
+
+.premium-modal-step.active .premium-modal-step-number {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.premium-modal-step.completed .premium-modal-step-number {
+  background-color: var(--success-color);
+  border-color: var(--success-color);
+  color: white;
+}
+
+.premium-modal-step-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+body.dark-mode .premium-modal-step-label {
+  color: var(--dark-text-light);
+}
+
+.premium-modal-step.active .premium-modal-step-label {
+  color: var(--primary-color);
+}
+
+body.dark-mode .premium-modal-step.active .premium-modal-step-label {
+  color: var(--primary-light);
+}
+
+.premium-modal-step.completed .premium-modal-step-label {
+  color: var(--success-color);
+}
+
+body.dark-mode .premium-modal-step.completed .premium-modal-step-label {
+  color: var(--success-light);
+}
+
+/* 弹性设计支持 */
+.premium-modal-body-scrollable {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* 弹窗内容动画 */
+.premium-modal-content {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition-delay: 0.2s;
+}
+
+.premium-modal-overlay.active .premium-modal-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .premium-modal-overlay {
+    padding: 1rem;
+  }
+  
+  .premium-modal-header,
+  .premium-modal-footer {
+    padding: var(--modal-padding-sm);
+  }
+  
+  .premium-modal-body {
+    padding: var(--modal-padding-sm);
+  }
+  
+  .premium-modal-title {
+    font-size: 1.25rem;
+  }
+  
+  .premium-modal-close {
+    font-size: 1.5rem;
+  }
+  
+  .premium-modal-sidebar {
+    max-width: 80%;
+  }
+  
+  .premium-modal-step-label {
+    font-size: 0.75rem;
+  }
+}
+
+/* 降级和辅助功能支持 */
+@supports not (backdrop-filter: blur(5px)) {
+  .premium-modal-overlay {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  
+  .premium-modal-glass {
+    background: rgba(255, 255, 255, 0.9);
+  }
+  
+  body.dark-mode .premium-modal-glass {
+    background: rgba(15, 23, 42, 0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-modal-overlay,
+  .premium-modal,
+  .premium-modal-content,
+  .premium-modal-close {
+    transition: none !important;
+  }
+}
+
+/* 辅助类 */
+.premium-modal-text-center {
+  text-align: center;
+}
+
+.premium-modal-footer-center {
+  justify-content: center;
+}
+
+.premium-modal-footer-between {
+  justify-content: space-between;
+}
+
+.premium-modal-footer-start {
+  justify-content: flex-start;
+}
+
+/* 没有头部或底部 */
+.premium-modal-no-header .premium-modal-header {
+  display: none;
+}
+
+.premium-modal-no-footer .premium-modal-footer {
+  display: none;
+}
+
+/* 弹窗加载状态 */
+.premium-modal-loading .premium-modal-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* 弹窗底部按钮调整 */
+.premium-modal-footer .btn,
+.premium-modal-footer .premium-btn {
+  min-width: 100px;
+} 

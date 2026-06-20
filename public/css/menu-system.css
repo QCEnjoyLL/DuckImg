@@ -1,0 +1,647 @@
+/* 
+ * 菜单管理系统 - 鸭鸭图床
+ * 现代化侧边菜单设计 - 极致美化版
+ */
+
+:root {
+  --menu-width: 280px;
+  --menu-collapsed-width: 70px;
+  --menu-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --menu-bg: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  --menu-border: var(--border-color);
+  --menu-shadow: 0 0 40px rgba(67, 97, 238, 0.08), 0 0 20px rgba(0, 0, 0, 0.05);
+  --menu-item-hover: linear-gradient(135deg, rgba(67, 97, 238, 0.08) 0%, rgba(139, 92, 246, 0.06) 100%);
+  --menu-item-active: linear-gradient(135deg, rgba(67, 97, 238, 0.15) 0%, rgba(139, 92, 246, 0.12) 100%);
+  --menu-icon-size: 22px;
+  --menu-text-color: var(--text-color);
+  --menu-text-muted: var(--text-light);
+  --menu-header-height: 70px;
+  --menu-footer-height: 60px;
+  --menu-glow: 0 0 30px rgba(67, 97, 238, 0.15);
+  --menu-backdrop-blur: blur(10px);
+}
+
+body.dark-mode {
+  --menu-bg: linear-gradient(145deg, #1a1b23 0%, #242530 100%);
+  --menu-border: var(--dark-border);
+  --menu-shadow: 0 0 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(67, 97, 238, 0.1);
+  --menu-item-hover: linear-gradient(135deg, rgba(67, 97, 238, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
+  --menu-item-active: linear-gradient(135deg, rgba(67, 97, 238, 0.25) 0%, rgba(139, 92, 246, 0.18) 100%);
+  --menu-text-color: var(--dark-text);
+  --menu-text-muted: var(--dark-text-light);
+  --menu-glow: 0 0 30px rgba(67, 97, 238, 0.25);
+}
+
+/* 主容器布局调整 */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: padding-left var(--menu-transition);
+}
+
+.app-container.menu-expanded {
+  padding-left: var(--menu-width);
+}
+
+.app-container.menu-collapsed {
+  padding-left: var(--menu-collapsed-width);
+}
+
+/* 侧边菜单 */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--menu-width);
+  background: var(--menu-bg);
+  border-right: 1px solid var(--menu-border);
+  box-shadow: var(--menu-shadow), inset 1px 0 0 rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transition: width var(--menu-transition), transform var(--menu-transition);
+  overflow: hidden;
+  backdrop-filter: var(--menu-backdrop-blur);
+}
+
+.side-menu:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, 
+    rgba(67, 97, 238, 0.02) 0%, 
+    rgba(139, 92, 246, 0.01) 50%, 
+    rgba(67, 97, 238, 0.02) 100%);
+  pointer-events: none;
+}
+
+.side-menu.collapsed {
+  width: var(--menu-collapsed-width);
+}
+
+/* 菜单头部 */
+.menu-header {
+  height: var(--menu-header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 25px;
+  border-bottom: 1px solid var(--menu-border);
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.6) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .menu-header {
+  background: linear-gradient(135deg, rgba(26, 27, 35, 0.9) 0%, rgba(36, 37, 48, 0.7) 100%);
+}
+
+.menu-logo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.menu-logo img {
+  height: 36px;
+  min-width: 36px;
+  max-width: 140px;
+  object-fit: contain;
+  transition: transform 0.4s ease, filter 0.3s ease;
+  filter: drop-shadow(0 2px 8px rgba(67, 97, 238, 0.2));
+}
+
+.menu-logo img:hover {
+  transform: scale(1.05) rotate(5deg);
+  filter: drop-shadow(0 4px 12px rgba(67, 97, 238, 0.3));
+}
+
+.menu-logo h1 {
+  font-size: 22px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #4361ee 0%, #8b5cf6 50%, #06ffa5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transition: opacity var(--menu-transition), transform var(--menu-transition);
+  text-shadow: 0 2px 10px rgba(67, 97, 238, 0.2);
+}
+
+.side-menu.collapsed .menu-logo h1 {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+/* 菜单切换按钮 */
+.menu-toggle {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #4361ee 0%, #8b5cf6 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3), 
+              0 2px 8px rgba(0, 0, 0, 0.1),
+              0 0 0 4px rgba(67, 97, 238, 0.1);
+  z-index: 10;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-toggle:hover {
+  transform: translateY(-50%) scale(1.2);
+  box-shadow: var(--menu-glow), 
+              0 8px 25px rgba(0, 0, 0, 0.15),
+              0 0 0 6px rgba(67, 97, 238, 0.15);
+}
+
+.menu-toggle svg {
+  width: 16px;
+  height: 16px;
+  color: white;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.side-menu.collapsed .menu-toggle svg {
+  transform: rotate(180deg);
+}
+
+/* 菜单内容 */
+.menu-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 25px 0;
+  background: linear-gradient(180deg, 
+    rgba(255, 255, 255, 0.02) 0%, 
+    rgba(248, 250, 252, 0.01) 100%);
+}
+
+body.dark-mode .menu-content {
+  background: linear-gradient(180deg, 
+    rgba(26, 27, 35, 0.05) 0%, 
+    rgba(36, 37, 48, 0.02) 100%);
+}
+
+/* 菜单项 */
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 25px;
+  color: var(--menu-text-color);
+  text-decoration: none;
+  position: relative;
+  transition: all 0.3s ease;
+  margin: 4px 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  min-height: 50px;
+}
+
+.menu-item:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(135deg, #4361ee 0%, #8b5cf6 100%);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.menu-item:hover {
+  background: var(--menu-item-hover);
+  transform: translateX(6px);
+  box-shadow: 0 4px 20px rgba(67, 97, 238, 0.12), 
+              0 1px 3px rgba(0, 0, 0, 0.08);
+  border-left: 3px solid transparent;
+}
+
+.menu-item:hover:before {
+  transform: scaleY(1);
+  background: linear-gradient(135deg, #4361ee 0%, #8b5cf6 50%, #06ffa5 100%);
+}
+
+.menu-item.active {
+  background: var(--menu-item-active);
+  color: var(--primary-color);
+  font-weight: 600;
+  box-shadow: 0 6px 25px rgba(67, 97, 238, 0.18),
+              0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateX(4px);
+}
+
+.menu-item.active:before {
+  transform: scaleY(1);
+}
+
+.menu-item-icon {
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20px;
+  color: var(--menu-text-muted);
+  transition: all 0.3s ease;
+  position: relative;
+  font-size: 18px;
+}
+
+.menu-item-icon:after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(67, 97, 238, 0.1) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.menu-item:hover .menu-item-icon:after {
+  opacity: 1;
+}
+
+.menu-item:hover .menu-item-icon {
+  transform: translateX(2px) scale(1.1) rotate(5deg);
+  color: var(--primary-color);
+}
+
+.menu-item.active .menu-item-icon {
+  color: var(--primary-color);
+  transform: scale(1.15) rotate(-5deg);
+}
+
+.menu-item-text {
+  white-space: nowrap;
+  transition: opacity var(--menu-transition), transform var(--menu-transition);
+  font-weight: 500;
+}
+
+.side-menu.collapsed .menu-item-text {
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+/* 菜单分类 */
+.menu-category {
+  padding: 0 25px;
+  margin: 30px 0 15px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--menu-text-muted);
+  white-space: nowrap;
+  transition: opacity var(--menu-transition);
+  position: relative;
+  font-weight: 700;
+}
+
+.menu-category:after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 25px;
+  width: 35px;
+  height: 3px;
+  background: linear-gradient(135deg, #4361ee 0%, #8b5cf6 50%, #06ffa5 100%);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(67, 97, 238, 0.3);
+}
+
+.side-menu.collapsed .menu-category {
+  opacity: 0;
+}
+
+/* 菜单底部 */
+.menu-footer {
+  height: var(--menu-footer-height);
+  border-top: 1px solid var(--menu-border);
+  display: flex;
+  align-items: center;
+  padding: 0 25px;
+  color: var(--menu-text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity var(--menu-transition);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(248, 250, 252, 0.3) 100%);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .menu-footer {
+  background: linear-gradient(135deg, rgba(26, 27, 35, 0.7) 0%, rgba(36, 37, 48, 0.5) 100%);
+}
+
+.side-menu.collapsed .menu-footer {
+  opacity: 0;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .side-menu {
+    transform: translateX(-100%);
+    width: 320px;
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .side-menu.mobile-visible {
+    transform: translateX(0);
+  }
+  
+  /* 移动端时强制移除折叠状态，避免冲突 */
+  .side-menu.collapsed {
+    transform: translateX(-100%); /* 移动端折叠状态也是隐藏 */
+    width: 320px; /* 保持移动端宽度 */
+  }
+  
+  .side-menu.collapsed.mobile-visible {
+    transform: translateX(0); /* 移动端显示时正常显示 */
+  }
+  
+  .app-container.menu-expanded,
+  .app-container.menu-collapsed {
+    padding-left: 0;
+  }
+  
+  .menu-item {
+    padding: 18px 20px;
+    margin: 3px 8px;
+    min-height: 54px;
+    border-radius: 12px;
+  }
+  
+  .menu-item-icon {
+    min-width: 26px;
+    height: 26px;
+    font-size: 20px;
+  }
+  
+  .menu-item-text {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  
+  .menu-category {
+    padding: 0 20px;
+    margin: 25px 0 12px;
+    font-size: 10px;
+    letter-spacing: 1.8px;
+  }
+  
+  .menu-header {
+    padding: 0 20px;
+    height: 75px;
+  }
+  
+  .menu-footer {
+    padding: 0 20px;
+    height: 65px;
+  }
+  
+  .menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  .menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* 桌面端确保折叠状态正常 */
+@media (min-width: 769px) {
+  .side-menu {
+    transform: translateX(0) !important; /* 桌面端始终可见 */
+  }
+  
+  .side-menu.collapsed {
+    width: var(--menu-collapsed-width);
+    transform: translateX(0) !important; /* 确保折叠时仍然可见 */
+  }
+}
+
+/* 平板端适配 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root {
+    --menu-width: 260px;
+    --menu-collapsed-width: 65px;
+  }
+  
+  .menu-item {
+    padding: 15px 22px;
+    margin: 5px 10px;
+  }
+  
+  .menu-item-icon {
+    min-width: 23px;
+    height: 23px;
+    margin-right: 18px;
+  }
+  
+  .menu-category {
+    font-size: 11px;
+    letter-spacing: 1.8px;
+  }
+}
+
+/* 菜单项徽章 */
+.menu-badge {
+  min-width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4361ee 0%, #8b5cf6 50%, #06ffa5 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding: 0 8px;
+  transition: all var(--menu-transition);
+  box-shadow: 0 3px 12px rgba(67, 97, 238, 0.4),
+              0 1px 3px rgba(0, 0, 0, 0.1);
+  animation: gentlePulse 3s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 3px 12px rgba(67, 97, 238, 0.4);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(67, 97, 238, 0.6);
+  }
+}
+
+.side-menu.collapsed .menu-badge {
+  opacity: 0;
+  transform: scale(0);
+}
+
+/* 菜单提示 */
+.menu-tooltip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #1a1b23 0%, #242530 100%);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 
+              0 0 20px rgba(67, 97, 238, 0.15),
+              0 4px 12px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 1001;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.menu-tooltip:after {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-right-color: #1a1b23;
+}
+
+.side-menu.collapsed .menu-item:hover .menu-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(8px);
+}
+
+/* 折叠状态下的提示框特殊样式 */
+.side-menu.collapsed .menu-tooltip {
+  left: calc(100% + 15px);
+}
+
+/* 滚动条美化增强 */
+.menu-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.menu-content::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.menu-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #4361ee 0%, #8b5cf6 50%, #06ffa5 100%);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(67, 97, 238, 0.3);
+}
+
+.menu-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #3651d4 0%, #7c3aed 50%, #059669 100%);
+  box-shadow: 0 3px 6px rgba(67, 97, 238, 0.4);
+}
+
+/* Firefox 滚动条样式 */
+.menu-content {
+  scrollbar-width: thin;
+  scrollbar-color: #4361ee transparent;
+}
+
+/* 菜单过渡动画优化 */
+.side-menu * {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 为折叠状态添加特殊样式 */
+.side-menu.collapsed .menu-content {
+  padding: 20px 0;
+}
+
+.side-menu.collapsed .menu-item {
+  margin: 6px 8px;
+  padding: 14px 0;
+  justify-content: center;
+  min-height: 48px;
+  position: relative;
+}
+
+/* 折叠状态下完全隐藏文字和徽章 */
+.side-menu.collapsed .menu-item-text {
+  display: none !important;
+}
+
+.side-menu.collapsed .menu-badge {
+  display: none !important;
+}
+
+/* 折叠状态下的图标样式优化 */
+.side-menu.collapsed .menu-item-icon {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  transform: none;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 折叠状态下悬停效果调整 */
+.side-menu.collapsed .menu-item:hover {
+  transform: translateX(0);
+  box-shadow: 0 4px 20px rgba(67, 97, 238, 0.12), 
+              0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.side-menu.collapsed .menu-item:hover .menu-item-icon {
+  transform: scale(1.2) rotate(8deg);
+  color: var(--primary-color);
+}
+
+.side-menu.collapsed .menu-item.active .menu-item-icon {
+  transform: scale(1.25) rotate(-8deg);
+  color: var(--primary-color);
+}
+
+/* 折叠状态下的激活状态样式 */
+.side-menu.collapsed .menu-item.active {
+  transform: translateX(0);
+}
+
+/* 确保折叠状态下左边框正常显示 */
+.side-menu.collapsed .menu-item:before {
+  left: 0;
+  width: 3px;
+}

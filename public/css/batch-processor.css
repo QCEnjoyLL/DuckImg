@@ -1,0 +1,704 @@
+/* 批量处理器样式 */
+.batch-processor-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.batch-processor-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.batch-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+.batch-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+body.dark-mode .batch-modal-content {
+    background: var(--dark-card-bg);
+    border: 1px solid var(--dark-border);
+}
+
+.batch-modal-header {
+    padding: 1.5rem 2rem;
+    background: var(--primary-gradient);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.batch-modal-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.batch-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.batch-modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.batch-modal-body {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+}
+
+.batch-modal-footer {
+    padding: 1.5rem 2rem;
+    background: var(--bg-color);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+body.dark-mode .batch-modal-footer {
+    background: var(--dark-bg);
+    border-color: var(--dark-border);
+}
+
+/* 配置部分 */
+.batch-config-section {
+    margin-bottom: 2rem;
+}
+
+.batch-config-section h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+body.dark-mode .batch-config-section h4 {
+    color: var(--dark-text);
+}
+
+.batch-config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.config-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-light);
+}
+
+body.dark-mode .config-group label {
+    color: var(--dark-text-light);
+}
+
+.batch-select {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.batch-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+body.dark-mode .batch-select {
+    background: var(--dark-bg);
+    border-color: var(--dark-border);
+    color: var(--dark-text);
+}
+
+.quality-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.batch-slider {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.batch-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.batch-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+#batchQualityValue {
+    min-width: 40px;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+.resize-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.batch-checkbox {
+    margin-right: 0.5rem;
+}
+
+.resize-inputs {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.batch-input {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    width: 80px;
+    text-align: center;
+}
+
+.batch-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.1);
+}
+
+body.dark-mode .batch-input {
+    background: var(--dark-bg);
+    border-color: var(--dark-border);
+    color: var(--dark-text);
+}
+
+.aspect-ratio-lock {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    cursor: pointer;
+}
+
+/* 文件列表 */
+.batch-files-section {
+    margin-bottom: 2rem;
+}
+
+.batch-files-section h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+body.dark-mode .batch-files-section h4 {
+    color: var(--dark-text);
+}
+
+.batch-file-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    background: var(--bg-color);
+}
+
+body.dark-mode .batch-file-list {
+    background: var(--dark-bg);
+    border-color: var(--dark-border);
+}
+
+.batch-file-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    background: var(--card-bg);
+    transition: all 0.2s ease;
+}
+
+.batch-file-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .batch-file-item {
+    background: var(--dark-card-bg);
+    border-color: var(--dark-border);
+}
+
+.file-preview {
+    width: 60px;
+    height: 60px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-size {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+body.dark-mode .file-name {
+    color: var(--dark-text);
+}
+
+body.dark-mode .file-size {
+    color: var(--dark-text-light);
+}
+
+.file-status {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    min-width: 80px;
+}
+
+.file-status.processing {
+    color: var(--primary-color);
+}
+
+.file-status.processing i {
+    animation: spin 1s linear infinite;
+}
+
+.file-status.success {
+    color: #10b981;
+}
+
+.file-status.error {
+    color: #ef4444;
+}
+
+.file-remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.file-remove-btn:hover {
+    background: var(--error-color);
+    color: white;
+}
+
+/* 进度部分 */
+.batch-progress-section {
+    margin-bottom: 2rem;
+}
+
+.batch-progress-section h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--success-color);
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+body.dark-mode .batch-progress-section h4 {
+    color: var(--dark-text);
+}
+
+.batch-progress-info {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+body.dark-mode .batch-progress-info {
+    background: var(--dark-card-bg);
+    border-color: var(--dark-border);
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.progress-stats strong {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+body.dark-mode .progress-stats {
+    color: var(--dark-text-light);
+}
+
+body.dark-mode .progress-stats strong {
+    color: var(--dark-text);
+}
+
+.progress-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-gradient);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.progress-percent {
+    min-width: 40px;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-align: right;
+}
+
+.batch-log {
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+}
+
+body.dark-mode .batch-log {
+    background: var(--dark-bg);
+    border-color: var(--dark-border);
+}
+
+.log-item {
+    display: flex;
+    margin-bottom: 0.5rem;
+    padding: 0.3rem 0;
+}
+
+.log-time {
+    color: var(--text-light);
+    margin-right: 1rem;
+    min-width: 80px;
+}
+
+.log-message {
+    color: var(--text-color);
+}
+
+.log-success .log-message {
+    color: #10b981;
+}
+
+.log-error .log-message {
+    color: #ef4444;
+}
+
+body.dark-mode .log-time {
+    color: var(--dark-text-light);
+}
+
+body.dark-mode .log-message {
+    color: var(--dark-text);
+}
+
+/* 结果部分 */
+.batch-results-section {
+    margin-bottom: 2rem;
+}
+
+.batch-results-section h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--success-color);
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+body.dark-mode .batch-results-section h4 {
+    color: var(--dark-text);
+}
+
+.batch-results-summary {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+}
+
+.result-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.result-stat.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.result-stat.failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.result-stat i {
+    font-size: 1.2rem;
+}
+
+.batch-download-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+/* 按钮样式 */
+.batch-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.batch-btn-primary {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.batch-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(67, 97, 238, 0.4);
+}
+
+.batch-btn-secondary {
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.batch-btn-secondary:hover {
+    background: var(--border-color);
+}
+
+body.dark-mode .batch-btn-secondary {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+
+body.dark-mode .batch-btn-secondary:hover {
+    background: var(--dark-border);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .batch-modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .batch-modal-body {
+        padding: 1rem;
+    }
+    
+    .batch-modal-header {
+        padding: 1rem;
+    }
+    
+    .batch-modal-footer {
+        padding: 1rem;
+        flex-direction: column;
+    }
+    
+    .batch-config-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .batch-file-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .file-preview {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .progress-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .batch-results-summary {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .batch-download-actions {
+        flex-direction: column;
+    }
+}
+
+/* 动画 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.batch-file-item {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+} 
