@@ -3,7 +3,7 @@
 # 🌟 鸭鸭图床 云端图床 🌟
 
 <p align="center">
-  <img src="public/images/logo.svg" alt="鸭鸭图床 Logo" width="120" height="120">
+  <img src="logo/鸭鸭.png" alt="鸭鸭图床 Logo" width="120" height="120">
 </p>
 
 <p align="center">
