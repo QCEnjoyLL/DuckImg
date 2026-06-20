@@ -27,7 +27,7 @@ export const DEFAULT_SETTINGS = {
   // 站点品牌自定义（后台可改，公开可读）
   site: {
     siteName: '鸭鸭图床',  // 站点名称/标题（应用到 Logo 文字与浏览器标题）
-    logoUrl: '',          // 留空使用默认 ./images/logo.svg
+    logoUrl: 'https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png',          // 留空使用默认 ./images/logo.svg
     githubUrl: 'https://github.com/QCEnjoyLL/DuckImg',
     helpUrl: '/help.html',
     menuFooter: '© 2025 鸭鸭图床',

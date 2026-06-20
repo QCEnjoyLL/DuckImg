@@ -106,7 +106,12 @@ body {
     overflow-x: hidden;
 }
 
-body.dark-mode {
+/* 深色主题：html.dark-mode 由 <head> 内联脚本在首屏渲染前设置，避免切换页面时浅色闪烁 */
+html.dark-mode {
+    background-color: var(--dark-bg);
+}
+body.dark-mode,
+html.dark-mode body {
     background-color: var(--dark-bg);
     color: var(--dark-text);
 }
