@@ -1,0 +1,106 @@
+/**
+ * Inline palette list under sidebar "切换配色"
+ */
+
+.side-menu {
+  background: color-mix(in srgb, var(--sidebar-bg, var(--glass-bg)) 92%, transparent) !important;
+}
+
+.menu-item.active,
+#sideMenu .menu-item.active {
+  background: var(--primary-soft, rgba(59, 130, 246, 0.14)) !important;
+  color: var(--primary-color) !important;
+}
+
+#themeMenuItem.palette-open {
+  background: var(--fill-tertiary) !important;
+}
+
+.palette-inline-wrap {
+  padding: 0 8px 8px;
+}
+
+.palette-inline[hidden] {
+  display: none !important;
+}
+
+.palette-inline {
+  margin: 0 0 4px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--fill-tertiary);
+  border: 1px solid var(--border-color);
+  animation: palette-in 0.18s ease-out;
+}
+
+@keyframes palette-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.palette-inline-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.side-menu.collapsed .palette-inline-wrap {
+  display: none !important;
+}
+
+.palette-swatch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--card-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  transition: border-color 0.15s ease, transform 80ms ease-out, background 0.15s ease;
+}
+
+.palette-swatch:hover {
+  border-color: var(--primary-color);
+}
+
+.palette-swatch:active {
+  transform: scale(0.98);
+}
+
+.palette-swatch.active {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-soft, rgba(59, 130, 246, 0.22));
+}
+
+.palette-swatch-color {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.palette-swatch-label {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* kill old modal if any leftover */
+.palette-panel {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .palette-inline {
+    animation: none;
+  }
+}

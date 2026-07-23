@@ -90,13 +90,13 @@ function renderUserRows(users) {
 
         return `<tr>
             ${checkCell}
-            <td>${u.username}</td>
-            <td class="col-email" title="${u.email || ''}">${u.email || '-'}</td>
-            <td>${regTime}</td>
-            <td>${statusBadge}</td>
-            <td>${u.imageCount || 0}</td>
-            <td>${limitText}</td>
-            <td>${actions}</td>
+            <td class="col-name" title="${escAttr(u.username || '')}">${u.username || '-'}</td>
+            <td class="col-email" title="${escAttr(u.email || '')}">${u.email || '-'}</td>
+            <td class="col-date">${regTime}</td>
+            <td class="col-status">${statusBadge}</td>
+            <td class="col-images">${u.imageCount || 0}</td>
+            <td class="col-limit">${limitText}</td>
+            <td class="col-actions">${actions}</td>
         </tr>`;
     }).join('');
 }
@@ -641,14 +641,20 @@ function initSettingButtons() {
     document.querySelectorAll('.admin-table th.sortable').forEach(th => {
         th.addEventListener('click', () => headerSort(th.dataset.sortkey));
     });
-    // 统计卡片点击 → 筛选用户列表
+    // 统计卡片点击 → 筛选用户列表（不滚动页面）
     document.querySelectorAll('.admin-stat-card[data-userfilter]').forEach(card => {
-        card.addEventListener('click', () => {
-            userStatusFilter = card.dataset.userfilter;
+        card.addEventListener('click', (e) => {
+            e.preventDefault();
+            // 再点同一筛选项则回到全部
+            const next = card.dataset.userfilter;
+            userStatusFilter = (userStatusFilter === next && next !== 'all') ? 'all' : next;
             userPage = 1;
+            const y = window.scrollY;
             renderUserTable();
-            const wrap = document.querySelector('.admin-table-wrap');
-            if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // 防止焦点/重排导致页面跳动
+            requestAnimationFrame(() => {
+                window.scrollTo({ top: y, left: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+            });
         });
     });
     const userPageSize = document.getElementById('userPageSize');

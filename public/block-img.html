@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}}catch(e){}})();</script>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>内容已屏蔽 - 鸭鸭图床</title>
@@ -11,10 +11,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./css/animations-premium.css">
-    <link rel="stylesheet" href="./css/buttons-premium.css">
-    <link rel="stylesheet" href="./css/modals-premium.css">
-    <style>
+
+
+<style>
         :root {
             /* 主色调 */
             --primary-color: #4f46e5;
@@ -252,6 +251,7 @@
 
     <!-- 主题管理器 -->
     <script src="./js/theme-manager.js"></script>
+    <script src="./js/palettes.js"></script>
     <script>
         // 后续代码会由 theme-manager.js 处理主题切换
         // 其他功能代码保留

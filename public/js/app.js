@@ -1,28 +1,13 @@
-// 页面加载动画 - 增强版
+// 页面就绪：立刻露出内容（无 1.2s 假加载）
 window.addEventListener('load', () => {
-    const pageLoader = document.getElementById('pageLoader');
-
-    // 完成加载后延迟一小段时间再隐藏加载器
-    setTimeout(() => {
-        pageLoader.classList.add('loaded');
-
-        // 页面内容淡入动画
-        document.querySelectorAll('.fade-in-element').forEach((el, index) => {
-            setTimeout(() => {
-                el.classList.add('visible');
-            }, 120 * index);
-        });
-
-        // 交错动画元素
-        document.querySelectorAll('.stagger-animation').forEach(container => {
-            setTimeout(() => {
-                container.classList.add('visible');
-            }, 300);
-        });
-
-        // 滚动动画初始化
-        initScrollAnimations();
-    }, 1200);
+    if (window.DuckShell) window.DuckShell.hidePageLoader();
+    else {
+        const pageLoader = document.getElementById('pageLoader');
+        if (pageLoader) pageLoader.classList.add('loaded', 'is-hidden');
+    }
+    document.querySelectorAll('.fade-in-element').forEach((el) => el.classList.add('visible'));
+    document.querySelectorAll('.stagger-animation').forEach((c) => c.classList.add('visible'));
+    initScrollAnimations();
 });
 
 // 滚动动画初始化
@@ -113,8 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初始化返回顶部按钮
     initBackToTop();
 
-    // 初始化移动端菜单
-    initMobileMenu();
+    // 移动端侧栏由 menu-system + shell 负责（不再初始化 legacy mobile-menu）
 
     // 初始化粘贴上传功能
     initPasteUpload();
@@ -405,7 +389,7 @@ function initUpload() {
     });
 
     // 处理多个文件上传
-    function handleFiles(files) {
+    async function handleFiles(files) {
         // 检查所有文件是否都是图片
         for (let i = 0; i < files.length; i++) {
             if (!files[i].type.match('image.*')) {
@@ -420,16 +404,29 @@ function initUpload() {
             }
         }
 
+        // 按系统设置预处理（压缩 / 质量 / 水印 / 去 EXIF）
+        let processed = Array.from(files);
+        if (window.UserPrefs && typeof window.UserPrefs.processFiles === 'function') {
+            try {
+                uploadStatus.textContent = '正在按设置处理图片…';
+                uploadStatus.className = 'upload-status loading';
+                processed = await window.UserPrefs.processFiles(files);
+            } catch (e) {
+                console.warn('预处理失败，使用原图', e);
+                processed = Array.from(files);
+            }
+        }
+
         // 计算总文件大小
         let totalSize = 0;
-        for (let i = 0; i < files.length; i++) {
-            totalSize += files[i].size;
+        for (let i = 0; i < processed.length; i++) {
+            totalSize += processed[i].size;
         }
 
         // 创建进度条HTML
         uploadStatus.innerHTML = `
             <div class="upload-progress">
-                <span class="loading-text">正在上传${files.length}张图片</span>
+                <span class="loading-text">正在上传${processed.length}张图片</span>
                 <div class="progress-container">
                     <div class="progress-bar" id="uploadProgressBar" style="width: 0%"></div>
                 </div>
@@ -444,8 +441,8 @@ function initUpload() {
 
         // 准备表单数据
         const formData = new FormData();
-        for (let i = 0; i < files.length; i++) {
-            formData.append('file', files[i]);
+        for (let i = 0; i < processed.length; i++) {
+            formData.append('file', processed[i]);
         }
 
         // 获取认证头
@@ -492,7 +489,7 @@ function initUpload() {
                     uploadStatus.className = 'upload-status success';
 
                     // 显示结果
-                    showResults(data, files);
+                    showResults(data, processed);
                 }
             } else if (xhr.status === 401) {
                 showError('请先登录后再上传');
@@ -994,124 +991,4 @@ function smoothPageTransition(url) {
     }
 }
 
-// 移动端菜单初始化
-function initMobileMenu() {
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const mobileMenuCloseBtn = document.getElementById('mobileMenuCloseBtn');
-    const mobileMenu = document.getElementById('mobileMenu');
-    const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
-
-    if (!mobileMenuBtn || !mobileMenu) {
-        console.error('移动端菜单元素未找到');
-        return;
-    }
-
-    console.log('初始化移动端菜单');
-
-    // 确保移动菜单按钮可见（在移动设备上）
-    if (window.innerWidth <= 768) {
-        mobileMenuBtn.style.display = 'flex';
-    }
-
-    // 打开菜单
-    mobileMenuBtn.addEventListener('click', (e) => {
-        console.log('点击菜单按钮');
-        e.preventDefault();
-        e.stopPropagation();
-
-        // 确保菜单按钮在最上层
-        mobileMenuBtn.style.zIndex = '1002';
-
-        // 显示菜单
-        mobileMenu.classList.add('active');
-        mobileMenuOverlay.classList.add('active');
-        document.body.style.overflow = 'hidden'; // 防止背景滚动
-    });
-
-    // 关闭菜单的函数
-    const closeMenu = (e) => {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        mobileMenu.classList.remove('active');
-        mobileMenuOverlay.classList.remove('active');
-        document.body.style.overflow = ''; // 恢复滚动
-
-        // 延迟一下再重置z-index，避免闪烁
-        setTimeout(() => {
-            mobileMenuBtn.style.zIndex = '1002';
-        }, 300);
-    };
-
-    // 关闭按钮点击事件
-    if (mobileMenuCloseBtn) {
-        mobileMenuCloseBtn.addEventListener('click', (e) => {
-            console.log('点击关闭按钮');
-            closeMenu(e);
-        });
-    }
-
-    // 遮罩点击关闭
-    if (mobileMenuOverlay) {
-        mobileMenuOverlay.addEventListener('click', (e) => {
-            console.log('点击遮罩层');
-            closeMenu(e);
-        });
-    }
-
-    // 移动端菜单链接点击后关闭菜单
-    const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
-    mobileNavLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            console.log('点击菜单链接:', link.textContent);
-
-            // 如果是内部链接，关闭菜单
-            if (!link.getAttribute('href').startsWith('http')) {
-                // 延迟一下再跳转，确保菜单关闭动画完成
-                e.preventDefault();
-                closeMenu();
-
-                setTimeout(() => {
-                    window.location.href = link.getAttribute('href');
-                }, 300);
-            }
-        });
-    });
-
-    // 监听窗口大小变化，在大屏幕上自动关闭移动菜单，在小屏幕上显示菜单按钮
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 768) {
-            if (mobileMenu.classList.contains('active')) {
-                closeMenu();
-            }
-            mobileMenuBtn.style.display = 'none';
-        } else {
-            mobileMenuBtn.style.display = 'flex';
-        }
-    });
-
-    // 添加触摸滑动关闭菜单功能
-    let touchStartX = 0;
-
-    mobileMenu.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    mobileMenu.addEventListener('touchend', (e) => {
-        const touchEndX = e.changedTouches[0].screenX;
-        const touchDiff = touchEndX - touchStartX;
-
-        // 向右滑动超过50px时关闭菜单
-        if (touchDiff > 50) {
-            closeMenu();
-        }
-    }, { passive: true });
-
-    // 初始检查
-    if (window.innerWidth <= 768) {
-        console.log('移动设备检测到，显示菜单按钮');
-        mobileMenuBtn.style.display = 'flex';
-    }
-}
+// legacy initMobileMenu removed — use DuckShell + side-menu

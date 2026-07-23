@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}}catch(e){}})();</script>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>收藏图片 - 鸭鸭图床 | 免费图床</title>
@@ -11,15 +11,12 @@
     <meta name="keywords" content="收藏图片,图片管理,鸭鸭图床,图床">
     <meta name="theme-color" content="#4361ee">
     <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
-    <link rel="stylesheet" href="./css/animations-premium.css">
-    <link rel="stylesheet" href="./css/advanced-cards.css">
-    <link rel="stylesheet" href="./css/buttons-premium.css">
-    <link rel="stylesheet" href="./css/forms-premium.css">
-    <link rel="stylesheet" href="./css/images-premium.css">
-    <link rel="stylesheet" href="./css/modals-premium.css">
-    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/menu-system.css">
     <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="stylesheet" href="./css/shell.css">
+    <link rel="stylesheet" href="./css/palettes.css">
+    <link rel="stylesheet" href="./css/page-common.css">
     <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -132,7 +129,7 @@
 
         .search-box {
             flex: 1;
-            min-width: 250px;
+            min-width: 0;
             position: relative;
         }
 
@@ -201,7 +198,7 @@
             position: absolute;
             top: 100%;
             right: 0;
-            min-width: 200px;
+            min-width: 0;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-sm);
@@ -751,7 +748,16 @@
 
             .favorites-stats {
                 width: 100%;
-                justify-content: space-between;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.6rem;
+            }
+
+            .favorites-stat {
+                text-align: center;
+                min-width: 0;
+                width: 100%;
+                box-sizing: border-box;
             }
 
             .search-filter-bar {
@@ -969,18 +975,18 @@
                     <div>
                         <h1 class="favorites-title">
                             <i class="ri-star-fill"></i>
-                            收藏图片
+                            <span data-i18n="page.favorites.title">收藏图片</span>
                         </h1>
-                        <p style="margin: 0.5rem 0 0; color: var(--text-light); position: relative; z-index: 1;">管理您收藏的所有图片</p>
+                        <p style="margin: 0.5rem 0 0; color: var(--text-light); position: relative; z-index: 1;" data-i18n="page.favorites.sub">管理您收藏的所有图片</p>
                     </div>
                     <div class="favorites-stats">
                         <div class="favorites-stat">
                             <div class="favorites-stat-value" id="totalFavorites">0</div>
-                            <div class="favorites-stat-label">收藏总数</div>
+                            <div class="favorites-stat-label" data-i18n="gallery.favoritesOnly">收藏总数</div>
                         </div>
                         <div class="favorites-stat">
                             <div class="favorites-stat-value" id="totalSize">0 MB</div>
-                            <div class="favorites-stat-label">总大小</div>
+                            <div class="favorites-stat-label" data-i18n="gallery.sort.size">总大小</div>
                         </div>
                     </div>
                 </div>
@@ -988,40 +994,40 @@
                 <div class="search-filter-bar">
                     <div class="search-box">
                         <i class="ri-search-line search-icon"></i>
-                        <input type="text" class="search-input" placeholder="搜索收藏的图片..." id="searchInput">
+                        <input type="text" class="search-input" placeholder="搜索收藏的图片…" id="searchInput" data-i18n-placeholder="fav.search">
                     </div>
-                    
+
                     <div class="filter-dropdown" id="sortDropdown">
                         <button class="filter-btn" id="sortBtn">
                             <i class="ri-sort-desc"></i>
-                            <span>收藏时间</span>
+                            <span data-i18n="fav.sort.favorite">收藏时间</span>
                             <i class="ri-arrow-down-s-line"></i>
                         </button>
                         <div class="filter-dropdown-content">
                             <div class="filter-option active" data-sort="favorite-date">
                                 <i class="ri-time-line"></i>
-                                <span>收藏时间</span>
+                                <span data-i18n="fav.sort.favorite">收藏时间</span>
                             </div>
                             <div class="filter-option" data-sort="upload-date">
                                 <i class="ri-calendar-line"></i>
-                                <span>上传时间</span>
+                                <span data-i18n="fav.sort.upload">上传时间</span>
                             </div>
                             <div class="filter-option" data-sort="name">
                                 <i class="ri-file-text-line"></i>
-                                <span>文件名</span>
+                                <span data-i18n="gallery.sort.name">文件名</span>
                             </div>
                             <div class="filter-option" data-sort="size">
                                 <i class="ri-hard-drive-line"></i>
-                                <span>文件大小</span>
+                                <span data-i18n="gallery.sort.size">文件大小</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="view-toggle">
-                        <button class="view-btn active" id="gridViewBtn" title="网格视图">
+                        <button class="view-btn active" id="gridViewBtn" title="网格视图" data-i18n-title="gallery.view.grid">
                             <i class="ri-grid-line"></i>
                         </button>
-                        <button class="view-btn" id="listViewBtn" title="列表视图">
+                        <button class="view-btn" id="listViewBtn" title="列表视图" data-i18n-title="gallery.view.list">
                             <i class="ri-list-check"></i>
                         </button>
                     </div>
@@ -1035,11 +1041,11 @@
                     <div class="empty-icon">
                         <i class="ri-star-line"></i>
                     </div>
-                    <h3 class="empty-title">还没有收藏的图片</h3>
-                    <p class="empty-text">快去收藏一些喜欢的图片吧！在任何图片上点击星星图标即可收藏。</p>
+                    <h3 class="empty-title" data-i18n="fav.empty.title">还没有收藏的图片</h3>
+                    <p class="empty-text" data-i18n="fav.empty.text">快去收藏一些喜欢的图片吧！在任何图片上点击星星图标即可收藏。</p>
                     <a href="/dashboard.html" class="empty-action">
                         <i class="ri-image-2-line"></i>
-                        查看我的图片
+                        <span data-i18n="fav.empty.action">查看我的图片</span>
                     </a>
                 </div>
 
@@ -1056,19 +1062,19 @@
 
     <!-- 批量操作工具栏 -->
     <div class="batch-toolbar" id="batchToolbar">
-        <div class="batch-info">已选择 <span id="selectedCount">0</span> 张图片</div>
+        <div class="batch-info"><span data-i18n="common.selected">已选择</span> <span id="selectedCount">0</span> <span data-i18n="common.images">张图片</span></div>
         <div class="batch-actions">
             <button class="batch-btn" id="batchCopy">
                 <i class="ri-file-copy-line"></i>
-                <span>复制链接</span>
+                <span data-i18n="common.copyLink">复制链接</span>
             </button>
             <button class="batch-btn batch-btn-danger" id="batchUnfavorite">
                 <i class="ri-star-line"></i>
-                <span>取消收藏</span>
+                <span data-i18n="fav.unfavorite">取消收藏</span>
             </button>
             <button class="batch-btn" id="batchCancel">
                 <i class="ri-close-line"></i>
-                <span>取消选择</span>
+                <span data-i18n="common.cancelSelect">取消选择</span>
             </button>
         </div>
     </div>
@@ -1076,7 +1082,11 @@
     <!-- JavaScript 文件 -->
     <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
     <!-- 主题管理器 -->
+    <script src="./js/shell.js"></script>
     <script src="./js/theme-manager.js"></script>
+    <script src="./js/user-prefs.js"></script>
+    <script src="./js/palettes.js"></script>
+    <script src="./js/auth.js"></script>
     <script src="./js/menu-system.js"></script>
     <script src="./js/common.js"></script>
     <script src="./js/favorites.js"></script>

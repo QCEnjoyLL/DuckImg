@@ -110,36 +110,85 @@ body.dark-mode .menu-chart-toggle {
   display: none;
 }
 
-/* 浮动图表面板 */
+/* Center in main content column (viewport − side menu), not full window */
 .floating-charts-panel {
   position: fixed;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.95);
+  left: calc(50% + (var(--menu-width, 260px) / 2));
+  transform: translate(-50%, -50%) scale(0.96);
   background-color: var(--card-bg);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  width: 90%;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  width: min(900px, calc(100vw - var(--menu-width, 260px) - 48px));
   max-width: 900px;
-  max-height: 80vh;
-  z-index: 1000;
+  max-height: min(80vh, 860px);
+  z-index: 400;
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), visibility 0.25s;
   display: flex;
   flex-direction: column;
 }
 
 body.dark-mode .floating-charts-panel {
   background-color: var(--dark-card-bg);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  border-color: var(--dark-border);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+/* collapsed rail */
+body:has(.app-container.menu-collapsed) .floating-charts-panel {
+  left: calc(50% + (var(--menu-collapsed-width, 72px) / 2));
+  width: min(900px, calc(100vw - var(--menu-collapsed-width, 72px) - 48px));
+}
+
+@media (max-width: 768px) {
+  .floating-charts-panel,
+  body:has(.app-container.menu-collapsed) .floating-charts-panel {
+    left: 50%;
+    width: min(960px, calc(100vw - 24px));
+  }
 }
 
 .floating-charts-panel.active {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
   transform: translate(-50%, -50%) scale(1);
+}
+
+/* scrim only over content column */
+.charts-panel-scrim {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--menu-width, 260px);
+  z-index: 350;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s;
+}
+
+body:has(.app-container.menu-collapsed) .charts-panel-scrim {
+  left: var(--menu-collapsed-width, 72px);
+}
+
+@media (max-width: 768px) {
+  .charts-panel-scrim {
+    left: 0;
+  }
+}
+
+.charts-panel-scrim.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* 统计卡片容器 */
@@ -233,15 +282,19 @@ body.dark-mode .charts-panel-close:hover {
   gap: 1.5rem;
 }
 
-/* 图表容器固定高度，确保 Chart.js 完整渲染、不被裁切 */
+/* 图表容器：给 X 轴标签留足底部空间，避免日期被裁切 */
 .charts-panel-content .chart-container-enhanced {
-  min-height: 300px;
+  min-height: 320px;
   display: flex;
   flex-direction: column;
+  padding-bottom: 8px;
+  overflow: visible;
 }
 .charts-panel-content .chart-container-enhanced canvas {
   flex: 1;
-  max-height: 240px;
+  min-height: 240px;
+  max-height: none;
+  width: 100% !important;
 }
 
 @media (max-width: 768px) {

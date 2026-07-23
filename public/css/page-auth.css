@@ -1,0 +1,220 @@
+/**
+ * Auth page — restrained iOS login/register
+ */
+
+body.auth-page .app-container {
+  padding-left: 0 !important;
+  max-width: none !important;
+}
+
+body.auth-page .app-container main {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 32px 20px calc(48px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(100dvh - 52px - env(safe-area-inset-top, 0px));
+}
+
+.auth-page .header {
+  justify-content: space-between;
+}
+
+.auth-page .header .logo {
+  text-decoration: none;
+}
+
+.auth-page .header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-page .header-nav a {
+  color: var(--text-light);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  border-radius: 999px;
+}
+
+.auth-page .header-nav a:hover {
+  background: var(--fill-tertiary);
+  color: var(--text-color);
+}
+
+.auth-shell {
+  width: 100%;
+}
+
+.auth-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-brand img {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+}
+
+.auth-brand h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0 0 6px;
+  color: var(--text-color);
+  background: none !important;
+  -webkit-text-fill-color: unset !important;
+}
+
+.auth-brand p {
+  margin: 0;
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--fill-tertiary);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.auth-tab {
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-light);
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 40px;
+  transition: background 0.15s ease, color 0.15s ease, transform 80ms ease-out;
+}
+
+.auth-tab:active {
+  transform: scale(0.98);
+}
+
+.auth-tab.active {
+  background: var(--card-bg);
+  color: var(--text-color);
+  box-shadow: var(--shadow-xs);
+}
+
+.auth-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 22px 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-panel {
+  display: none;
+}
+
+.auth-panel.active {
+  display: block;
+}
+
+.auth-error {
+  display: none;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 59, 48, 0.12);
+  color: #ff3b30;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.auth-error.show {
+  display: block;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-field label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+
+.auth-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-field input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.auth-submit {
+  margin-top: 6px;
+  width: 100%;
+  min-height: 46px;
+  border: none;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 80ms ease-out;
+}
+
+.auth-submit:hover {
+  opacity: 0.92;
+}
+
+.auth-submit:active {
+  transform: scale(0.98);
+}
+
+.auth-link {
+  display: block;
+  text-align: center;
+  margin-top: 4px;
+  font-size: 0.875rem;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+/* hide legacy flip-card if any leftover */
+.wrapper,
+.card-switch,
+.flip-card__inner,
+.mobile-menu,
+.mobile-menu-overlay {
+  display: none !important;
+}

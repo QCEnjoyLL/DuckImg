@@ -2,6 +2,15 @@
  * 用户认证相关功能
  */
 
+// 页面跳转：auth 页可能不加载 app.js，提供轻量回退
+function goTo(url) {
+    if (typeof smoothPageTransition === 'function') {
+        smoothPageTransition(url);
+    } else {
+        window.location.href = url;
+    }
+}
+
 // UTF-8 安全解析 JWT 载荷（兼容中文用户名 / 旧标准 base64 token）
 function decodeJwtPayload(token) {
     let s = String(token.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/');
@@ -104,7 +113,7 @@ function initAuth() {
 
         // 如果当前页面是登录或注册页面，重定向到首页
         if (path === '/login.html' || path === '/register.html') {
-            smoothPageTransition('/');
+            goTo('/');
         }
 
         // 如果当前页面是仪表盘，但令牌无效，重定向到登录页面
@@ -112,7 +121,7 @@ function initAuth() {
             validateToken().catch(() => {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                smoothPageTransition('/login.html');
+                goTo('/login.html');
             });
         }
 
@@ -150,7 +159,7 @@ function initAuth() {
 
         // 如果当前页面是仪表盘，重定向到登录页面
         if (path === '/dashboard.html') {
-            smoothPageTransition('/login.html');
+            goTo('/login.html');
         }
     }
 }
@@ -229,7 +238,7 @@ function initLoginForm() {
                 localStorage.setItem('user', JSON.stringify(data.user));
 
                 // 重定向到首页
-                smoothPageTransition('/');
+                goTo('/');
             } catch (error) {
                 showError(loginError, error.message);
             }
@@ -413,7 +422,7 @@ function initRegisterForm() {
                 if (data.token) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    smoothPageTransition('/');
+                    goTo('/');
                 }
             } catch (error) {
                 showError(loginError, error.message);
@@ -439,7 +448,7 @@ function initLogout() {
         localStorage.removeItem('user');
 
         // 重定向到首页
-        smoothPageTransition('/');
+        goTo('/');
     };
 
     // 桌面端退出按钮
@@ -479,171 +488,99 @@ function showError(element, message) {
     }
 }
 
-// 更新用户头像显示
+// 更新用户头像显示（顶栏等）
 function updateUserAvatar() {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
     const userAvatars = document.querySelectorAll('.user-avatar');
-    
+
     if (user && user.avatarUrl) {
         userAvatars.forEach(avatar => {
-            // 清空现有内容
             avatar.innerHTML = '';
-            
-            // 创建头像图片元素
+            avatar.classList.add('has-photo');
             const img = document.createElement('img');
             img.src = user.avatarUrl;
             img.alt = '用户头像';
             img.className = 'user-avatar-img';
-            img.onerror = function() {
-                // 如果头像加载失败，显示默认图标
-                this.style.display = 'none';
+            img.onerror = function () {
+                this.remove();
+                avatar.classList.remove('has-photo');
                 avatar.innerHTML = '<i class="ri-user-3-line"></i>';
             };
-            
             avatar.appendChild(img);
         });
     } else {
-        // 显示默认头像图标
         userAvatars.forEach(avatar => {
+            avatar.classList.remove('has-photo');
             avatar.innerHTML = '<i class="ri-user-3-line"></i>';
         });
     }
 }
 
-// 上传头像
+// 仅保存头像 URL（上传文件或自定义链接共用）
+async function setAvatarUrl(avatarUrl) {
+    const url = String(avatarUrl || '').trim();
+    if (!url) throw new Error('头像链接不能为空');
+    if (!/^https?:\/\//i.test(url) && !url.startsWith('/')) {
+        throw new Error('请输入有效的图片链接（http/https）');
+    }
+
+    const updateResponse = await fetch('/api/auth/avatar', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+        },
+        body: JSON.stringify({ avatarUrl: url })
+    });
+
+    if (!updateResponse.ok) {
+        const errorData = await updateResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || '头像更新失败');
+    }
+
+    const result = await updateResponse.json();
+    localStorage.setItem('user', JSON.stringify(result.user));
+    updateUserAvatar();
+    return result;
+}
+
+// 上传本地图片作为头像
 async function uploadAvatar(file) {
     try {
-        // 首先上传文件到图床
         const formData = new FormData();
         formData.append('file', file);
-        
+
         const uploadResponse = await fetch('/upload', {
             method: 'POST',
             headers: getAuthHeader(),
             body: formData
         });
-        
+
         if (!uploadResponse.ok) {
             throw new Error('图片上传失败');
         }
-        
+
         const uploadResult = await uploadResponse.json();
-        
+
         if (!uploadResult || uploadResult.length === 0 || !uploadResult[0].src) {
             throw new Error('上传结果无效');
         }
-        
-        // 获取上传后的图片链接
-        const avatarUrl = window.location.origin + uploadResult[0].src;
-        
-        // 更新用户头像
-        const updateResponse = await fetch('/api/auth/avatar', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                ...getAuthHeader()
-            },
-            body: JSON.stringify({ avatarUrl })
-        });
-        
-        if (!updateResponse.ok) {
-            const errorData = await updateResponse.json();
-            throw new Error(errorData.error || '头像更新失败');
-        }
-        
-        const result = await updateResponse.json();
-        
-        // 更新本地存储的用户信息
-        localStorage.setItem('user', JSON.stringify(result.user));
-        
-        // 更新页面上的头像显示
-        updateUserAvatar();
-        
-        return result;
+
+        // 相对路径转绝对，便于跨页显示
+        const src = uploadResult[0].src;
+        const avatarUrl = src.startsWith('http') ? src : (window.location.origin + src);
+
+        return await setAvatarUrl(avatarUrl);
     } catch (error) {
         console.error('上传头像错误:', error);
         throw error;
     }
 }
+window.__authUploadAvatar = uploadAvatar;
 
-// 初始化头像上传功能
+// 顶栏头像不再绑定「点击上传」（仅资料页管理头像）
 function initAvatarUpload() {
-    // 检查是否已经初始化过，避免重复初始化
-    if (document.getElementById('avatarInput')) {
-        return;
-    }
-
-    // 创建隐藏的文件输入元素
-    const avatarInput = document.createElement('input');
-    avatarInput.type = 'file';
-    avatarInput.accept = 'image/*';
-    avatarInput.style.display = 'none';
-    avatarInput.id = 'avatarInput';
-    document.body.appendChild(avatarInput);
-    
-    // 为所有用户头像添加点击事件
-    function handleAvatarClick(e) {
-        // 检查用户是否已登录
-        if (!checkAuth()) {
-            return;
-        }
-
-        // 检查点击的元素是否是头像
-        const avatarElement = e.target.closest('.user-avatar');
-        if (avatarElement) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('头像被点击，打开文件选择器');
-            avatarInput.click();
-        }
-    }
-
-    // 使用事件委托绑定点击事件
-    document.addEventListener('click', handleAvatarClick);
-    
-    // 处理文件选择
-    avatarInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        console.log('文件被选择:', file.name);
-        
-        // 验证文件类型
-        if (!file.type.startsWith('image/')) {
-            alert('请选择图片文件');
-            return;
-        }
-        
-        // 验证文件大小（限制为5MB）
-        if (file.size > 5 * 1024 * 1024) {
-            alert('图片文件大小不能超过5MB');
-            return;
-        }
-        
-        try {
-            // 显示加载状态
-            console.log('开始上传头像...');
-            const userAvatars = document.querySelectorAll('.user-avatar');
-            userAvatars.forEach(avatar => {
-                avatar.innerHTML = '<i class="ri-loader-4-line rotating"></i>';
-            });
-            
-            await uploadAvatar(file);
-            
-            // 显示成功消息
-            console.log('头像上传成功');
-            showSuccessMessage('头像更新成功');
-            
-        } catch (error) {
-            console.error('头像上传失败:', error);
-            // 恢复头像显示
-            updateUserAvatar();
-            alert('头像更新失败: ' + error.message);
-        }
-        
-        // 清空文件输入
-        avatarInput.value = '';
-    });
+    // no-op kept for compatibility with callers
 }
 
 // 显示成功消息
@@ -747,7 +684,7 @@ function showVerifyModal(email, username, devCode) {
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
             overlay.remove();
-            smoothPageTransition('/');
+            goTo('/');
         } catch (err) {
             showErr(err.message);
             confirmBtn.disabled = false;

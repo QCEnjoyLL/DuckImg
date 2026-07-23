@@ -20,6 +20,15 @@ let showOnlyFavorites = false; // 是否只显示收藏的图片
 let customOrder = []; // 存储用户自定义排序顺序
 let isDraggable = false; // 是否启用拖拽排序
 
+// ponytail: thin i18n helper for runtime strings
+function tt(key, fallback) {
+    if (window.UserPrefs && typeof window.UserPrefs.t === 'function') {
+        const lang = (window.UserPrefs.read && window.UserPrefs.read().language) || 'zh-CN';
+        const v = window.UserPrefs.t(key, lang);
+        if (v && v !== key) return v;
+    }
+    return fallback != null ? fallback : key;
+}
 // 初始化仪表盘
 function initDashboard() {
     // 从本地存储加载收藏的图片
@@ -28,14 +37,19 @@ function initDashboard() {
     // 从本地存储加载自定义排序
     loadCustomOrder();
 
-    // 读取 URL 查询参数（来自菜单「最近上传」?sort 或「标签管理」?tag）
+    // 默认始终按「最新上传」；仅 URL ?sort= 可覆盖
     const params = new URLSearchParams(window.location.search);
     const urlSort = params.get('sort');
     const urlTag = params.get('tag');
-    if (urlSort) {
-        currentSortMethod = urlSort;
-        const sortSelect = document.getElementById('sortSelect');
-        if (sortSelect) sortSelect.value = urlSort;
+    const allowedSorts = new Set(['newest', 'oldest', 'name', 'size', 'custom']);
+    currentSortMethod = (urlSort && allowedSorts.has(urlSort)) ? urlSort : 'newest';
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) {
+        sortSelect.value = currentSortMethod;
+        // 确保 option 选中态与变量一致
+        Array.from(sortSelect.options).forEach((opt) => {
+            opt.selected = opt.value === currentSortMethod;
+        });
     }
     if (urlTag) {
         currentTagFilter = urlTag;
@@ -44,11 +58,7 @@ function initDashboard() {
     // 来自其他页面「统计信息」的跳转：自动打开统计面板
     if (params.get('stats') === '1') {
         setTimeout(() => {
-            const chartsPanel = document.getElementById('chartsPanel');
-            if (chartsPanel) {
-                chartsPanel.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
+            openChartsPanel();
         }, 300);
     }
 
@@ -275,8 +285,8 @@ function renderTimelineView() {
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21 15 16 10 5 21"></polyline>
                 </svg>
-                <h3>${showOnlyFavorites ? '没有收藏的图片' : '没有图片'}</h3>
-                <p>${showOnlyFavorites ? '您还没有收藏任何图片，点击图片右上角的星标收藏图片。' : '上传一些图片开始使用吧！'}</p>
+                <h3>${showOnlyFavorites ? tt('gallery.empty.fav','没有收藏的图片') : tt('gallery.empty.none','没有图片')}</h3>
+                <p>${showOnlyFavorites ? tt('gallery.empty.favText','您还没有收藏任何图片，点击图片右上角的星标收藏。') : tt('gallery.empty.noneText','上传一些图片开始使用吧！')}</p>
             </div>
         `;
         return;
@@ -350,7 +360,8 @@ function groupImagesByDate(images) {
 // 创建图片卡片
 function createImageCard(image) {
     const card = document.createElement('div');
-    card.className = 'image-card-enhanced';
+    // 同时带 image-card 以兼容拖拽/选择器与样式
+    card.className = 'image-card image-card-enhanced';
     card.dataset.id = image.id;
 
     // 如果图片被选中，添加选中样式
@@ -401,7 +412,7 @@ function createImageCard(image) {
                     <line x1="8" y1="11" x2="14" y2="11"></line>
                 </svg>
             </div>
-            <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${image.id}" title="${isFavorite ? '取消收藏' : '收藏图片'}">
+            <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${image.id}" title="${isFavorite ? tt('gallery.fav.remove','取消收藏') : tt('gallery.fav.add','收藏图片')}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
@@ -440,28 +451,28 @@ function createImageCard(image) {
             ${tagsHtml}
         </div>
         <div class="image-actions">
-            <button class="image-btn copy-btn" data-clipboard-text="${window.location.origin}${image.url}" title="复制图片链接">
+            <button class="image-btn copy-btn" data-clipboard-text="${window.location.origin}${image.url}" title="${tt('gallery.copyTitle', '复制图片链接')}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
-                复制
+                ${tt('common.copy', '复制')}
             </button>
-            <button class="image-btn edit-btn" data-id="${image.id}" title="编辑图片信息">
+            <button class="image-btn edit-btn" data-id="${image.id}" title="${tt('gallery.editTitle', '编辑图片信息')}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
-                编辑
+                ${tt('common.edit', '编辑')}
             </button>
-            <button class="image-btn delete-btn" data-id="${image.id}" title="删除图片">
+            <button class="image-btn delete-btn" data-id="${image.id}" title="${tt('gallery.deleteTitle', '删除图片')}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                     <line x1="10" y1="11" x2="10" y2="17"></line>
                     <line x1="14" y1="11" x2="14" y2="17"></line>
                 </svg>
-                删除
+                ${tt('common.delete', '删除')}
             </button>
         </div>
     `;
@@ -471,18 +482,25 @@ function createImageCard(image) {
 
 // 初始化图片卡片事件
 function initImageCardEvents() {
-    // 初始化复制按钮
+    // 初始化复制按钮 — 成功态只换图标/class，不改文案长度，避免卡片被顶高
     new ClipboardJS('.copy-btn').on('success', function(e) {
-        const originalText = e.trigger.innerHTML;
-        e.trigger.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        const btn = e.trigger;
+        if (btn.dataset.copyBusy === '1') return;
+        btn.dataset.copyBusy = '1';
+        const originalHtml = btn.innerHTML;
+        btn.classList.add('is-copied');
+        // icon-only success — same footprint as “复制”, no reflow
+        btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
-            已复制!
         `;
+        btn.setAttribute('aria-label', tt('common.copied','已复制'));
         setTimeout(() => {
-            e.trigger.innerHTML = originalText;
-        }, 2000);
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('is-copied');
+            btn.dataset.copyBusy = '';
+        }, 1600);
     });
 
     // 添加编辑按钮事件
@@ -582,23 +600,23 @@ function toggleFavorite(imageId, button) {
         // 取消收藏
         favoriteImages.delete(imageId);
         button.classList.remove('active');
-        button.title = '收藏图片';
+        button.title = tt('gallery.fav.add','收藏图片');
         button.querySelector('svg').setAttribute('fill', 'none');
 
         // 触发美化通知
         if (window.beautyEffects) {
-            window.beautyEffects.showNotification('已取消收藏', 'warning', 2000);
+            window.beautyEffects.showNotification(tt('gallery.fav.removed','已取消收藏'), 'warning', 2000);
         }
     } else {
         // 添加收藏
         favoriteImages.add(imageId);
         button.classList.add('active');
-        button.title = '取消收藏';
+        button.title = tt('gallery.fav.remove','取消收藏');
         button.querySelector('svg').setAttribute('fill', 'currentColor');
 
         // 触发美化通知
         if (window.beautyEffects) {
-            window.beautyEffects.showNotification('已添加到收藏', 'success', 2000);
+            window.beautyEffects.showNotification(tt('gallery.fav.added','已添加到收藏'), 'success', 2000);
         }
     }
 
@@ -627,7 +645,7 @@ async function loadUserImages(page = 1, query = '', tag = '') {
         const pagination = document.getElementById('pagination');
 
         // 显示加载状态
-        imageGrid.innerHTML = '<div class="loading-text">加载中...</div>';
+        imageGrid.innerHTML = '<div class="loading-text">' + tt('common.loading','加载中…') + '</div>';
 
         // 构建API URL
         let url = `/api/images?page=${page}`;
@@ -817,9 +835,9 @@ function initCharts() {
                     ticks: {
                         precision: 0,
                         font: {
-                            size: 12
+                            size: 11
                         },
-                        padding: 8
+                        padding: 6
                     },
                     grid: {
                         display: true,
@@ -830,14 +848,31 @@ function initCharts() {
                 x: {
                     ticks: {
                         font: {
-                            size: 12
+                            size: 10
                         },
-                        padding: 8
+                        padding: 6,
+                        maxRotation: 0,
+                        minRotation: 0,
+                        autoSkip: true,
+                        maxTicksLimit: 8, // avoid dense labels clipping at edges
+                        callback: function (value, index, ticks) {
+                            const label = this.getLabelForValue(value);
+                            // "MM-DD" → show as is; skip via autoSkip
+                            return label;
+                        }
                     },
                     grid: {
                         display: false,
                         drawBorder: false
                     }
+                }
+            },
+            layout: {
+                padding: {
+                    top: 4,
+                    right: 12,
+                    bottom: 4,
+                    left: 4
                 }
             }
         }
@@ -931,19 +966,29 @@ function updateCharts() {
     // 创建过去30天的日期标签
     const labels = [];
     const data = [];
+    const dayKeys = []; // full YYYY-MM-DD for lookup
 
     for (let i = 29; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        labels.push(dateStr.substring(5)); // 只显示月-日
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
+        dayKeys.push(dateStr);
+        // show M/D without leading zero clutter
+        labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
         dateMap.set(dateStr, 0);
     }
 
     // 统计每天的上传数量
     currentImages.forEach(img => {
         const date = new Date(img.uploadTime);
-        const dateStr = date.toISOString().split('T')[0];
+        if (Number.isNaN(date.getTime())) return;
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
 
         if (dateMap.has(dateStr)) {
             dateMap.set(dateStr, dateMap.get(dateStr) + 1);
@@ -951,14 +996,16 @@ function updateCharts() {
     });
 
     // 填充数据数组
-    labels.forEach(label => {
-        const fullDate = new Date().getFullYear() + '-' + label;
-        data.push(dateMap.get(fullDate) || 0);
+    dayKeys.forEach((key) => {
+        data.push(dateMap.get(key) || 0);
     });
 
     // 更新上传趋势图表
     uploadTrendChart.data.labels = labels;
     uploadTrendChart.data.datasets[0].data = data;
+    // denser points when 30 days — keep small
+    uploadTrendChart.data.datasets[0].pointRadius = 2;
+    uploadTrendChart.data.datasets[0].pointHoverRadius = 5;
     uploadTrendChart.update();
 
     // 更新存储使用情况图表
@@ -1127,7 +1174,7 @@ function renderPagination() {
     // 上一页按钮
     const prevBtn = document.createElement('button');
     prevBtn.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
-    prevBtn.textContent = '上一页';
+    prevBtn.textContent = tt('common.prev','上一页');
     prevBtn.disabled = currentPage === 1;
     prevBtn.addEventListener('click', () => {
         if (currentPage > 1) {
@@ -1160,7 +1207,7 @@ function renderPagination() {
     // 下一页按钮
     const nextBtn = document.createElement('button');
     nextBtn.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
-    nextBtn.textContent = '下一页';
+    nextBtn.textContent = tt('common.next','下一页');
     nextBtn.disabled = currentPage === totalPages;
     nextBtn.addEventListener('click', () => {
         if (currentPage < totalPages) {
@@ -1226,17 +1273,20 @@ function initSortFilter() {
 // 初始化拖拽排序功能
 function initDragSort() {
     const dragToggle = document.getElementById('dragToggle');
+    if (!dragToggle) return;
 
     // 从本地存储恢复拖拽状态
     const savedDragMode = localStorage.getItem('dragMode');
-    if (savedDragMode === 'true') {
+    if (savedDragMode === 'true' || savedDragMode === '1') {
         isDraggable = true;
         dragToggle.checked = true;
 
         // 如果启用了拖拽，自动切换到自定义排序
         const sortSelect = document.getElementById('sortSelect');
-        sortSelect.value = 'custom';
-        currentSortMethod = 'custom';
+        if (sortSelect) {
+            sortSelect.value = 'custom';
+            currentSortMethod = 'custom';
+        }
     }
 
     // 添加拖拽模式切换事件
@@ -1250,14 +1300,23 @@ function initDragSort() {
 
 // 切换拖拽模式
 function toggleDragMode(enable) {
-    isDraggable = enable;
-    localStorage.setItem('dragMode', enable);
+    isDraggable = !!enable;
+    localStorage.setItem('dragMode', isDraggable ? 'true' : 'false');
 
     // 如果启用拖拽，切换到自定义排序
-    if (enable) {
+    if (isDraggable) {
         const sortSelect = document.getElementById('sortSelect');
-        sortSelect.value = 'custom';
-        currentSortMethod = 'custom';
+        if (sortSelect) {
+            sortSelect.value = 'custom';
+            currentSortMethod = 'custom';
+        }
+        if (typeof showNotification === 'function') {
+            const touch = window.matchMedia('(pointer: coarse)').matches;
+            showNotification(
+                touch ? tt('gallery.drag.on.touch','拖拽已开启：长按图片卡片即可排序') : tt('gallery.drag.on','拖拽已开启：按住卡片左上角六点拖动'),
+                'success'
+            );
+        }
     }
 
     // 重新渲染图片以应用拖拽样式
@@ -1274,6 +1333,7 @@ function toggleDragMode(enable) {
 // 初始化Sortable拖拽库
 function initSortable() {
     const imageGrid = document.getElementById('imageGrid');
+    if (!imageGrid) return;
 
     // 销毁现有的Sortable实例
     if (imageGrid.sortableInstance) {
@@ -1281,20 +1341,29 @@ function initSortable() {
         imageGrid.sortableInstance = null;
     }
 
-    // 如果不是网格或列表视图，或者没有启用拖拽，则不初始化Sortable
+    // 时间线视图或未开启拖拽时不初始化
     if (currentViewMode === 'timeline' || !isDraggable) {
         return;
     }
 
-    // 创建新的Sortable实例
+    const touch = window.matchMedia('(pointer: coarse)').matches;
+
+    // 创建新的Sortable实例：触控/桌面都可拖整卡；手柄仅作提示
     imageGrid.sortableInstance = new Sortable(imageGrid, {
         animation: 150,
-        handle: '.drag-handle',
+        // 不限制 handle，整卡可拖（含手机长按）
+        draggable: '.image-card',
+        filter: 'button, a, input, .favorite-btn, .image-btn, .image-actions',
+        preventOnFilter: false,
         ghostClass: 'sortable-ghost',
         chosenClass: 'sortable-chosen',
         dragClass: 'sortable-drag',
-        onEnd: function(evt) {
-            // 更新自定义排序顺序
+        forceFallback: true,
+        fallbackTolerance: 3,
+        delay: touch ? 180 : 0,
+        delayOnTouchOnly: true,
+        touchStartThreshold: 5,
+        onEnd: function () {
             updateCustomOrder();
         }
     });
@@ -1302,8 +1371,8 @@ function initSortable() {
 
 // 更新自定义排序顺序
 function updateCustomOrder() {
-    const imageCards = document.querySelectorAll('.image-card');
-    customOrder = Array.from(imageCards).map(card => card.dataset.id);
+    const imageCards = document.querySelectorAll('.image-card, .image-card-enhanced');
+    customOrder = Array.from(imageCards).map(card => card.dataset.id).filter(Boolean);
     saveCustomOrder();
 }
 
@@ -1324,10 +1393,10 @@ function renderTagFilters() {
     const topTags = tagArray.slice(0, 5);
 
     // 创建标签过滤器HTML
-    let filtersHtml = '<span class="filter-label">标签:</span>';
+    let filtersHtml = '<span class="filter-label">' + tt('gallery.tags.label','标签:') + '</span>';
 
     // 添加"全部"选项
-    filtersHtml += `<span class="image-tag ${currentTagFilter === '' ? 'active' : ''}" data-tag="">全部</span>`;
+    filtersHtml += `<span class="image-tag ${currentTagFilter === '' ? 'active' : ''}" data-tag=""></span>`;
 
     // 添加标签选项
     topTags.forEach(tag => {
@@ -1519,7 +1588,7 @@ function initEditModal() {
         const fileName = document.getElementById('editFileName').value.trim();
 
         if (!fileName) {
-            alert('文件名不能为空');
+            alert(tt('gallery.name.required','文件名不能为空'));
             return;
         }
 
@@ -1547,7 +1616,7 @@ function initEditModal() {
             loadUserImages(currentPage);
         } catch (error) {
             console.error('更新图片信息错误:', error);
-            alert(`更新失败: ${error.message}`);
+            alert(`${tt('gallery.update.fail','更新失败')}: ${error.message}`);
         }
     });
 
@@ -1660,7 +1729,7 @@ function removeTag(tag) {
 
 // 确认删除图片
 function confirmDeleteImage(imageId) {
-    if (confirm('确定要删除这张图片吗？此操作不可撤销。')) {
+    if (confirm(tt('gallery.delete.confirm','确定要删除这张图片吗？此操作不可撤销。'))) {
         deleteImage(imageId);
     }
 }
@@ -1681,7 +1750,7 @@ async function deleteImage(imageId) {
         loadUserImages(currentPage);
     } catch (error) {
         console.error('删除图片错误:', error);
-        alert(`删除失败: ${error.message}`);
+        alert(`${tt('gallery.delete.fail','删除失败')}: ${error.message}`);
     }
 }
 
@@ -1751,7 +1820,7 @@ function initBatchOperations() {
             document.execCommand('copy');
             document.body.removeChild(textarea);
 
-            alert(`已复制 ${links.length} 个链接到剪贴板`);
+            alert(`${tt('gallery.copied.n','已复制链接到剪贴板')} (${links.length})`);
         }
     });
 
@@ -1760,7 +1829,7 @@ function initBatchOperations() {
         if (selectedImages.size === 0) return;
 
         // 创建一个简单的输入对话框
-        const tag = prompt('请输入要添加的标签:');
+        const tag = prompt(tt('gallery.tag.prompt','请输入要添加的标签:'));
         if (!tag || tag.trim() === '') return;
 
         batchAddTagToImages(tag.trim());
@@ -1770,7 +1839,7 @@ function initBatchOperations() {
     batchDelete.addEventListener('click', () => {
         if (selectedImages.size === 0) return;
 
-        if (confirm(`确定要删除选中的 ${selectedImages.size} 张图片吗？此操作不可撤销。`)) {
+        if (confirm(tt('gallery.delete.batch','确定要删除选中的图片吗？此操作不可撤销。') + ` (${selectedImages.size})`)) {
             batchDeleteImages();
         }
     });
@@ -1963,33 +2032,9 @@ function initMenuIntegration() {
         });
     }
 
-    // 主题切换菜单项点击事件
-    const themeMenuItem = document.getElementById('themeMenuItem');
-    if (themeMenuItem) {
-        themeMenuItem.addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleTheme();
-        });
-    }
+    // 侧栏「切换配色」由 palettes.js 负责，不再绑定 light/dark
 
-    // 移动端菜单切换按钮
-    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    const sideMenu = document.getElementById('sideMenu');
-    const menuOverlay = document.getElementById('menuOverlay');
-
-    if (mobileMenuToggle && sideMenu && menuOverlay) {
-        mobileMenuToggle.addEventListener('click', () => {
-            sideMenu.classList.add('mobile-visible');
-            menuOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
-
-        menuOverlay.addEventListener('click', () => {
-            sideMenu.classList.remove('mobile-visible');
-            menuOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
-    }
+    // 移动端抽屉由 menu-system + DuckShell 统一处理
 
     // 初始化图表面板控制
     initChartsPanelControl();
@@ -2009,6 +2054,30 @@ function toggleTheme() {
 }
 
 /**
+ * 数据统计面板开合（相对主内容区居中 + scrim）
+ */
+function openChartsPanel() {
+    const chartsPanel = document.getElementById('chartsPanel');
+    const scrim = document.getElementById('chartsPanelScrim');
+    if (!chartsPanel) return;
+    chartsPanel.classList.add('active');
+    if (scrim) scrim.classList.add('active');
+    if (window.DuckShell) window.DuckShell.lockScroll();
+    else document.body.style.overflow = 'hidden';
+}
+window.openChartsPanel = openChartsPanel;
+
+function closeChartsPanel() {
+    const chartsPanel = document.getElementById('chartsPanel');
+    const scrim = document.getElementById('chartsPanelScrim');
+    if (chartsPanel) chartsPanel.classList.remove('active');
+    if (scrim) scrim.classList.remove('active');
+    if (window.DuckShell) window.DuckShell.unlockScroll();
+    else document.body.style.overflow = '';
+}
+window.closeChartsPanel = closeChartsPanel;
+
+/**
  * 初始化图表面板控制
  */
 function initChartsPanelControl() {
@@ -2016,44 +2085,41 @@ function initChartsPanelControl() {
     const statsToggleBtn = document.getElementById('statsToggleBtn');
     const chartsPanel = document.getElementById('chartsPanel');
     const closeChartsBtn = document.getElementById('closeChartsBtn');
+    const scrim = document.getElementById('chartsPanelScrim');
 
-    // 点击菜单中的统计信息按钮
     if (statsMenuItem && chartsPanel) {
         statsMenuItem.addEventListener('click', (e) => {
             e.preventDefault();
-            chartsPanel.classList.add('active');
-            document.body.style.overflow = 'hidden';
+            openChartsPanel();
         });
     }
 
-    // 点击仪表盘中的统计信息按钮
     if (statsToggleBtn && chartsPanel) {
-        statsToggleBtn.addEventListener('click', () => {
-            chartsPanel.classList.add('active');
-            document.body.style.overflow = 'hidden';
+        statsToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openChartsPanel();
         });
     }
 
-    // 点击关闭按钮
-    if (closeChartsBtn && chartsPanel) {
-        closeChartsBtn.addEventListener('click', () => {
-            chartsPanel.classList.remove('active');
-            document.body.style.overflow = '';
+    if (closeChartsBtn) {
+        closeChartsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeChartsPanel();
         });
     }
 
-    // 点击外部区域关闭
+    if (scrim) {
+        scrim.addEventListener('click', () => closeChartsPanel());
+    }
+
+    // 点面板外关闭（保留按钮点击）
     document.addEventListener('click', (e) => {
-        if (chartsPanel && chartsPanel.classList.contains('active')) {
-            if (!chartsPanel.contains(e.target) &&
-                e.target !== statsMenuItem &&
-                e.target !== statsToggleBtn &&
-                !statsMenuItem?.contains(e.target) &&
-                !statsToggleBtn?.contains(e.target)) {
-                chartsPanel.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        }
+        if (!chartsPanel || !chartsPanel.classList.contains('active')) return;
+        if (chartsPanel.contains(e.target)) return;
+        if (statsMenuItem && (e.target === statsMenuItem || statsMenuItem.contains(e.target))) return;
+        if (statsToggleBtn && (e.target === statsToggleBtn || statsToggleBtn.contains(e.target))) return;
+        closeChartsPanel();
     });
 }
 

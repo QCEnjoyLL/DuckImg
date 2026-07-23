@@ -115,14 +115,8 @@ class ThemeManager {
             });
         }
         
-        // 绑定菜单项的主题切换
-        const themeMenuItem = document.getElementById('themeMenuItem');
-        if (themeMenuItem) {
-            themeMenuItem.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.toggleTheme();
-            });
-        }
+        // 侧栏「切换配色」由 palettes.js 绑定；这里不再绑定 light/dark，避免冲突
+        // （顶栏 #switch / 设置页 darkModeToggle 仍控制明暗）
     }
 
     // 监听系统主题变化

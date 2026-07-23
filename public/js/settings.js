@@ -34,6 +34,15 @@ function updateDarkModeToggleState(isDark) {
     if (darkModeToggle) {
         darkModeToggle.classList.toggle('active', isDark);
     }
+    const hint = document.getElementById('themeModeHint');
+    if (hint) {
+        if (window.UserPrefs && typeof window.UserPrefs.t === 'function') {
+            const lang = (getSettings().language) || 'zh-CN';
+            hint.textContent = window.UserPrefs.t(isDark ? 'theme.dark' : 'theme.light', lang);
+        } else {
+            hint.textContent = isDark ? '当前：深色' : '当前：浅色';
+        }
+    }
 }
 
 /**
@@ -51,6 +60,9 @@ function loadCurrentSettings() {
  * 获取设置
  */
 function getSettings() {
+    if (window.UserPrefs && typeof window.UserPrefs.read === 'function') {
+        return window.UserPrefs.read();
+    }
     const defaultSettings = {
         darkMode: false,
         language: 'zh-CN',
@@ -60,10 +72,9 @@ function getSettings() {
         watermark: false,
         public: true,
         exif: false,
-        loginNotify: true,
+        loginNotify: false,
         autoClean: false
     };
-    
     const savedSettings = localStorage.getItem('userSettings');
     return savedSettings ? { ...defaultSettings, ...JSON.parse(savedSettings) } : defaultSettings;
 }
@@ -72,7 +83,21 @@ function getSettings() {
  * 保存设置
  */
 function saveSettings(settings) {
-    localStorage.setItem('userSettings', JSON.stringify(settings));
+    if (window.UserPrefs && typeof window.UserPrefs.set === 'function') {
+        window.UserPrefs.set(settings);
+    } else {
+        localStorage.setItem('userSettings', JSON.stringify(settings));
+    }
+    // 云端同步（登录提醒等）
+    if (window.UserPrefs && typeof window.UserPrefs.syncToServer === 'function') {
+        window.UserPrefs.syncToServer(settings);
+    }
+    if (window.UserPrefs && typeof window.UserPrefs.applyLanguage === 'function') {
+        window.UserPrefs.applyLanguage(settings.language || 'zh-CN');
+    }
+    if (settings.autoClean && window.UserPrefs && window.UserPrefs.runAutoClean) {
+        window.UserPrefs.runAutoClean();
+    }
 }
 
 /**
@@ -147,136 +172,226 @@ function applySettingsToUI(settings) {
     if (autoCleanToggle) {
         autoCleanToggle.classList.toggle('active', settings.autoClean);
     }
+
+    // 水印文字
+    const watermarkTextInput = document.getElementById('watermarkTextInput');
+    if (watermarkTextInput) {
+        watermarkTextInput.value = settings.watermarkText || '鸭鸭图床';
+        watermarkTextInput.disabled = !settings.watermark;
+        watermarkTextInput.style.opacity = settings.watermark ? '1' : '0.55';
+    }
+
+    if (window.UserPrefs && typeof window.UserPrefs.applyLanguage === 'function') {
+        window.UserPrefs.applyLanguage(settings.language || 'zh-CN');
+    }
 }
 
 /**
  * 初始化事件监听器
  */
 function initSettingsEventListeners() {
-    // 深色模式切换 - 使用全局主题管理器
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    if (darkModeToggle) {
-        darkModeToggle.addEventListener('click', () => {
-            if (window.themeManager) {
-                window.themeManager.toggleTheme();
-                showNotification('主题已切换', 'success');
+    // 明暗仅由顶栏开关控制
+
+    // 打开配色面板（侧栏「切换配色」同款）
+    const openPaletteBtn = document.getElementById('openPaletteBtn');
+    if (openPaletteBtn) {
+        openPaletteBtn.addEventListener('click', () => {
+            if (window.DuckPalette && typeof window.DuckPalette.open === 'function') {
+                window.DuckPalette.open();
+            } else if (window.DuckPalette && typeof window.DuckPalette.toggle === 'function') {
+                window.DuckPalette.toggle();
             } else {
-                // 降级处理：如果主题管理器未加载
-                toggleSetting('darkMode', darkModeToggle);
-                const switchCheckbox = document.getElementById('switch');
-                if (switchCheckbox) {
-                    switchCheckbox.checked = darkModeToggle.classList.contains('active');
-                    const event = new Event('change');
-                    switchCheckbox.dispatchEvent(event);
-                }
+                showNotification('请打开侧栏使用「切换配色」', 'info');
             }
         });
     }
-    
-    // 语言设置
+
+    // 快捷清空缓存
+    const clearCacheQuickBtn = document.getElementById('clearCacheQuickBtn');
+    if (clearCacheQuickBtn) {
+        clearCacheQuickBtn.addEventListener('click', () => {
+            showConfirmModal(
+                '清空本地缓存',
+                '将清除本机保存的主题、排序等偏好，不会删除云端图片。',
+                () => clearCache()
+            );
+        });
+    }
+
+    // 绑定实际上传/隐私偏好
+    bindPrefToggle('autoCompressToggle', 'autoCompress', '自动压缩');
+    bindPrefToggle('watermarkToggle', 'watermark', '水印');
+    bindPrefToggle('exifToggle', 'exif', '保留 EXIF');
+    bindPrefToggle('publicToggle', 'public', '图片公开可见');
+    bindPrefToggle('loginNotifyToggle', 'loginNotify', '登录提醒');
+    bindPrefToggle('autoCleanToggle', 'autoClean', '自动清理');
+
     const languageSelect = document.getElementById('languageSelect');
     if (languageSelect) {
         languageSelect.addEventListener('change', () => {
-            updateSelectSetting('language', languageSelect.value);
-            showNotification('语言设置已更新', 'success');
+            const settings = getSettings();
+            settings.language = languageSelect.value;
+            saveSettings(settings);
+            showNotification(languageSelect.value === 'en-US' ? 'Language updated' : '语言已更新', 'success');
         });
     }
-    
-    // 动画效果
-    const animationToggle = document.getElementById('animationToggle');
-    if (animationToggle) {
-        animationToggle.addEventListener('click', () => {
-            toggleSetting('animation', animationToggle);
-        });
-    }
-    
-    // 自动压缩
-    const autoCompressToggle = document.getElementById('autoCompressToggle');
-    if (autoCompressToggle) {
-        autoCompressToggle.addEventListener('click', () => {
-            toggleSetting('autoCompress', autoCompressToggle);
-        });
-    }
-    
-    // 图片质量
+
     const qualitySelect = document.getElementById('qualitySelect');
     if (qualitySelect) {
         qualitySelect.addEventListener('change', () => {
-            updateSelectSetting('quality', qualitySelect.value);
+            const settings = getSettings();
+            settings.quality = qualitySelect.value;
+            saveSettings(settings);
+            showNotification('默认图片质量已更新', 'success');
         });
     }
-    
-    // 水印设置
-    const watermarkToggle = document.getElementById('watermarkToggle');
-    if (watermarkToggle) {
-        watermarkToggle.addEventListener('click', () => {
-            toggleSetting('watermark', watermarkToggle);
+
+    const watermarkTextInput = document.getElementById('watermarkTextInput');
+    if (watermarkTextInput) {
+        let timer = null;
+        const commit = () => {
+            const settings = getSettings();
+            settings.watermarkText = (watermarkTextInput.value || '').trim() || '鸭鸭图床';
+            watermarkTextInput.value = settings.watermarkText;
+            saveSettings(settings);
+            showNotification('水印文字已保存', 'success');
+        };
+        watermarkTextInput.addEventListener('change', commit);
+        watermarkTextInput.addEventListener('blur', commit);
+        watermarkTextInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                const settings = getSettings();
+                settings.watermarkText = (watermarkTextInput.value || '').trim() || '鸭鸭图床';
+                saveSettings(settings);
+            }, 500);
         });
     }
-    
-    // 公开可见
-    const publicToggle = document.getElementById('publicToggle');
-    if (publicToggle) {
-        publicToggle.addEventListener('click', () => {
-            toggleSetting('public', publicToggle);
-        });
-    }
-    
-    // EXIF信息
-    const exifToggle = document.getElementById('exifToggle');
-    if (exifToggle) {
-        exifToggle.addEventListener('click', () => {
-            toggleSetting('exif', exifToggle);
-        });
-    }
-    
-    // 登录提醒
-    const loginNotifyToggle = document.getElementById('loginNotifyToggle');
-    if (loginNotifyToggle) {
-        loginNotifyToggle.addEventListener('click', () => {
-            toggleSetting('loginNotify', loginNotifyToggle);
-        });
-    }
-    
-    // 自动清理
-    const autoCleanToggle = document.getElementById('autoCleanToggle');
-    if (autoCleanToggle) {
-        autoCleanToggle.addEventListener('click', () => {
-            toggleSetting('autoClean', autoCleanToggle);
-        });
-    }
-    
-    // 保存按钮
+
+    // 保存设置按钮
     const saveBtn = document.getElementById('saveBtn');
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
-            saveAllSettings();
+            const settings = getSettings();
+            if (window.themeManager) {
+                settings.darkMode = window.themeManager.theme === 'dark';
+            }
+            // 从 UI 再收集一遍
+            collectFromUI(settings);
+            saveSettings(settings);
+            showNotification('设置已保存并生效', 'success');
         });
     }
-    
-    // 重置按钮
+
+    // 重置设置按钮
     const resetBtn = document.getElementById('resetBtn');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            resetAllSettings();
+            if (confirm('确定要重置所有本机设置为默认值吗？')) {
+                localStorage.removeItem('userSettings');
+                localStorage.removeItem('themePalette');
+                const defaults = window.UserPrefs ? { ...window.UserPrefs.DEFAULTS } : getSettings();
+                saveSettings(defaults);
+                applySettingsToUI(getSettings());
+                showNotification('本机设置已重置', 'success');
+            }
         });
     }
-    
-    // 危险操作按钮
-    initDangerButtons();
+
+    // 危险操作：清空缓存
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', () => {
+            showConfirmModal(
+                '清空缓存',
+                '确定要清空本地缓存吗？不会删除云端图片。',
+                () => clearCache()
+            );
+        });
+    }
+
+    // 危险操作：删除所有图片
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', () => {
+            showConfirmModal(
+                '删除所有图片',
+                '⚠️ 警告：此操作将永久删除您的所有图片，且无法恢复！请确认您要执行此操作。',
+                () => deleteAllImages()
+            );
+        });
+    }
+
+    // 危险操作：删除账户
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    if (deleteAccountBtn) {
+        deleteAccountBtn.addEventListener('click', () => {
+            showConfirmModal(
+                '删除账户',
+                '⚠️ 警告：此操作将永久删除您的账户与相关数据，且无法恢复！',
+                () => deleteAccount()
+            );
+        });
+    }
+}
+
+function bindPrefToggle(id, key, label) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', () => {
+        if (el.closest && el.closest('.is-disabled')) return;
+        el.classList.toggle('active');
+        const on = el.classList.contains('active');
+        const settings = getSettings();
+        settings[key] = on;
+        saveSettings(settings);
+        if (key === 'watermark') {
+            const input = document.getElementById('watermarkTextInput');
+            if (input) {
+                input.disabled = !on;
+                input.style.opacity = on ? '1' : '0.55';
+            }
+        }
+        showNotification(`${label}已${on ? '开启' : '关闭'}`, 'success');
+    });
+}
+
+function collectFromUI(settings) {
+    const map = [
+        ['autoCompressToggle', 'autoCompress'],
+        ['watermarkToggle', 'watermark'],
+        ['exifToggle', 'exif'],
+        ['publicToggle', 'public'],
+        ['loginNotifyToggle', 'loginNotify'],
+        ['autoCleanToggle', 'autoClean'],
+    ];
+    map.forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        if (el) settings[key] = el.classList.contains('active');
+    });
+    const languageSelect = document.getElementById('languageSelect');
+    if (languageSelect) settings.language = languageSelect.value;
+    const qualitySelect = document.getElementById('qualitySelect');
+    if (qualitySelect) settings.quality = qualitySelect.value;
+    const watermarkTextInput = document.getElementById('watermarkTextInput');
+    if (watermarkTextInput) {
+        settings.watermarkText = (watermarkTextInput.value || '').trim() || '鸭鸭图床';
+    }
 }
 
 /**
  * 切换开关设置
  */
 function toggleSetting(settingName, toggleElement) {
+    // 禁用的「即将支持」项不响应
+    if (toggleElement.closest && toggleElement.closest('.is-disabled')) return;
     toggleElement.classList.toggle('active');
     const isActive = toggleElement.classList.contains('active');
-    
+
     const settings = getSettings();
     settings[settingName] = isActive;
     saveSettings(settings);
-    
+
     showNotification(`${getSettingDisplayName(settingName)} 已${isActive ? '启用' : '禁用'}`, 'success');
 }
 
@@ -386,40 +501,33 @@ function showConfirmModal(title, message, confirmCallback) {
     const titleElement = document.getElementById('confirmTitle');
     const messageElement = document.getElementById('confirmMessage');
     const confirmBtn = document.getElementById('confirmAction');
-    
+
     if (modal && titleElement && messageElement && confirmBtn) {
         titleElement.textContent = title;
         messageElement.textContent = message;
-        
-        // 移除之前的事件监听器
+
         const newConfirmBtn = confirmBtn.cloneNode(true);
         confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-        
-        // 添加新的事件监听器
+
         newConfirmBtn.addEventListener('click', () => {
             confirmCallback();
             hideConfirmModal();
         });
-        
+
         modal.style.display = 'flex';
-        
-        // 关闭模态框事件
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+
         const closeBtn = document.getElementById('closeConfirmModal');
         const cancelBtn = document.getElementById('cancelConfirm');
-        
-        if (closeBtn) {
-            closeBtn.onclick = hideConfirmModal;
-        }
-        if (cancelBtn) {
-            cancelBtn.onclick = hideConfirmModal;
-        }
-        
-        // 点击背景关闭
+        if (closeBtn) closeBtn.onclick = hideConfirmModal;
+        if (cancelBtn) cancelBtn.onclick = hideConfirmModal;
+
         modal.onclick = (e) => {
-            if (e.target === modal) {
-                hideConfirmModal();
-            }
+            if (e.target === modal) hideConfirmModal();
         };
+    } else if (window.confirm(`${title}\n\n${message}`)) {
+        confirmCallback();
     }
 }
 
@@ -430,6 +538,8 @@ function hideConfirmModal() {
     const modal = document.getElementById('confirmModal');
     if (modal) {
         modal.style.display = 'none';
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
     }
 }
 
@@ -438,110 +548,161 @@ function hideConfirmModal() {
  */
 function clearCache() {
     try {
-        // 清除本地存储（除了重要设置）
-        const importantKeys = ['userSettings', 'token', 'user', 'menuState'];
+        // 保留登录态与菜单状态，清其它本机偏好
+        const keep = new Set(['token', 'user', 'menuState']);
         const keysToRemove = [];
-        
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && !importantKeys.includes(key)) {
-                keysToRemove.push(key);
-            }
+            if (key && !keep.has(key)) keysToRemove.push(key);
         }
-        
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-        
-        // 清除会话存储
+        keysToRemove.forEach((key) => localStorage.removeItem(key));
         sessionStorage.clear();
-        
-        showNotification('缓存已清空', 'success');
+        showNotification('本地缓存已清空（登录状态保留）', 'success');
+        // 刷新主题提示
+        if (window.themeManager) {
+            updateDarkModeToggleState(window.themeManager.theme === 'dark');
+        }
+        updateStorageInfo();
     } catch (error) {
         showNotification('清空缓存失败', 'error');
     }
 }
 
 /**
- * 删除所有图片
+ * 删除所有图片（真实调用删除 API）
  */
 async function deleteAllImages() {
     try {
-        showNotification('正在删除所有图片...', 'info');
-        
-        // 这里应该调用API删除所有图片
-        // const response = await fetch('/api/images/delete-all', { method: 'DELETE' });
-        
-        // 模拟删除过程
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        showNotification('所有图片已删除', 'success');
-        
-        // 可以重定向到首页或刷新页面
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 1500);
+        const token = localStorage.getItem('token');
+        if (!token) {
+            showNotification('请先登录', 'error');
+            return;
+        }
+
+        showNotification('正在获取图片列表…', 'info');
+        const listRes = await fetch('/api/images?page=1&limit=5000', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!listRes.ok) throw new Error('获取图片列表失败');
+        const data = await listRes.json();
+        const files = data.files || [];
+        if (!files.length) {
+            showNotification('没有可删除的图片', 'info');
+            return;
+        }
+
+        showNotification(`正在删除 ${files.length} 张图片…`, 'info');
+        let ok = 0;
+        let fail = 0;
+        // 串行删除，避免压垮 Worker / TG
+        for (const f of files) {
+            try {
+                const id = f.id;
+                if (!id) { fail++; continue; }
+                const delRes = await fetch(`/api/images/${encodeURIComponent(id)}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (delRes.ok) ok++;
+                else fail++;
+            } catch (_) {
+                fail++;
+            }
+        }
+
+        if (fail === 0) {
+            showNotification(`已删除全部 ${ok} 张图片`, 'success');
+        } else {
+            showNotification(`删除完成：成功 ${ok}，失败 ${fail}`, fail ? 'error' : 'success');
+        }
+        updateStorageInfo();
     } catch (error) {
-        showNotification('删除图片失败', 'error');
+        console.error(error);
+        showNotification(error.message || '删除图片失败', 'error');
     }
 }
 
 /**
- * 删除账户
+ * 删除账户：后端暂无自助删除接口
  */
 async function deleteAccount() {
-    try {
-        showNotification('正在删除账户...', 'info');
-        
-        // 这里应该调用API删除账户
-        // const response = await fetch('/api/auth/delete-account', { method: 'DELETE' });
-        
-        // 模拟删除过程
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // 清除所有本地数据
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        showNotification('账户已删除', 'success');
-        
-        // 重定向到首页
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 1500);
-    } catch (error) {
-        showNotification('删除账户失败', 'error');
-    }
+    showNotification('暂不支持自助删除账户，请联系管理员处理', 'error');
+}
+
+function formatBytes(bytes) {
+    const n = Number(bytes) || 0;
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+    if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+    return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 /**
- * 更新存储信息
+ * 从 API 刷新真实占用与配额
  */
-function updateStorageInfo() {
-    // 这里应该从API获取真实的存储信息
-    // 现在使用模拟数据
-    
-    const storageData = {
-        used: 134.5, // MB
-        total: 2048, // MB (2GB)
-        percentage: 6.6
-    };
-    
-    // 更新进度条
-    const progressBar = document.querySelector('.storage-progress');
-    if (progressBar) {
-        progressBar.style.width = `${storageData.percentage}%`;
+async function updateStorageInfo() {
+    const usedText = document.getElementById('settingsStorageUsedText');
+    const bar = document.getElementById('settingsStorageBar');
+    const countText = document.getElementById('settingsImageCountText');
+    const quotaText = document.getElementById('settingsQuotaText');
+    if (!usedText && !bar) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+        if (usedText) usedText.textContent = '未登录';
+        if (countText) countText.textContent = '图片数 —';
+        if (quotaText) quotaText.textContent = '今日配额 —';
+        if (bar) bar.style.width = '0%';
+        return;
     }
-    
-    // 更新文本信息
-    const storageTexts = document.querySelectorAll('.storage-text span');
-    if (storageTexts.length >= 2) {
-        storageTexts[0].textContent = `已使用 ${storageData.percentage.toFixed(1)}%`;
-        storageTexts[1].textContent = `剩余 ${((storageData.total - storageData.used) / 1024).toFixed(2)} GB`;
-    }
-    
-    // 更新使用量显示
-    const usageDisplay = document.querySelector('.storage-info span[style*="color: var(--primary-color)"]');
-    if (usageDisplay) {
-        usageDisplay.textContent = `${storageData.used} MB / ${(storageData.total / 1024).toFixed(0)} GB`;
+
+    try {
+        const headers = { Authorization: `Bearer ${token}` };
+        const [profileRes, quotaRes] = await Promise.all([
+            fetch('/api/auth/profile', { headers }),
+            fetch('/api/auth/quota', { headers })
+        ]);
+
+        let totalImages = 0;
+        let totalSize = 0;
+        if (profileRes.ok) {
+            const p = await profileRes.json();
+            const stats = (p.user && p.user.stats) || p.stats || {};
+            totalImages = stats.totalImages || 0;
+            totalSize = stats.totalSize || 0;
+        }
+
+        let quotaLine = '今日配额 —';
+        let pct = 0;
+        if (quotaRes.ok) {
+            const q = await quotaRes.json();
+            if (q.unlimited || q.limit === 0) {
+                quotaLine = `今日已传 ${q.used || 0} 张 · 不限量`;
+                pct = Math.min(100, totalImages ? 8 : 0); // 不限量时仅作弱进度示意
+            } else {
+                const used = q.used || 0;
+                const limit = q.limit || 0;
+                const rem = q.remaining != null ? q.remaining : Math.max(0, limit - used);
+                quotaLine = `今日 ${used}/${limit}（剩余 ${rem}）`;
+                pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+            }
+        }
+
+        if (usedText) usedText.textContent = formatBytes(totalSize);
+        if (countText) countText.textContent = `图片数 ${totalImages}`;
+        if (quotaText) quotaText.textContent = quotaLine;
+        // 占用条：无总容量上限时用「相对视觉」——按图片数映射，避免假 2GB
+        if (bar) {
+            // 若有今日配额百分比更有意义，优先显示配额进度
+            if (quotaRes.ok) {
+                bar.style.width = `${pct}%`;
+            } else {
+                bar.style.width = totalImages ? `${Math.min(100, totalImages)}%` : '0%';
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        if (usedText) usedText.textContent = '加载失败';
     }
 }
 

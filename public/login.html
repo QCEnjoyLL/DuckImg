@@ -1,268 +1,142 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}}catch(e){}})();</script>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>登录/注册 - 鸭鸭图床 | 免费图床</title>
+    <title>登录/注册 - 鸭鸭图床</title>
     <meta name="description" content="登录或注册鸭鸭图床，管理您的图片">
-    <meta name="keywords" content="图床,Telegram,图片上传,免费图床,图片托管,登录,注册">
-    <meta name="theme-color" content="#4361ee">
+    <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
     <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/animations-premium.css">
-    <link rel="stylesheet" href="./css/buttons-premium.css">
-    <link rel="stylesheet" href="./css/forms-premium.css">
-    <link rel="stylesheet" href="./css/loaders-premium.css">
-    <link rel="stylesheet" href="./css/mobile-nav-enhance.css">
-    <link rel="stylesheet" href="./css/modals-premium.css">
+    <link rel="stylesheet" href="./css/tokens.css">
+    <link rel="stylesheet" href="./css/shell.css">
+    <link rel="stylesheet" href="./css/palettes.css">
+    <link rel="stylesheet" href="./css/page-auth.css">
     <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <style>
-        .auth-container {
-            max-width: 480px;
-            margin: 2rem auto;
-            padding: 2rem;
-            background-color: var(--card-bg);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            transition: all var(--transition);
-        }
-
-        body.dark-mode .auth-container {
-            background-color: var(--dark-card-bg);
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .auth-header h2 {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .auth-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .form-group label {
-            font-weight: 500;
-            color: var(--text-light);
-        }
-
-        .form-group input {
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            font-size: 1rem;
-            transition: all var(--transition-fast);
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-
-        body.dark-mode .form-group input {
-            background-color: var(--dark-bg);
-            border-color: var(--dark-border);
-            color: var(--dark-text);
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 2px rgba(var(--primary-light-rgb), 0.2);
-        }
-
-        .auth-btn {
-            margin-top: 1rem;
-            padding: 0.75rem 1.5rem;
-            background: var(--primary-gradient);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .auth-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(var(--primary-dark-rgb), 0.3);
-        }
-
-        .auth-links {
-            margin-top: 1.5rem;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .auth-error {
-            background-color: rgba(255, 0, 0, 0.1);
-            color: #e74c3c;
-            padding: 0.75rem;
-            border-radius: var(--radius-sm);
-            margin-bottom: 1rem;
-            display: none;
-        }
-
-        body.dark-mode .auth-error {
-            background-color: rgba(255, 0, 0, 0.2);
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
-<body><script data-early-theme-body>(function(){try{if(document.documentElement.classList.contains("dark-mode")){document.body.classList.add("dark-mode");}}catch(e){}})();</script>
-    <!-- 页面加载动画 -->
-    <div id="pageLoader" class="page-loader">
+<body class="auth-page"><script data-early-theme-body>(function(){try{if(document.documentElement.classList.contains("dark-mode")){document.body.classList.add("dark-mode");}}catch(e){}})();</script>
+
+    <div class="page-loader" id="pageLoader">
         <div class="loader-content">
-            <div class="loader">
-                <div class="loader-circle"></div>
-                <div class="loader-circle"></div>
-                <div class="loader-circle"></div>
-                <div class="loader-dot"></div>
-            </div>
+            <div class="loader"><div class="loader-circle"></div></div>
             <div class="loader-brand">鸭鸭图床</div>
         </div>
     </div>
 
-    <!-- 页面过渡动画 -->
-    <div id="pageTransition" class="page-transition"></div>
-
     <div class="app-container">
         <header class="header">
-            <div class="logo">
-                <img src="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png" alt="鸭鸭图床 Logo" class="logo-img">
-                <h1>鸭鸭图床</h1>
-            </div>
-            <div class="nav-container">
-                <nav class="nav" id="mainNav">
-                    <a href="/" class="nav-link animated-link">首页</a>
-                    <a href="/login.html" class="nav-link active animated-link">登录</a>
-                    <a href="https://github.com/QCEnjoyLL/DuckImg" target="_blank" class="nav-link animated-link">GitHub</a>
-                </nav>
-                <div class="header-buttons">
-                    <label class="theme-toggle" id="themeToggle" aria-label="切换暗色/亮色模式">
-                      <input id="switch" type="checkbox">
-                      <div class="theme-toggle-icon">
+            <a href="/" class="logo">
+                <img src="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png" alt="鸭鸭图床" class="logo-img">
+                <h1 data-i18n="page.home.title">鸭鸭图床</h1>
+            </a>
+            <div class="header-nav">
+                <a href="/" data-i18n="common.home">首页</a>
+                <label class="theme-toggle" id="themeToggle" aria-label="切换主题">
+                    <input id="switch" type="checkbox">
+                    <div class="theme-toggle-icon">
                         <i class="ri-sun-line"></i>
                         <i class="ri-moon-line"></i>
-                      </div>
-                    </label>
-                    <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="菜单">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- 移动端导航菜单 -->
-            <div class="mobile-menu" id="mobileMenu">
-                <div class="mobile-menu-header">
-                    <div class="logo">
-                        <img src="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png" alt="鸭鸭图床 Logo" class="logo-img">
-                        <h1>鸭鸭图床</h1>
                     </div>
-                    <button id="mobileMenuCloseBtn" class="mobile-menu-close" aria-label="关闭菜单">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                </div>
-                <nav class="mobile-nav">
-                    <a href="/" class="mobile-nav-link">首页</a>
-                    <a href="/login.html" class="mobile-nav-link active">登录</a>
-                    <a href="https://github.com/QCEnjoyLL/DuckImg" target="_blank" class="mobile-nav-link">GitHub</a>
-                </nav>
+                </label>
             </div>
         </header>
 
         <main>
-            <div id="loginError" class="auth-error"></div>
-            <div class="wrapper">
-                <div class="card-switch">
-                    <label class="switch">
-                       <input class="toggle" type="checkbox" id="authToggle">
-                       <span class="slider"></span>
-                       <span class="card-side"></span>
-                       <div class="flip-card__inner">
-                          <div class="flip-card__front">
-                             <div class="title">登录</div>
-                             <form id="loginForm" class="flip-card__form">
-                                <input type="text" placeholder="用户名 / 邮箱" name="username" id="username" class="flip-card__input premium-input" required>
-                                <input type="password" placeholder="密码" name="password" id="password" class="flip-card__input premium-input" required>
-                                <button type="submit" class="flip-card__btn premium-btn premium-btn-primary">登录</button>
-                                <a href="#" id="forgotPasswordLink" style="display:block;text-align:center;margin-top:0.8rem;font-size:0.85rem;color:var(--primary-color,#4361ee);text-decoration:none;">忘记密码？</a>
-                             </form>
-                          </div>
-                          <div class="flip-card__back">
-                             <div class="title">注册</div>
-                             <form id="registerForm" class="flip-card__form">
-                                <input type="text" placeholder="用户名" name="username" id="regUsername" class="flip-card__input premium-input" required>
-                                <input type="email" placeholder="电子邮箱" name="email" id="regEmail" class="flip-card__input premium-input" required>
-                                <input type="password" placeholder="密码" name="password" id="regPassword" class="flip-card__input premium-input" required>
-                                <button type="submit" class="flip-card__btn premium-btn premium-btn-primary">注册</button>
-                             </form>
-                          </div>
-                       </div>
-                    </label>
+            <div class="auth-shell">
+                <div class="auth-brand">
+                    <img src="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png" alt="">
+                    <h1 data-i18n="auth.welcome">欢迎回来</h1>
+                    <p data-i18n="auth.subtitle">登录后上传与管理图片</p>
+                </div>
+
+                <div class="auth-tabs" role="tablist">
+                    <button type="button" class="auth-tab active" id="tabLogin" data-panel="loginPanel" data-i18n="auth.login">登录</button>
+                    <button type="button" class="auth-tab" id="tabRegister" data-panel="registerPanel" data-i18n="auth.register">注册</button>
+                </div>
+
+                <div class="auth-card">
+                    <div id="loginError" class="auth-error"></div>
+
+                    <div class="auth-panel active" id="loginPanel">
+                        <form id="loginForm" class="auth-form">
+                            <div class="auth-field">
+                                <label for="username" data-i18n="auth.username">用户名 / 邮箱</label>
+                                <input type="text" name="username" id="username" autocomplete="username" required>
+                            </div>
+                            <div class="auth-field">
+                                <label for="password" data-i18n="auth.password">密码</label>
+                                <input type="password" name="password" id="password" autocomplete="current-password" required>
+                            </div>
+                            <button type="submit" class="auth-submit" data-i18n="auth.login">登录</button>
+                            <a href="#" id="forgotPasswordLink" class="auth-link" data-i18n="auth.forgot">忘记密码？</a>
+                        </form>
+                    </div>
+
+                    <div class="auth-panel" id="registerPanel">
+                        <form id="registerForm" class="auth-form">
+                            <div class="auth-field">
+                                <label for="regUsername" data-i18n="auth.regUsername">用户名</label>
+                                <input type="text" name="username" id="regUsername" autocomplete="username" required>
+                            </div>
+                            <div class="auth-field">
+                                <label for="regEmail" data-i18n="auth.email">电子邮箱</label>
+                                <input type="email" name="email" id="regEmail" autocomplete="email" required>
+                            </div>
+                            <div class="auth-field">
+                                <label for="regPassword" data-i18n="auth.password">密码</label>
+                                <input type="password" name="password" id="regPassword" autocomplete="new-password" required>
+                            </div>
+                            <button type="submit" class="auth-submit" data-i18n="auth.register">注册</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </main>
 
         <footer class="footer">
-            <p>&copy; 2024-2025 鸭鸭图床. 基于 <a href="https://telegram.org" target="_blank">Telegram</a> 提供技术支持</p>
+            <p>&copy; 2024-2025 鸭鸭图床 · 基于 <a href="https://telegram.org" target="_blank">Telegram</a></p>
         </footer>
     </div>
 
-    <!-- 返回顶部按钮 -->
-    <div class="back-to-top" id="backToTop">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="18 15 12 9 6 15"></polyline>
-        </svg>
-    </div>
+    <!-- hidden for auth.js compatibility (register/login toggle used to be a checkbox) -->
+    <input type="checkbox" id="authToggle" hidden>
 
-    <!-- 移动端菜单遮罩 -->
-    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
-
-    <!-- 主题管理器 -->
+    <script src="./js/shell.js"></script>
     <script src="./js/theme-manager.js"></script>
+    <script src="./js/user-prefs.js"></script>
+    <script src="./js/palettes.js"></script>
     <script src="./js/auth.js"></script>
-    <script src="./js/app.js"></script>
     <script src="./js/site-config.js"></script>
     <script>
-        // 登录/注册卡片切换初始化
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const authToggle = document.getElementById('authToggle');
+            const tabLogin = document.getElementById('tabLogin');
+            const tabRegister = document.getElementById('tabRegister');
+            const loginPanel = document.getElementById('loginPanel');
+            const registerPanel = document.getElementById('registerPanel');
 
-            // 根据URL参数决定显示登录还是注册表单
-            const urlParams = new URLSearchParams(window.location.search);
-            const action = urlParams.get('action');
-
-            if (action === 'register') {
-                authToggle.checked = true;
+            function showPanel(which) {
+                const isReg = which === 'register';
+                tabLogin.classList.toggle('active', !isReg);
+                tabRegister.classList.toggle('active', isReg);
+                loginPanel.classList.toggle('active', !isReg);
+                registerPanel.classList.toggle('active', isReg);
+                if (authToggle) authToggle.checked = isReg;
             }
 
-            // 初始化表单处理
-            initLoginForm();
-            initRegisterForm();
-            initAuth();
+            tabLogin.addEventListener('click', () => showPanel('login'));
+            tabRegister.addEventListener('click', () => showPanel('register'));
+
+            const action = new URLSearchParams(window.location.search).get('action');
+            if (action === 'register') showPanel('register');
+
+            if (typeof initLoginForm === 'function') initLoginForm();
+            if (typeof initRegisterForm === 'function') initRegisterForm();
+            if (typeof initAuth === 'function') initAuth();
         });
     </script>
 </body>

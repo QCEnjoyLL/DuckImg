@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}}catch(e){}})();</script>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>我的图片 - 鸭鸭图床 | 免费图床</title>
@@ -11,20 +11,15 @@
     <meta name="keywords" content="图床,Telegram,图片上传,免费图床,图片托管,图片管理">
     <meta name="theme-color" content="#4361ee">
     <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
-    <link rel="stylesheet" href="./css/animations-premium.css">
-    <link rel="stylesheet" href="./css/advanced-cards.css">
-    <link rel="stylesheet" href="./css/buttons-premium.css">
-    <link rel="stylesheet" href="./css/forms-premium.css">
-    <link rel="stylesheet" href="./css/images-premium.css">
-    <link rel="stylesheet" href="./css/loaders-premium.css">
-    <link rel="stylesheet" href="./css/modals-premium.css">
-    <link rel="stylesheet" href="./css/mobile-nav-enhance.css">
+    <link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/dashboard-enhanced.css">
     <link rel="stylesheet" href="./css/menu-system.css">
     <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="stylesheet" href="./css/shell.css">
+    <link rel="stylesheet" href="./css/palettes.css">
+    <link rel="stylesheet" href="./css/page-common.css">
     <link rel="stylesheet" href="./css/share.css">
     <link rel="stylesheet" href="./css/menu-stats.css">
-    <link rel="stylesheet" href="./css/ultimate-beauty.css">
     <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,7 +77,61 @@
 
         .dashboard-actions {
             display: flex;
-            gap: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        /* paired action pills — primary + secondary, same size */
+        .dashboard-actions .upload-btn,
+        .dashboard-actions .stats-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 40px;
+            padding: 0 16px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            box-sizing: border-box;
+            border: 1px solid transparent;
+            transition: opacity 0.15s ease, transform 100ms ease-out, background 0.15s ease;
+            line-height: 1;
+        }
+
+        .dashboard-actions .upload-btn {
+            background: var(--primary-color);
+            color: #fff !important;
+            border-color: transparent;
+        }
+
+        .dashboard-actions .upload-btn:hover {
+            opacity: 0.92;
+        }
+
+        .dashboard-actions .stats-toggle-btn {
+            background: var(--fill-tertiary);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+
+        body.dark-mode .dashboard-actions .stats-toggle-btn {
+            background: var(--fill-secondary);
+            color: var(--dark-text);
+            border-color: var(--dark-border);
+        }
+
+        .dashboard-actions .stats-toggle-btn:hover {
+            background: var(--fill-secondary);
+        }
+
+        .dashboard-actions .upload-btn:active,
+        .dashboard-actions .stats-toggle-btn:active {
+            transform: scale(0.97);
         }
 
         .dashboard-stats {
@@ -244,27 +293,34 @@
 
         .filter-options {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
             flex-wrap: wrap;
-            gap: 1rem;
+            align-items: center;
+            gap: 0.6rem 0.75rem;
+            margin-bottom: 1.5rem;
         }
 
         .filter-group {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        /* keep favorite + drag + view on one chip row */
+        .filter-group.favorite-filter,
+        .filter-group.drag-toggle {
+            margin-left: 0;
+        }
+
+        .filter-group.view-mode-toggle {
+            margin-left: auto;
         }
 
         .filter-label {
             font-size: 0.9rem;
             color: var(--text-light);
-        }
-
-        /* 收藏过滤器样式 */
-        .favorite-filter {
-            margin-left: auto;
+            white-space: nowrap;
         }
 
         .favorite-toggle {
@@ -392,42 +448,81 @@
             box-shadow: var(--shadow-lg);
         }
 
-        .image-card.draggable {
+        .image-card.draggable,
+        .image-card-enhanced.draggable {
             cursor: grab;
         }
 
-        .image-card.draggable:active {
+        .image-card.draggable:active,
+        .image-card-enhanced.draggable:active {
             cursor: grabbing;
         }
 
-        .image-card.draggable .drag-handle {
-            display: flex;
+        .image-card.draggable .drag-handle,
+        .image-card-enhanced.draggable .drag-handle {
+            display: flex !important;
         }
 
         .drag-handle {
             position: absolute;
             top: 10px;
             left: 10px;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.55);
             color: white;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 2;
+            z-index: 5;
             cursor: grab;
+            touch-action: none;
+            pointer-events: auto;
         }
 
         .drag-handle:active {
             cursor: grabbing;
         }
 
+        /* 开启拖拽时卡片描边提示 */
+        .image-card.draggable,
+        .image-card-enhanced.draggable {
+            outline: 1px dashed color-mix(in srgb, var(--primary-color) 45%, transparent);
+            outline-offset: -1px;
+        }
+
+        /* 时间线：操作按钮保持横排，不压成竖条 */
+        .image-grid.timeline-view .image-actions,
+        .timeline-images .image-actions {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 0.6rem 0.75rem;
+        }
+
+        .image-grid.timeline-view .image-btn,
+        .timeline-images .image-btn {
+            flex: 1 1 auto;
+            min-width: 0;
+            justify-content: center;
+            white-space: nowrap;
+            font-size: 0.78rem;
+            padding: 0.4rem 0.55rem;
+        }
+
+        .timeline-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
         .view-mode-toggle {
             display: flex;
             align-items: center;
             margin-left: auto;
+            gap: 0.35rem;
         }
 
         .view-mode-btn {
@@ -499,21 +594,41 @@
 
         /* 列表视图样式 */
         .image-grid.list-view {
-            grid-template-columns: 1fr;
-            gap: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
         }
 
-        .image-grid.list-view .image-card {
+        .image-grid.list-view .image-card,
+        .image-grid.list-view .image-card-enhanced {
             display: grid;
-            grid-template-columns: 120px 1fr auto;
-            grid-template-rows: 1fr;
-            height: 120px;
+            grid-template-columns: 120px minmax(0, 1fr) auto;
+            grid-template-rows: auto;
+            height: auto;
+            min-height: 0;
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
-        .image-grid.list-view .image-preview {
-            height: 100%;
+        .image-grid.list-view .image-preview,
+        .image-grid.list-view .image-preview-enhanced {
+            height: 120px;
             width: 120px;
-            grid-row: 1;
+            max-width: 120px;
+            min-width: 0;
+            grid-row: 1 / span 1;
+            grid-column: 1;
+            flex-shrink: 0;
+        }
+
+        .image-grid.list-view .image-preview img,
+        .image-grid.list-view .image-preview-enhanced img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         .image-grid.list-view .image-info {
@@ -521,6 +636,16 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            min-width: 0;
+            overflow: hidden;
+            grid-column: 2;
+        }
+
+        .image-grid.list-view .image-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
 
         .image-grid.list-view .image-actions {
@@ -531,15 +656,79 @@
             border-left: 1px solid var(--border-color);
             background: none;
             justify-content: center;
+            gap: 0.35rem;
+            min-width: 0;
+            grid-column: 3;
         }
 
         body.dark-mode .image-grid.list-view .image-actions {
-            border-color: var(--dark-border);
+            border-color: var(--border-color);
         }
 
         .image-grid.list-view .image-btn {
-            padding: 0.4rem;
-            font-size: 0.8rem;
+            padding: 0.4rem 0.55rem;
+            font-size: 0.78rem;
+            width: 100%;
+            white-space: nowrap;
+        }
+
+        /* 手机列表：缩略图固定比例，信息不被挤没 */
+        @media (max-width: 768px) {
+            .image-grid.list-view .image-card,
+            .image-grid.list-view .image-card-enhanced {
+                grid-template-columns: 88px minmax(0, 1fr);
+                grid-template-rows: auto auto;
+                height: auto;
+            }
+
+            .image-grid.list-view .image-preview,
+            .image-grid.list-view .image-preview-enhanced {
+                width: 88px;
+                max-width: 88px;
+                height: 88px;
+                grid-row: 1 / span 2;
+                grid-column: 1;
+            }
+
+            .image-grid.list-view .image-info {
+                grid-column: 2;
+                grid-row: 1;
+                padding: 0.55rem 0.65rem 0.25rem;
+            }
+
+            .image-grid.list-view .image-actions {
+                grid-column: 2;
+                grid-row: 2;
+                flex-direction: row;
+                flex-wrap: wrap;
+                border-left: none;
+                border-top: none;
+                padding: 0 0.55rem 0.55rem;
+                justify-content: flex-start;
+            }
+
+            .image-grid.list-view .image-btn {
+                flex: 1 1 auto;
+                width: auto;
+                min-width: 0;
+            }
+
+            .image-grid.list-view .image-meta {
+                font-size: 0.75rem;
+            }
+
+            .image-grid.list-view .image-tags {
+                display: none; /* 窄屏省空间，避免把行撑爆 */
+            }
+        }
+
+        @media (max-width: 380px) {
+            .image-grid.list-view .image-preview,
+            .image-grid.list-view .image-preview-enhanced {
+                width: 72px;
+                max-width: 72px;
+                height: 72px;
+            }
         }
 
         /* 时间线视图样式 */
@@ -719,8 +908,6 @@
             height: 100%;
             object-fit: cover;
             transition: transform var(--transition);
-            /* 应用高级图像类 */
-            class: premium-img premium-img-cover;
         }
 
         .image-card:hover .image-preview img {
@@ -860,62 +1047,73 @@
 
         .image-actions {
             display: flex;
-            padding: 0.75rem;
-            gap: 0.5rem;
+            padding: 0.65rem 0.75rem;
+            gap: 0.4rem;
             border-top: 1px solid var(--border-color);
-            background-color: rgba(var(--primary-light-rgb), 0.03);
+            background: transparent;
         }
 
         body.dark-mode .image-actions {
-            border-color: var(--dark-border);
-            background-color: rgba(0, 0, 0, 0.2);
+            border-color: var(--border-color);
+            background: transparent;
         }
 
         .image-btn {
             flex: 1;
-            padding: 0.6rem 0.5rem;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-size: 0.85rem;
+            min-height: 34px;
+            padding: 0.4rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            font-size: 0.8rem;
             font-weight: 500;
+            font-family: inherit;
             cursor: pointer;
-            transition: all var(--transition-fast);
-            display: flex;
+            transition: background 0.15s ease, transform 80ms ease-out, opacity 0.15s ease, border-color 0.15s ease;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.25rem;
-            /* 应用高级按钮类 */
-            class: premium-btn premium-btn-sm;
+            gap: 0.3rem;
+            background: var(--fill-tertiary);
+            color: var(--text-color);
+            box-sizing: border-box;
         }
 
         .copy-btn {
-            background-color: var(--primary-light);
-            color: white;
-            /* 应用高级按钮类 */
-            class: premium-btn premium-btn-primary premium-btn-sm;
+            background: var(--fill-tertiary);
+            color: var(--text-color);
+            border-color: var(--border-color);
         }
 
         .edit-btn {
-            background-color: #4cc9f0;
-            color: white;
-            /* 应用高级按钮类 */
-            class: premium-btn premium-btn-accent premium-btn-sm;
+            background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+            color: var(--primary-color);
+            border-color: color-mix(in srgb, var(--primary-color) 28%, transparent);
         }
 
         .delete-btn {
-            background-color: #f72585;
-            color: white;
-            /* 应用高级按钮类 */
-            class: premium-btn premium-btn-error premium-btn-sm;
+            background: color-mix(in srgb, #ff3b30 10%, transparent);
+            color: #ff3b30;
+            border-color: color-mix(in srgb, #ff3b30 28%, transparent);
         }
 
         .image-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+            opacity: 0.92;
         }
 
         .image-btn:active {
-            transform: translateY(0);
+            transform: scale(0.97);
+        }
+
+        .copy-btn:hover {
+            background: var(--fill-secondary);
+        }
+
+        .edit-btn:hover {
+            background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+        }
+
+        .delete-btn:hover {
+            background: color-mix(in srgb, #ff3b30 16%, transparent);
         }
 
         .pagination {
@@ -929,43 +1127,43 @@
         .page-btn {
             padding: 0.6rem 1rem;
             border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
+            border-radius: 999px;
             background-color: var(--card-bg);
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: background 0.15s ease, transform 80ms ease-out, border-color 0.15s ease;
             min-width: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 500;
-            /* 应用高级按钮类 */
-            class: premium-btn premium-btn-outline-primary premium-btn-sm;
+            color: var(--text-color);
+            font-family: inherit;
         }
 
         body.dark-mode .page-btn {
-            background-color: var(--dark-card-bg);
-            border-color: var(--dark-border);
-            color: var(--dark-text);
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
         }
 
         .page-btn.active {
-            background: var(--primary-gradient);
+            background: var(--primary-color);
             color: white;
             border-color: transparent;
-            box-shadow: 0 3px 8px rgba(var(--primary-dark-rgb), 0.3);
-            /* 应用高级按钮类 */
-            class: premium-btn premium-btn-primary premium-btn-sm;
+            box-shadow: none;
         }
 
         .page-btn:hover:not(.active):not(.disabled) {
-            border-color: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+            background: var(--fill-tertiary);
+            transform: none;
+            box-shadow: none;
         }
 
         .page-btn.disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
         }
 
         .empty-state {
@@ -1011,26 +1209,28 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: var(--primary-gradient);
+            padding: 0 1.1rem;
+            min-height: 40px;
+            background: var(--primary-color);
             color: white;
             border: none;
-            border-radius: var(--radius-sm);
-            font-size: 1rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
             font-weight: 500;
+            font-family: inherit;
             cursor: pointer;
-            /* 应用高级按钮类 */
-            class: premium-btn premium-btn-primary;
+            box-sizing: border-box;
         }
 
         .upload-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(var(--primary-dark-rgb), 0.3);
+            opacity: 0.92;
+            transform: none;
+            box-shadow: none;
         }
 
         .upload-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(var(--primary-dark-rgb), 0.2);
+            transform: scale(0.97);
+            box-shadow: none;
         }
 
         /* 编辑模态框 */
@@ -1127,7 +1327,7 @@
 
         .edit-image-preview {
             flex: 1;
-            min-width: 250px;
+            min-width: 0;
             max-width: 300px;
             border-radius: var(--radius);
             overflow: hidden;
@@ -1150,7 +1350,7 @@
 
         .edit-image-details {
             flex: 2;
-            min-width: 300px;
+            min-width: 0;
         }
 
         .form-group {
@@ -1572,8 +1772,47 @@
             }
 
             .filter-options {
-                flex-direction: column;
-                align-items: flex-start;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .filter-group {
+                width: auto;
+            }
+
+            /* sort row full width */
+            .filter-group:first-child {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .filter-group:first-child .sort-select {
+                flex: 1;
+                min-width: 0;
+            }
+
+            /* tags full width when present */
+            #tagFilters {
+                width: 100%;
+            }
+
+            .filter-group.favorite-filter,
+            .filter-group.drag-toggle,
+            .filter-group.view-mode-toggle {
+                margin-left: 0 !important;
+                flex: 0 0 auto;
+            }
+
+            .filter-group.view-mode-toggle {
+                margin-left: auto !important;
+            }
+
+            .favorite-toggle,
+            .drag-mode-toggle {
+                min-height: 36px;
+                padding: 0.4rem 0.65rem;
             }
 
             .image-grid {
@@ -1590,13 +1829,23 @@
             }
 
             .image-actions {
-                flex-direction: column;
+                flex-direction: row !important;
+                flex-wrap: wrap;
+                gap: 6px;
                 padding: 0.5rem;
             }
 
             .image-btn {
-                padding: 0.5rem;
-                font-size: 0.8rem;
+                flex: 1 1 auto;
+                min-width: calc(33% - 6px);
+                padding: 0.45rem 0.4rem;
+                font-size: 0.78rem;
+                justify-content: center;
+            }
+
+            .image-grid.timeline-view .image-actions,
+            .timeline-images .image-actions {
+                flex-direction: row !important;
             }
         }
 
@@ -1822,15 +2071,21 @@
         <main>
             <div class="dashboard-container fade-in-element">
                 <div class="dashboard-header">
-                    <h2 class="dashboard-title">我的图片</h2>
+                    <div>
+                        <h2 class="dashboard-title">
+                            <i class="ri-image-2-line"></i>
+                            <span data-i18n="page.dashboard.title">我的图片</span>
+                        </h2>
+                        <p data-i18n="page.dashboard.sub">管理、搜索与分享您上传的图片</p>
+                    </div>
                     <div class="dashboard-actions">
-                        <a href="/" class="upload-btn premium-btn premium-btn-primary premium-btn-icon-left btn-beauty-accent">
+                        <a href="/" class="upload-btn">
                             <i class="ri-upload-cloud-2-line"></i>
-                            上传新图片
+                            <span data-i18n="common.uploadNew">上传新图片</span>
                         </a>
-                        <button id="statsToggleBtn" class="stats-toggle-btn premium-btn premium-btn-outline-primary premium-btn-icon-left btn-beauty-secondary">
+                        <button id="statsToggleBtn" class="stats-toggle-btn">
                             <i class="ri-bar-chart-2-line"></i>
-                            统计信息
+                            <span data-i18n="common.stats">统计信息</span>
                         </button>
                     </div>
                 </div>
@@ -1842,8 +2097,8 @@
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
                     </div>
-                    <input type="text" id="searchInput" class="search-input input-beauty" placeholder="搜索图片名称或标签...">
-                    <button id="searchBtn" class="search-btn btn-beauty">
+                    <input type="text" id="searchInput" class="search-input" placeholder="搜索图片名称或标签…" data-i18n-placeholder="gallery.search">
+                    <button id="searchBtn" class="search-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
@@ -1852,9 +2107,9 @@
 
                 <div class="filter-options">
                     <div class="filter-group">
-                        <span class="filter-label">排序方式:</span>
+                        <span class="filter-label" data-i18n="gallery.sort">排序方式:</span>
                         <select id="sortSelect" class="sort-select">
-                            <option value="newest">最新上传</option>
+                            <option value="newest" selected>最新上传</option>
                             <option value="oldest">最早上传</option>
                             <option value="name">文件名</option>
                             <option value="size">文件大小</option>
@@ -1865,18 +2120,18 @@
                         <!-- 标签过滤器将通过JavaScript动态生成 -->
                     </div>
                     <div class="filter-group favorite-filter">
-                        <label class="favorite-toggle" title="只显示收藏">
+                        <label class="favorite-toggle" title="只显示收藏" data-i18n-title="gallery.favoritesOnly.title">
                             <input type="checkbox" id="favoriteToggle">
                             <span class="favorite-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                                 </svg>
                             </span>
-                            <span class="favorite-label">收藏</span>
+                            <span class="favorite-label" data-i18n="gallery.favoritesOnly">收藏</span>
                         </label>
                     </div>
                     <div class="filter-group drag-toggle">
-                        <label class="drag-mode-toggle" title="启用拖拽排序">
+                        <label class="drag-mode-toggle" title="启用拖拽排序" data-i18n-title="gallery.drag.title">
                             <input type="checkbox" id="dragToggle">
                             <span class="drag-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1885,12 +2140,12 @@
                                     <line x1="3" y1="18" x2="21" y2="18"></line>
                                 </svg>
                             </span>
-                            <span class="drag-label">拖拽排序</span>
+                            <span class="drag-label" data-i18n="gallery.drag">拖拽排序</span>
                         </label>
                     </div>
                     <div class="filter-group view-mode-toggle">
-                        <span class="filter-label">视图:</span>
-                        <button id="gridViewBtn" class="view-mode-btn active" title="网格视图">
+                        <span class="filter-label" data-i18n="gallery.view">视图:</span>
+                        <button id="gridViewBtn" class="view-mode-btn active" title="网格视图" data-i18n-title="gallery.view.grid">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="7" height="7"></rect>
                                 <rect x="14" y="3" width="7" height="7"></rect>
@@ -1898,7 +2153,7 @@
                                 <rect x="3" y="14" width="7" height="7"></rect>
                             </svg>
                         </button>
-                        <button id="listViewBtn" class="view-mode-btn" title="列表视图">
+                        <button id="listViewBtn" class="view-mode-btn" title="列表视图" data-i18n-title="gallery.view.list">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="8" y1="6" x2="21" y2="6"></line>
                                 <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -1908,7 +2163,7 @@
                                 <line x1="3" y1="18" x2="3.01" y2="18"></line>
                             </svg>
                         </button>
-                        <button id="timelineViewBtn" class="view-mode-btn" title="时间线视图">
+                        <button id="timelineViewBtn" class="view-mode-btn" title="时间线视图" data-i18n-title="gallery.view.timeline">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
@@ -1929,15 +2184,15 @@
                             <polyline points="21 15 16 10 5 21"></polyline>
                         </svg>
                     </div>
-                    <h3>还没有上传图片</h3>
-                    <p>上传您的第一张图片，开始使用鸭鸭图床图床服务。您可以随时管理、分享和删除您的图片。</p>
-                    <a href="/" class="upload-btn premium-btn premium-btn-primary premium-btn-icon-left">
+                    <h3 data-i18n="gallery.empty.title">还没有上传图片</h3>
+                    <p data-i18n="gallery.empty.text">上传您的第一张图片，开始使用鸭鸭图床。您可以随时管理、分享和删除图片。</p>
+                    <a href="/" class="upload-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="17 8 12 3 7 8"></polyline>
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
-                        上传图片
+                        <span data-i18n="common.upload">上传图片</span>
                     </a>
                 </div>
 
@@ -1965,7 +2220,7 @@
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">编辑图片信息</h3>
+                <h3 class="modal-title" data-i18n="gallery.edit.title">编辑图片信息</h3>
                 <button class="modal-close" id="closeModal">&times;</button>
             </div>
             <div class="modal-body">
@@ -1981,7 +2236,7 @@
                             </svg>
                             文件名
                         </label>
-                        <input type="text" id="editFileName" class="form-control input-beauty" placeholder="输入文件名...">
+                        <input type="text" id="editFileName" class="form-control" placeholder="输入文件名...">
                     </div>
                     <div class="form-group">
                         <label for="editTags">
@@ -1992,7 +2247,7 @@
                             标签
                         </label>
                         <div class="tags-input-container">
-                            <div id="tagsInput" class="tags-input input-beauty">
+                            <div id="tagsInput" class="tags-input">
                                 <input type="text" id="tagInput" placeholder="输入标签后按回车...">
                             </div>
                             <div class="tags-suggestions" id="tagsSuggestions">
@@ -2044,14 +2299,14 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="cancelEdit" class="modal-btn modal-btn-secondary premium-btn premium-btn-outline-primary btn-beauty">取消</button>
-                <button id="saveEdit" class="modal-btn modal-btn-primary premium-btn premium-btn-primary premium-btn-icon-left btn-beauty-accent">
+                <button id="cancelEdit" class="modal-btn modal-btn-secondary" data-i18n="common.cancel">取消</button>
+                <button id="saveEdit" class="modal-btn modal-btn-primary">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                         <polyline points="17 21 17 13 7 13 7 21"></polyline>
                         <polyline points="7 3 7 8 15 8"></polyline>
                     </svg>
-                    保存
+                    <span data-i18n="common.save">保存</span>
                 </button>
             </div>
         </div>
@@ -2059,35 +2314,35 @@
 
     <!-- 批量操作工具栏 -->
     <div id="batchToolbar" class="batch-toolbar">
-        <div class="batch-info">已选择 <span id="selectedCount">0</span> 张图片</div>
+        <div class="batch-info"><span data-i18n="common.selected">已选择</span> <span id="selectedCount">0</span> <span data-i18n="common.images">张图片</span></div>
         <div class="batch-actions">
-            <button id="batchCopy" class="batch-btn premium-btn premium-btn-outline-primary premium-btn-sm premium-btn-icon-left btn-beauty" title="复制所有选中图片链接">
+            <button id="batchCopy" class="batch-btn" title="复制所有选中图片链接">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
-                复制链接
+                <span data-i18n="common.copyLink">复制链接</span>
             </button>
-            <button id="batchAddTag" class="batch-btn premium-btn premium-btn-outline-accent premium-btn-sm premium-btn-icon-left btn-beauty-accent" title="为所有选中图片添加标签">
+            <button id="batchAddTag" class="batch-btn" title="为所有选中图片添加标签">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
                     <line x1="7" y1="7" x2="7.01" y2="7"></line>
                 </svg>
-                添加标签
+                <span data-i18n="gallery.edit.tags">标签</span>
             </button>
-            <button id="batchDelete" class="batch-btn batch-btn-danger premium-btn premium-btn-error premium-btn-sm premium-btn-icon-left btn-beauty-secondary" title="删除所有选中图片">
+            <button id="batchDelete" class="batch-btn batch-btn-danger" title="删除所有选中图片">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
-                删除
+                <span data-i18n="common.delete">删除</span>
             </button>
-            <button id="batchCancel" class="batch-btn premium-btn premium-btn-outline-secondary premium-btn-sm premium-btn-icon-left btn-beauty" title="取消选择">
+            <button id="batchCancel" class="batch-btn" title="取消选择">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
-                取消
+                <span data-i18n="common.cancel">取消</span>
             </button>
         </div>
     </div>
@@ -2102,10 +2357,11 @@
     <!-- 移动端菜单遮罩 -->
     <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
 
-    <!-- 浮动图表面板 -->
+    <!-- 统计面板遮罩 + 面板（相对主内容区居中，见 menu-stats.css） -->
+    <div class="charts-panel-scrim" id="chartsPanelScrim"></div>
     <div class="floating-charts-panel" id="chartsPanel">
         <div class="charts-panel-header">
-            <h3>数据统计</h3>
+            <h3 data-i18n="gallery.stats.title">数据统计</h3>
             <button class="charts-panel-close" id="closeChartsBtn">
                 <i class="ri-close-line"></i>
             </button>
@@ -2118,21 +2374,21 @@
                         <i class="ri-image-line"></i>
                     </div>
                     <div class="stat-value-enhanced" id="totalImages">0</div>
-                    <div class="stat-label-enhanced">总图片数</div>
+                    <div class="stat-label-enhanced" data-i18n="gallery.stats.total">总图片数</div>
                 </div>
                 <div class="stat-card-enhanced">
                     <div class="stat-icon">
                         <i class="ri-hard-drive-line"></i>
                     </div>
                     <div class="stat-value-enhanced" id="totalSize">0 MB</div>
-                    <div class="stat-label-enhanced">总存储空间</div>
+                    <div class="stat-label-enhanced" data-i18n="gallery.stats.storage">总存储空间</div>
                 </div>
                 <div class="stat-card-enhanced">
                     <div class="stat-icon">
                         <i class="ri-calendar-line"></i>
                     </div>
                     <div class="stat-value-enhanced" id="recentUploads">0</div>
-                    <div class="stat-label-enhanced">最近上传(7天)</div>
+                    <div class="stat-label-enhanced" data-i18n="gallery.stats.recent">最近上传(7天)</div>
                 </div>
                 <div class="stat-card-enhanced">
                     <div class="stat-icon">
@@ -2150,7 +2406,7 @@
                     <div class="chart-icon">
                         <i class="ri-line-chart-line"></i>
                     </div>
-                    <h3 class="chart-title-enhanced">上传趋势</h3>
+                    <h3 class="chart-title-enhanced" data-i18n="gallery.stats.trend">上传趋势</h3>
                 </div>
                 <canvas id="uploadTrendChart"></canvas>
             </div>
@@ -2167,21 +2423,20 @@
         </div>
     </div>
 
-    <!-- 脚本文件 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <!-- 主题管理器 -->
-    <script src="./js/theme-manager.js"></script>
-    <script src="./js/common.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+    <!-- 脚本：Chart / Sortable 各保留一版，避免双 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+    <script src="./js/shell.js"></script>
+    <script src="./js/theme-manager.js"></script>
+    <script src="./js/user-prefs.js"></script>
+    <script src="./js/palettes.js"></script>
+    <script src="./js/common.js"></script>
     <script src="./js/app.js"></script>
     <script src="./js/auth.js"></script>
     <script src="./js/dashboard.js"></script>
     <script src="./js/menu-system.js"></script>
     <script src="./js/share.js"></script>
-    <script src="./js/beauty-effects.js"></script>
     <script src="./js/announcement.js"></script>
     <script src="./js/site-config.js"></script>
 </body>

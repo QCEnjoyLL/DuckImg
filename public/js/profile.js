@@ -212,22 +212,28 @@ function updateUserProfileDisplay(user) {
 
     // 更新头像显示
     const avatarPreview = document.getElementById('avatarPreview');
-    if (avatarPreview && user.avatarUrl) {
-        avatarPreview.innerHTML = '';
-        const img = document.createElement('img');
-        img.src = user.avatarUrl;
-        img.alt = '用户头像';
-        img.onerror = function() {
-            this.style.display = 'none';
-            avatarPreview.innerHTML = '<i class="ri-user-3-line"></i><div class="avatar-overlay">更换头像</div>';
-        };
-        avatarPreview.appendChild(img);
-        
-        // 重新添加overlay
-        const overlay = document.createElement('div');
-        overlay.className = 'avatar-overlay';
-        overlay.textContent = '更换头像';
-        avatarPreview.appendChild(overlay);
+    if (avatarPreview) {
+        if (user.avatarUrl) {
+            avatarPreview.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = user.avatarUrl;
+            img.alt = '用户头像';
+            img.onerror = function () {
+                avatarPreview.innerHTML = '<i class="ri-user-3-line"></i><div class="avatar-overlay">上传图片</div>';
+            };
+            avatarPreview.appendChild(img);
+            const overlay = document.createElement('div');
+            overlay.className = 'avatar-overlay';
+            overlay.textContent = '上传图片';
+            avatarPreview.appendChild(overlay);
+        } else {
+            avatarPreview.innerHTML = '<i class="ri-user-3-line"></i><div class="avatar-overlay">上传图片</div>';
+        }
+    }
+
+    const avatarUrlInput = document.getElementById('avatarUrlInput');
+    if (avatarUrlInput && user.avatarUrl) {
+        avatarUrlInput.value = user.avatarUrl;
     }
 
     // 更新所有页面的用户名显示
@@ -235,76 +241,98 @@ function updateUserProfileDisplay(user) {
     if (userDisplayName) {
         userDisplayName.textContent = user.username || '用户';
     }
+
+    if (typeof updateUserAvatar === 'function') updateUserAvatar();
 }
 
-// 初始化头像上传功能
+// 初始化头像：上传文件 + 自定义链接
 function initAvatarUpload() {
     const avatarPreview = document.getElementById('avatarPreview');
-    
+    const fileBtn = document.getElementById('avatarFileBtn');
+    const urlInput = document.getElementById('avatarUrlInput');
+    const urlSaveBtn = document.getElementById('avatarUrlSaveBtn');
     if (!avatarPreview) return;
 
-    // 创建隐藏的文件输入元素
-    const avatarInput = document.createElement('input');
-    avatarInput.type = 'file';
-    avatarInput.accept = 'image/*';
-    avatarInput.style.display = 'none';
-    avatarInput.id = 'avatarFileInput';
-    document.body.appendChild(avatarInput);
-    
-    // 头像点击事件
-    avatarPreview.addEventListener('click', () => {
-        avatarInput.click();
-    });
-    
-    // 文件选择事件
+    let avatarInput = document.getElementById('avatarFileInput');
+    if (!avatarInput) {
+        avatarInput = document.createElement('input');
+        avatarInput.type = 'file';
+        avatarInput.accept = 'image/*';
+        avatarInput.style.display = 'none';
+        avatarInput.id = 'avatarFileInput';
+        document.body.appendChild(avatarInput);
+    }
+
+    const pickFile = () => avatarInput.click();
+    avatarPreview.addEventListener('click', pickFile);
+    if (fileBtn) fileBtn.addEventListener('click', pickFile);
+
     avatarInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
-        // 验证文件类型
+
         if (!file.type.startsWith('image/')) {
             showNotification('请选择图片文件', 'error');
             return;
         }
-        
-        // 验证文件大小（限制为5MB）
         if (file.size > 5 * 1024 * 1024) {
             showNotification('图片文件大小不能超过5MB', 'error');
             return;
         }
-        
+
         try {
-            // 显示加载状态
             avatarPreview.innerHTML = '<i class="ri-loader-4-line rotating"></i>';
-            
-            await uploadAvatar(file);
-            
-            // 显示成功消息
+            if (typeof uploadAvatar === 'function') {
+                await uploadAvatar(file);
+            } else {
+                throw new Error('上传功能未加载');
+            }
             showNotification('头像更新成功', 'success');
-            
-            // 重新加载用户资料
             loadUserProfile();
-            
         } catch (error) {
             console.error('头像上传错误:', error);
             showNotification('头像更新失败: ' + error.message, 'error');
-            
-            // 恢复头像显示
             loadUserProfile();
         }
-        
-        // 清空文件输入
         avatarInput.value = '';
     });
+
+    if (urlSaveBtn && urlInput) {
+        urlSaveBtn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                showNotification('请输入图片链接', 'error');
+                return;
+            }
+            try {
+                avatarPreview.innerHTML = '<i class="ri-loader-4-line rotating"></i>';
+                if (typeof setAvatarUrl === 'function') {
+                    await setAvatarUrl(url);
+                } else {
+                    throw new Error('保存功能未加载');
+                }
+                showNotification('头像链接已保存', 'success');
+                loadUserProfile();
+            } catch (error) {
+                console.error('头像链接保存错误:', error);
+                showNotification(error.message || '保存失败', 'error');
+                loadUserProfile();
+            }
+        });
+    }
 }
 
-// 上传头像
+// 上传头像：优先用 auth.js 的 uploadAvatar / setAvatarUrl
 async function uploadAvatar(file) {
+    // if auth.js already defined a better version that uses setAvatarUrl, prefer it
+    // (this local fallback kept when auth not loaded)
+    if (window.__authUploadAvatar) {
+        return window.__authUploadAvatar(file);
+    }
     try {
-        // 首先上传文件到图床
         const formData = new FormData();
         formData.append('file', file);
-        
+
         const uploadResponse = await fetch('/upload', {
             method: 'POST',
             headers: {
@@ -312,21 +340,24 @@ async function uploadAvatar(file) {
             },
             body: formData
         });
-        
+
         if (!uploadResponse.ok) {
             throw new Error('图片上传失败');
         }
-        
+
         const uploadResult = await uploadResponse.json();
-        
+
         if (!uploadResult || uploadResult.length === 0 || !uploadResult[0].src) {
             throw new Error('上传结果无效');
         }
-        
-        // 获取上传后的图片链接
-        const avatarUrl = window.location.origin + uploadResult[0].src;
-        
-        // 更新用户头像
+
+        const src = uploadResult[0].src;
+        const avatarUrl = src.startsWith('http') ? src : (window.location.origin + src);
+
+        if (typeof setAvatarUrl === 'function') {
+            return await setAvatarUrl(avatarUrl);
+        }
+
         const updateResponse = await fetch('/api/auth/avatar', {
             method: 'PUT',
             headers: {
@@ -335,20 +366,15 @@ async function uploadAvatar(file) {
             },
             body: JSON.stringify({ avatarUrl })
         });
-        
+
         if (!updateResponse.ok) {
             const errorData = await updateResponse.json();
             throw new Error(errorData.error || '头像更新失败');
         }
-        
+
         const result = await updateResponse.json();
-        
-        // 更新本地存储的用户信息
         localStorage.setItem('user', JSON.stringify(result.user));
-        
-        // 更新全局头像显示
-        updateUserAvatar();
-        
+        if (typeof updateUserAvatar === 'function') updateUserAvatar();
         return result;
     } catch (error) {
         console.error('上传头像错误:', error);
@@ -406,14 +432,7 @@ function initProfileButtons() {
         });
     }
 
-    // 主题切换菜单项
-    const themeMenuItem = document.getElementById('themeMenuItem');
-    if (themeMenuItem) {
-        themeMenuItem.addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleTheme();
-        });
-    }
+    // 侧栏「切换配色」由 palettes.js 负责，不再绑定 light/dark
 
     // 退出登录按钮（下拉菜单）
     const logoutBtn = document.getElementById('logoutBtn');

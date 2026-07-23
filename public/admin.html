@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}}catch(e){}})();</script>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>管理后台 - 鸭鸭图床</title>
     <meta name="theme-color" content="#4361ee">
     <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
-    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/menu-system.css">
     <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="stylesheet" href="./css/shell.css">
+    <link rel="stylesheet" href="./css/palettes.css">
+    <link rel="stylesheet" href="./css/page-common.css">
     <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
@@ -29,12 +32,46 @@
         .admin-section { background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
         body.dark-mode .admin-section { background: var(--dark-card-bg); }
         .admin-section h3 { margin: 0 0 1rem; font-size: 1.15rem; color: var(--primary-color); display:flex; align-items:center; gap:8px; }
-        table.admin-table { width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 0.9rem; }
-        .admin-table th, .admin-table td { padding: 0.7rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; vertical-align: middle; }
+        /* fixed columns so sort changes don't reflow widths */
+        .admin-table-wrap { overflow-x: auto; width: 100%; }
+        table.admin-table {
+          width: 1180px;
+          min-width: 1180px;
+          table-layout: fixed;
+          border-collapse: collapse;
+          font-size: 0.9rem;
+        }
+        .admin-table th, .admin-table td {
+          padding: 0.7rem 0.6rem;
+          text-align: left;
+          border-bottom: 1px solid var(--border-color);
+          white-space: nowrap;
+          vertical-align: middle;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
         .admin-table th { color: var(--text-light); font-weight: 600; }
-        .admin-table td.col-email { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+        .admin-table col.c-check { width: 40px; }
+        .admin-table col.c-name { width: 110px; }
+        .admin-table col.c-email { width: 220px; }
+        .admin-table col.c-date { width: 110px; }
+        .admin-table col.c-status { width: 90px; }
+        .admin-table col.c-images { width: 80px; }
+        .admin-table col.c-limit { width: 80px; }
+        .admin-table col.c-actions { width: 340px; }
+        .admin-table td.col-email { max-width: none; }
+        .admin-table td.col-actions { overflow: visible; }
+        .admin-table .row-actions {
+          display: inline-flex;
+          flex-wrap: nowrap;
+          gap: 6px;
+          align-items: center;
+        }
+        .admin-table .row-actions .admin-btn {
+          flex: 0 0 auto;
+          white-space: nowrap;
+        }
         .admin-table tbody tr:hover { background: rgba(67,97,238,0.05); }
-        .admin-table-wrap { overflow-x: auto; }
         .badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:0.75rem; white-space:nowrap; line-height:1.4; }
         .badge-active { background:#dcfce7; color:#166534; }
         .badge-banned { background:#fee2e2; color:#991b1b; }
@@ -85,9 +122,32 @@
         .admin-preview-bar button { background:rgba(255,255,255,0.15); color:#fff; border:none; border-radius:6px; padding:5px 14px; cursor:pointer; }
         .section-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }
         .section-head h3 { margin:0; }
-        .sort-control { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--text-light); }
-        .sort-control select { padding:0.45rem 0.7rem; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-color); color:var(--text-color); font-size:0.85rem; }
+        .sort-control { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--text-light); flex-wrap: wrap; min-width: 0; width: 100%; }
+        .sort-control select { padding:0.45rem 0.7rem; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-color); color:var(--text-color); font-size:0.85rem; max-width: 100%; min-width: 0; flex: 1 1 140px; }
         body.dark-mode .sort-control select { background:var(--dark-bg); border-color:var(--dark-border); color:var(--dark-text); }
+        .sort-control input[type="search"] { flex: 1 1 160px; min-width: 0 !important; max-width: 100%; width: auto !important; }
+        .section-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 1rem; }
+        .section-head h3 { margin: 0; }
+        .section-head .sort-control { justify-content: flex-start; flex: 1 1 100%; }
+        @media (max-width: 768px) {
+          .admin-container { padding: 0.75rem; margin: 0.75rem auto; }
+          .admin-section { padding: 1rem; overflow: hidden; }
+          .sort-control { flex-direction: column; align-items: stretch; gap: 8px; }
+          .sort-control label { font-size: 0.8rem; }
+          .sort-control select,
+          .sort-control input[type="search"] {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            flex: none;
+            box-sizing: border-box;
+            font-size: 16px; /* no iOS zoom */
+          }
+          .batch-bar { flex-direction: column; align-items: stretch; }
+          .batch-actions { flex-wrap: wrap; }
+          table.admin-table { width: 1000px; min-width: 1000px; }
+          .admin-table col.c-actions { width: 280px; }
+        }
         .batch-bar { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
             padding:0.6rem 0.9rem; margin-bottom:0.8rem; border-radius:8px;
             background:rgba(67,97,238,0.08); border:1px solid var(--border-color); }
@@ -100,20 +160,193 @@
         .user-pagination button.active { background:var(--primary-color,#4361ee); color:#fff; border-color:var(--primary-color,#4361ee); }
         .user-pagination button:disabled { opacity:0.5; cursor:not-allowed; }
         .user-pagination .page-info { color:var(--text-light); font-size:0.85rem; margin:0 8px; }
-        .form-row { display:flex; flex-direction:column; gap:6px; margin-bottom:1rem; }
-        .form-row label { font-weight:500; font-size:0.9rem; }
-        .form-row input, .form-row textarea, .form-row select {
-            padding:0.6rem 0.8rem; border:1px solid var(--border-color); border-radius:8px;
-            background: var(--bg-color); color: var(--text-color); font-size:0.9rem;
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 0;
         }
-        body.dark-mode .form-row input, body.dark-mode .form-row textarea, body.dark-mode .form-row select {
-            background: var(--dark-bg); border-color: var(--dark-border); color: var(--dark-text);
+        .form-row label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            line-height: 1.2;
+            min-height: 1.2em;
         }
-        .form-row textarea { min-height: 90px; resize: vertical; }
-        .form-inline { display:flex; gap:1rem; flex-wrap:wrap; }
-        .form-inline .form-row { flex:1; min-width:160px; }
-        .save-btn { padding:0.7rem 1.4rem; background:var(--primary-gradient,#4361ee); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:500; }
+        .form-row input,
+        .form-row textarea,
+        .form-row select {
+            margin: 0;
+            padding: 0 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 0.9rem;
+            height: 42px;
+            min-height: 42px;
+            max-height: 42px;
+            box-sizing: border-box;
+            width: 100%;
+            line-height: 42px;
+            vertical-align: middle;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .form-row textarea {
+            height: auto;
+            min-height: 90px;
+            max-height: none;
+            line-height: 1.45;
+            padding: 0.6rem 0.8rem;
+            resize: vertical;
+        }
+        body.dark-mode .form-row input,
+        body.dark-mode .form-row textarea,
+        body.dark-mode .form-row select {
+            background: var(--dark-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+        .form-inline {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .form-inline .form-row {
+            flex: 1 1 200px;
+            min-width: 0;
+            margin-bottom: 0;
+        }
+        /* 按钮与 input 同一基线：同高 + 贴底对齐 */
+        .form-inline > .save-btn,
+        .email-test-row > .save-btn {
+            height: 42px !important;
+            min-height: 42px !important;
+            max-height: 42px !important;
+            padding: 0 1.2rem !important;
+            margin: 0 !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            box-sizing: border-box;
+            white-space: nowrap;
+            line-height: 1 !important;
+            align-self: flex-end !important;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .save-btn {
+            height: 42px;
+            min-height: 42px;
+            padding: 0 1.4rem;
+            margin-top: 1rem;
+            background: var(--primary-color, #4361ee);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-family: inherit;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            line-height: 1;
+        }
+
+        /* 区块内「保存××」主按钮：与上方表单拉开间距 */
+        .admin-section > .save-btn {
+            margin-top: 1.15rem;
+            margin-bottom: 0.15rem;
+        }
+
+        /* 行内按钮（查询/刷新/测试发信）不要额外顶距 */
+        .form-inline > .save-btn,
+        .email-test-controls .save-btn,
+        .email-test-controls #sendTestEmail {
+            margin-top: 0 !important;
+        }
         .switch-row { display:flex; align-items:center; gap:8px; margin-bottom:1rem; }
+
+        /* 测试发信：标签单独一行，输入+按钮同一行严格等高对齐 */
+        .email-test-block {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+        .email-test-label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            line-height: 1.2;
+        }
+        .email-test-controls {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%;
+        }
+        .email-test-controls input[type="email"] {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 42px;
+            min-height: 42px;
+            max-height: 42px;
+            margin: 0;
+            padding: 0 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            line-height: 42px;
+        }
+        body.dark-mode .email-test-controls input[type="email"] {
+            background: var(--dark-bg);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+        .email-test-controls .save-btn,
+        .email-test-controls #sendTestEmail {
+            flex: 0 0 auto;
+            height: 42px !important;
+            min-height: 42px !important;
+            max-height: 42px !important;
+            margin: 0 !important;
+            padding: 0 1.2rem !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            line-height: 1 !important;
+            white-space: nowrap;
+            align-self: center !important;
+        }
+        @media (max-width: 576px) {
+            .form-inline > .save-btn {
+                width: 100%;
+                align-self: stretch !important;
+            }
+            .email-test-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .email-test-controls .save-btn,
+            .email-test-controls #sendTestEmail {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body class="dark-mode-transition"><script data-early-theme-body>(function(){try{if(document.documentElement.classList.contains("dark-mode")){document.body.classList.add("dark-mode");}}catch(e){}})();</script>
@@ -147,33 +380,52 @@
             </div>
             <div class="header-right">
                 <div class="header-actions">
+                    <button class="header-action-btn" id="uploadBtn" title="上传图片" type="button">
+                        <i class="ri-upload-cloud-2-line"></i>
+                    </button>
                     <label class="theme-toggle" id="themeToggle" aria-label="切换主题">
                         <input id="switch" type="checkbox">
                         <div class="theme-toggle-icon"><i class="ri-sun-line"></i><i class="ri-moon-line"></i></div>
                     </label>
+                    <div id="userDropdown" class="user-dropdown" style="display: none;">
+                        <button id="userDropdownBtn" class="user-dropdown-btn" type="button">
+                            <div class="user-avatar"><i class="ri-user-3-line"></i></div>
+                            <span id="userDisplayName">用户</span>
+                            <i class="ri-arrow-down-s-line"></i>
+                        </button>
+                        <div class="user-dropdown-content"></div>
+                    </div>
                 </div>
             </div>
         </header>
 
         <main>
             <div class="admin-container">
-                <h2 class="admin-title">管理后台</h2>
+                <div class="admin-header">
+                    <div>
+                        <h2 class="admin-title">
+                            <i class="ri-shield-star-line"></i>
+                            <span data-i18n="page.admin.title">管理后台</span>
+                        </h2>
+                        <p data-i18n="page.admin.sub">用户管理、审核与站点配置</p>
+                    </div>
+                </div>
 
                 <!-- 概览 -->
                 <div class="admin-stats" id="adminStats">
-                    <div class="admin-stat-card" data-userfilter="all" style="cursor:pointer" title="点击查看全部用户"><div class="admin-stat-value" id="statTotalUsers">-</div><div class="admin-stat-label">注册用户</div></div>
-                    <div class="admin-stat-card"><div class="admin-stat-value" id="statTotalImages">-</div><div class="admin-stat-label">图片总数</div></div>
-                    <div class="admin-stat-card" data-userfilter="verified" style="cursor:pointer" title="点击筛选已验证用户"><div class="admin-stat-value" id="statVerified">-</div><div class="admin-stat-label">已验证用户</div></div>
-                    <div class="admin-stat-card" data-userfilter="banned" style="cursor:pointer" title="点击筛选被封禁用户"><div class="admin-stat-value" id="statBanned">-</div><div class="admin-stat-label">被封禁</div></div>
+                    <div class="admin-stat-card" data-userfilter="all" style="cursor:pointer" title="点击查看全部用户"><div class="admin-stat-value" id="statTotalUsers">-</div><div class="admin-stat-label" data-i18n="admin.users">注册用户</div></div>
+                    <div class="admin-stat-card"><div class="admin-stat-value" id="statTotalImages">-</div><div class="admin-stat-label" data-i18n="admin.images">图片总数</div></div>
+                    <div class="admin-stat-card" data-userfilter="verified" style="cursor:pointer" title="点击筛选已验证用户"><div class="admin-stat-value" id="statVerified">-</div><div class="admin-stat-label" data-i18n="admin.verified">已验证用户</div></div>
+                    <div class="admin-stat-card" data-userfilter="banned" style="cursor:pointer" title="点击筛选被封禁用户"><div class="admin-stat-value" id="statBanned">-</div><div class="admin-stat-label" data-i18n="admin.banned">被封禁</div></div>
                 </div>
 
                 <!-- 用户管理 -->
                 <div class="admin-section">
                     <div class="section-head">
-                        <h3><i class="ri-team-line"></i> 用户管理</h3>
+                        <h3><i class="ri-team-line"></i> <span data-i18n="admin.userMgmt">用户管理</span></h3>
                         <div class="sort-control">
-                            <input type="search" id="userSearch" placeholder="搜索用户名 / 邮箱" style="height:34px;box-sizing:border-box;padding:0 0.7rem;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-color);color:var(--text-color);min-width:180px;">
-                            <label for="userSort">排序</label>
+                            <input type="search" id="userSearch" placeholder="搜索用户名 / 邮箱" data-i18n-placeholder="admin.search.user" style="height:34px;box-sizing:border-box;padding:0 0.7rem;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-color);color:var(--text-color);min-width:180px;">
+                            <label for="userSort" data-i18n="admin.sort">排序</label>
                             <select id="userSort">
                                 <option value="created_desc">注册时间（新→旧）</option>
                                 <option value="created_asc">注册时间（旧→新）</option>
@@ -183,7 +435,7 @@
                                 <option value="images_asc">图片数（少→多）</option>
                                 <option value="status">状态（封禁/未验证优先）</option>
                             </select>
-                            <label for="userPageSize">每页</label>
+                            <label for="userPageSize" data-i18n="admin.pageSize">每页</label>
                             <select id="userPageSize">
                                 <option value="10" selected>10</option>
                                 <option value="20">20</option>
@@ -195,25 +447,30 @@
                     </div>
                     <!-- 批量操作工具条（选中用户后显示） -->
                     <div id="batchBar" class="batch-bar" style="display:none;">
-                        <span class="batch-count">已选 <b id="batchCount">0</b> 个用户</span>
+                        <span class="batch-count"><span data-i18n="admin.selectedUsers">已选</span> <b id="batchCount">0</b> <span data-i18n="admin.usersUnit">个用户</span></span>
                         <div class="batch-actions">
-                            <button class="admin-btn btn-ban" data-batch="ban">批量封禁</button>
-                            <button class="admin-btn btn-unban" data-batch="unban">批量解封</button>
-                            <button class="admin-btn btn-limit" data-batch="limit">批量设上限</button>
-                            <button class="admin-btn btn-del" data-batch="delete">批量删除</button>
-                            <button class="admin-btn" data-batch="cancel" style="background:#9ca3af;">取消选择</button>
+                            <button class="admin-btn btn-ban" data-batch="ban" data-i18n="admin.batch.ban">批量封禁</button>
+                            <button class="admin-btn btn-unban" data-batch="unban" data-i18n="admin.batch.unban">批量解封</button>
+                            <button class="admin-btn btn-limit" data-batch="limit" data-i18n="admin.batch.limit">批量设上限</button>
+                            <button class="admin-btn btn-del" data-batch="delete" data-i18n="admin.batch.delete">批量删除</button>
+                            <button class="admin-btn" data-batch="cancel" style="background:#9ca3af;" data-i18n="common.cancelSelect">取消选择</button>
                         </div>
                     </div>
                     <div class="admin-table-wrap">
                         <table class="admin-table">
+                            <colgroup>
+                                <col class="c-check"><col class="c-name"><col class="c-email"><col class="c-date">
+                                <col class="c-status"><col class="c-images"><col class="c-limit"><col class="c-actions">
+                            </colgroup>
                             <thead><tr>
-                                <th style="width:36px;"><input type="checkbox" id="selectAllUsers" title="全选本页"></th>
-                                <th class="sortable" data-sortkey="name">用户名 <span class="sort-ind"></span></th>
-                                <th class="sortable" data-sortkey="email">邮箱 <span class="sort-ind"></span></th>
-                                <th class="sortable" data-sortkey="created">注册时间 <span class="sort-ind"></span></th>
-                                <th class="sortable" data-sortkey="status">状态 <span class="sort-ind"></span></th>
-                                <th class="sortable" data-sortkey="images">图片数 <span class="sort-ind"></span></th>
-                                <th>每日上限</th><th>操作</th>
+                                <th><input type="checkbox" id="selectAllUsers" title="全选本页"></th>
+                                <th class="sortable" data-sortkey="name"><span data-i18n="admin.col.user">用户名</span> <span class="sort-ind"></span></th>
+                                <th class="sortable" data-sortkey="email"><span data-i18n="admin.col.email">邮箱</span> <span class="sort-ind"></span></th>
+                                <th class="sortable" data-sortkey="created"><span data-i18n="admin.col.created">注册时间</span> <span class="sort-ind"></span></th>
+                                <th class="sortable" data-sortkey="status"><span data-i18n="admin.col.status">状态</span> <span class="sort-ind"></span></th>
+                                <th class="sortable" data-sortkey="images"><span data-i18n="admin.col.images">图片数</span> <span class="sort-ind"></span></th>
+                                <th data-i18n="admin.col.limit">每日上限</th>
+                                <th data-i18n="admin.col.actions">操作</th>
                             </tr></thead>
                             <tbody id="userTableBody"><tr><td colspan="8">加载中...</td></tr></tbody>
                         </table>
@@ -223,7 +480,7 @@
 
                 <!-- 图片审核 / 最近上传 -->
                 <div class="admin-section">
-                    <h3><i class="ri-shield-flash-line"></i> 图片审核 / 最近上传</h3>
+                    <h3><i class="ri-shield-flash-line"></i> <span data-i18n="admin.audit">图片审核 / 最近上传</span></h3>
                     <p style="font-size:0.85rem;color:var(--text-light);margin:-0.4rem 0 0.9rem;">
                         在 TG 频道发现违规图片后，把它的<b>文件名</b>填到下面即可查出上传者；下方「最近上传」可一览近期各用户上传。新上传的图片，频道帖子标题会标注上传者。
                     </p>
@@ -236,24 +493,24 @@
                         <button class="save-btn" id="recentRefreshBtn" style="height:42px;background:#10b981;">刷新最近上传</button>
                     </div>
                     <div id="imgSearchResult" style="margin-top:0.5rem;"></div>
-                    <h4 style="margin:1.2rem 0 0.6rem;font-size:1rem;color:var(--text-color);">最近上传</h4>
+                    <h4 style="margin:1.2rem 0 0.6rem;font-size:1rem;color:var(--text-color);" data-i18n="admin.recent">最近上传</h4>
                     <div id="recentUploads" class="audit-grid"><p style="color:var(--text-light);">加载中...</p></div>
                 </div>
 
                 <!-- 公告设置 -->
                 <div class="admin-section">
-                    <h3><i class="ri-notification-3-line"></i> 网站公告</h3>
+                    <h3><i class="ri-notification-3-line"></i> <span data-i18n="admin.ann">网站公告</span></h3>
                     <div class="switch-row">
                         <input type="checkbox" id="annEnabled"><label for="annEnabled">启用公告弹窗</label>
                     </div>
                     <div class="form-row"><label>公告标题</label><input type="text" id="annTitle" placeholder="公告标题"></div>
                     <div class="form-row"><label>公告内容</label><textarea id="annContent" placeholder="支持换行的公告正文"></textarea></div>
-                    <button class="save-btn" id="saveAnnouncement">保存公告</button>
+                    <button class="save-btn" id="saveAnnouncement" data-i18n="admin.ann.save">保存公告</button>
                 </div>
 
                 <!-- 上传与验证设置 -->
                 <div class="admin-section">
-                    <h3><i class="ri-settings-3-line"></i> 上传与验证</h3>
+                    <h3><i class="ri-settings-3-line"></i> <span data-i18n="admin.upload">上传与验证</span></h3>
                     <div class="form-inline">
                         <div class="form-row"><label>每日上传上限（0 = 不限制）</label><input type="number" id="dailyLimit" min="0" placeholder="0"></div>
                     </div>
@@ -263,7 +520,7 @@
                     <div class="switch-row">
                         <input type="checkbox" id="allowSvg"><label for="allowSvg">允许上传 SVG 图片（出于安全可关闭；SVG 始终以附件方式返回防 XSS）</label>
                     </div>
-                    <button class="save-btn" id="saveUploadSettings">保存设置</button>
+                    <button class="save-btn" id="saveUploadSettings" data-i18n="admin.upload.save">保存设置</button>
                 </div>
 
                 <!-- 鉴黄设置 -->
@@ -289,7 +546,7 @@
                         <div class="form-row"><label>违规阈值</label><input type="number" id="nsfwThreshold" min="0" step="0.01" placeholder="0.8"></div>
                     </div>
                     <p style="font-size:0.8rem;color:var(--text-light);margin:4px 0 10px;">免费示例·ModerateContent：GET，URL=https://api.moderatecontent.com/moderate/，附加参数 key=你的KEY，字段名 url，分数路径 predictions.adult，阈值 60。</p>
-                    <button class="save-btn" id="saveNsfw">保存鉴黄配置</button>
+                    <button class="save-btn" id="saveNsfw" data-i18n="admin.nsfw.save">保存鉴黄配置</button>
                 </div>
 
                 <!-- 邮件发送设置 -->
@@ -334,12 +591,15 @@
                         </div>
                     </div>
 
-                    <button class="save-btn" id="saveEmail">保存邮件配置</button>
+                    <button class="save-btn" id="saveEmail" data-i18n="admin.email.save">保存邮件配置</button>
 
                     <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px dashed var(--border-color);">
-                        <div class="form-inline" style="align-items:flex-end;">
-                            <div class="form-row"><label>测试发信到</label><input type="email" id="testEmailTo" placeholder="收件邮箱"></div>
-                            <button class="save-btn" id="sendTestEmail" style="background:#10b981;">发送测试邮件</button>
+                        <div class="email-test-block">
+                            <label class="email-test-label" for="testEmailTo">测试发信到</label>
+                            <div class="email-test-controls">
+                                <input type="email" id="testEmailTo" placeholder="收件邮箱" autocomplete="email">
+                                <button type="button" class="save-btn" id="sendTestEmail" style="background:#10b981;">发送测试邮件</button>
+                            </div>
                         </div>
                         <p style="font-size:0.8rem;color:var(--text-light);margin-top:8px;">提示：请先「保存邮件配置」，再测试发信。Cloudflare 通常封禁 25 端口，企业邮箱建议用 465(SSL) 或 587(STARTTLS)。</p>
                     </div>
@@ -356,13 +616,16 @@
                     </div>
                     <div class="form-row"><label>侧边栏底部文字</label><input type="text" id="siteMenuFooter" placeholder="© 2025 鸭鸭图床"></div>
                     <div class="form-row"><label>页面底部文字（支持 HTML，如 &lt;a&gt;、&lt;b&gt;）</label><input type="text" id="sitePageFooter" placeholder="© 2024-2025 鸭鸭图床 · <a href='/help.html'>帮助</a>"></div>
-                    <button class="save-btn" id="saveSite">保存站点设置</button>
+                    <button class="save-btn" id="saveSite" data-i18n="admin.site.save">保存站点设置</button>
                 </div>
             </div>
         </main>
     </div>
 
+    <script src="./js/shell.js"></script>
     <script src="./js/theme-manager.js"></script>
+    <script src="./js/user-prefs.js"></script>
+    <script src="./js/palettes.js"></script>
     <script src="./js/common.js"></script>
     <script src="./js/auth.js"></script>
     <script src="./js/menu-system.js"></script>

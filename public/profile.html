@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}}catch(e){}})();</script>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>用户资料 - 鸭鸭图床 | 免费图床</title>
@@ -11,14 +11,12 @@
     <meta name="keywords" content="用户资料,个人设置,头像管理,鸭鸭图床">
     <meta name="theme-color" content="#4361ee">
     <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
-    <link rel="stylesheet" href="./css/animations-premium.css">
-    <link rel="stylesheet" href="./css/advanced-cards.css">
-    <link rel="stylesheet" href="./css/buttons-premium.css">
-    <link rel="stylesheet" href="./css/forms-premium.css">
-    <link rel="stylesheet" href="./css/modals-premium.css">
-    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/menu-system.css">
     <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="stylesheet" href="./css/shell.css">
+    <link rel="stylesheet" href="./css/palettes.css">
+    <link rel="stylesheet" href="./css/page-common.css">
     <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -137,27 +135,32 @@
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            background: var(--primary-gradient);
+            background: var(--fill-secondary);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: var(--text-light);
             font-size: 48px;
             cursor: pointer;
-            transition: all var(--transition);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
             overflow: hidden;
             position: relative;
-            border: 4px solid var(--card-bg);
-            box-shadow: var(--shadow);
+            border: 3px solid var(--border-color);
+            box-shadow: var(--shadow-xs);
         }
 
         body.dark-mode .avatar-preview {
-            border-color: var(--dark-card-bg);
+            border-color: var(--border-color);
+            background: var(--fill-secondary);
+        }
+
+        .avatar-preview:has(img) {
+            background: transparent;
         }
 
         .avatar-preview:hover {
-            transform: scale(1.05);
-            box-shadow: 0 8px 25px rgba(var(--primary-color-rgb), 0.3);
+            transform: scale(1.02);
+            box-shadow: var(--shadow-sm);
         }
 
         .avatar-preview img {
@@ -165,6 +168,8 @@
             height: 100%;
             object-fit: cover;
             border-radius: 50%;
+            display: block;
+            background: transparent;
         }
 
         .avatar-overlay {
@@ -173,15 +178,15 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.45);
             border-radius: 50%;
             opacity: 0;
-            transition: opacity var(--transition);
+            transition: opacity 0.15s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
         }
 
@@ -191,12 +196,18 @@
 
         .avatar-actions {
             margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 280px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .avatar-hint {
             font-size: 0.9rem;
-            color: var(--primary-color);
-            margin: 0.5rem 0 0.25rem;
+            color: var(--text-color);
+            margin: 0;
             font-weight: 500;
         }
 
@@ -207,7 +218,61 @@
         }
 
         body.dark-mode .avatar-tips {
-            color: var(--dark-text-light);
+            color: var(--text-light);
+        }
+
+        .avatar-url-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .avatar-url-row input {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 16px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .avatar-url-row input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-soft, rgba(59,130,246,.15));
+        }
+
+        .avatar-url-row button,
+        .avatar-file-btn {
+            flex-shrink: 0;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: none;
+            background: var(--primary-color);
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .avatar-file-btn {
+            width: 100%;
+            background: var(--fill-tertiary);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .avatar-file-btn:hover {
+            background: var(--fill-secondary);
+        }
+
+        .avatar-url-row button:hover {
+            opacity: 0.92;
         }
 
         .info-item {
@@ -260,8 +325,9 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+            width: 100%;
         }
 
         .stat-item {
@@ -269,42 +335,56 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 128px;
+            width: 100%;
+            min-width: 0;
+            min-height: 132px;
             text-align: center;
-            padding: 1.25rem 0.75rem;
-            background: var(--bg-secondary, rgba(99, 102, 241, 0.06));
+            padding: 1.1rem 0.5rem;
+            box-sizing: border-box;
+            background: var(--fill-tertiary);
             border-radius: var(--radius);
-            transition: all var(--transition);
+            border: 1px solid var(--border-color);
+            transition: background 0.15s ease, transform 100ms ease-out;
         }
 
         body.dark-mode .stat-item {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--fill-tertiary);
+            border-color: var(--dark-border);
         }
 
         .stat-item:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow);
+            background: var(--fill-secondary);
+        }
+
+        .stat-item:active {
+            transform: scale(0.98);
         }
 
         .stat-icon {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: var(--primary-gradient);
+            background: var(--primary-color);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 24px;
-            margin: 0 auto 1rem;
+            font-size: 20px;
+            margin: 0 auto 0.75rem;
+            flex-shrink: 0;
+            box-shadow: none;
         }
 
         .stat-value {
-            font-size: 1.35rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: var(--text-color);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.35rem;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            letter-spacing: -0.02em;
         }
 
         body.dark-mode .stat-value {
@@ -312,7 +392,7 @@
         }
 
         .stat-label {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-light);
             white-space: nowrap;
         }
@@ -604,11 +684,17 @@
         <main>
             <div class="profile-container fade-in-element">
                 <div class="profile-header">
-                    <h2 class="profile-title">用户资料</h2>
+                    <div>
+                        <h2 class="profile-title">
+                            <i class="ri-user-settings-line"></i>
+                            <span data-i18n="page.profile.title">用户资料</span>
+                        </h2>
+                        <p data-i18n="page.profile.sub">查看与管理您的账户信息</p>
+                    </div>
                     <div class="profile-actions">
                         <a href="/dashboard.html" class="action-btn">
                             <i class="ri-arrow-left-line"></i>
-                            返回图片管理
+                            <span data-i18n="profile.back">返回图片管理</span>
                         </a>
                     </div>
                 </div>
@@ -619,18 +705,24 @@
                         <div class="profile-card">
                             <h3>
                                 <i class="ri-user-3-line"></i>
-                                头像管理
+                                <span data-i18n="profile.avatar">头像管理</span>
                             </h3>
                             <div class="avatar-section">
                                 <div class="avatar-upload-area">
-                                    <div class="avatar-preview" id="avatarPreview" title="点击更换头像">
+                                    <div class="avatar-preview" id="avatarPreview" title="点击上传头像">
                                         <i class="ri-user-3-line"></i>
-                                        <div class="avatar-overlay">更换头像</div>
+                                        <div class="avatar-overlay" data-i18n="profile.avatar.upload">上传图片</div>
                                     </div>
                                 </div>
                                 <div class="avatar-actions">
-                                    <p class="avatar-hint">点击头像更换</p>
-                                    <p class="avatar-tips">支持JPG、PNG格式，最大5MB</p>
+                                    <button type="button" class="avatar-file-btn" id="avatarFileBtn">
+                                        <i class="ri-upload-2-line"></i> <span data-i18n="profile.avatar.upload">上传图片</span>
+                                    </button>
+                                    <div class="avatar-url-row">
+                                        <input type="url" id="avatarUrlInput" placeholder="或粘贴图片链接 https://..." autocomplete="off" data-i18n-placeholder="profile.avatar.url">
+                                        <button type="button" id="avatarUrlSaveBtn" data-i18n="common.save">保存</button>
+                                    </div>
+                                    <p class="avatar-tips" data-i18n="profile.avatar.tips">支持上传 JPG/PNG（≤5MB），或填写可访问的图片 URL</p>
                                 </div>
                             </div>
                         </div>
@@ -639,7 +731,7 @@
                         <div class="profile-card">
                             <h3>
                                 <i class="ri-bar-chart-2-line"></i>
-                                使用统计
+                                <span data-i18n="profile.stats">使用统计</span>
                             </h3>
                             <div class="stats-grid">
                                 <div class="stat-item">
@@ -647,14 +739,14 @@
                                         <i class="ri-image-line"></i>
                                     </div>
                                     <div class="stat-value" id="profileImageCount">0</div>
-                                    <div class="stat-label">图片总数</div>
+                                    <div class="stat-label" data-i18n="profile.stats.images">图片总数</div>
                                 </div>
                                 <div class="stat-item">
                                     <div class="stat-icon">
                                         <i class="ri-hard-drive-line"></i>
                                     </div>
                                     <div class="stat-value" id="profileStorageUsed">0 MB</div>
-                                    <div class="stat-label">存储使用</div>
+                                    <div class="stat-label" data-i18n="profile.stats.storage">存储使用</div>
                                 </div>
                             </div>
                         </div>
@@ -665,33 +757,33 @@
                         <div class="profile-card">
                             <h3>
                                 <i class="ri-information-line"></i>
-                                基本信息
+                                <span data-i18n="profile.info">基本信息</span>
                             </h3>
                             <div class="info-item">
                                 <label>
                                     <i class="ri-user-line"></i>
-                                    用户名
+                                    <span data-i18n="profile.username">用户名</span>
                                 </label>
                                 <span id="profileUsername">-</span>
                             </div>
                             <div class="info-item">
                                 <label>
                                     <i class="ri-mail-line"></i>
-                                    邮箱地址
+                                    <span data-i18n="profile.email">邮箱地址</span>
                                 </label>
                                 <span id="profileEmail">-</span>
                             </div>
                             <div class="info-item">
                                 <label>
                                     <i class="ri-calendar-line"></i>
-                                    注册时间
+                                    <span data-i18n="profile.regTime">注册时间</span>
                                 </label>
                                 <span id="profileRegTime">-</span>
                             </div>
                             <div class="info-item">
                                 <label>
                                     <i class="ri-time-line"></i>
-                                    最后登录
+                                    <span data-i18n="profile.lastLogin">最后登录</span>
                                 </label>
                                 <span id="profileLastLogin">刚刚</span>
                             </div>
@@ -701,35 +793,35 @@
                         <div class="profile-card">
                             <h3>
                                 <i class="ri-shield-keyhole-line"></i>
-                                账户安全
+                                <span data-i18n="profile.security">账户安全</span>
                             </h3>
 
                             <!-- 修改密码 -->
                             <div class="security-block">
-                                <h4>修改密码</h4>
+                                <h4 data-i18n="profile.password">修改密码</h4>
                                 <div class="security-form">
-                                    <input type="password" id="curPassword" class="sec-input" placeholder="当前密码" autocomplete="current-password">
-                                    <input type="password" id="newPassword" class="sec-input" placeholder="新密码（至少 6 位）" autocomplete="new-password">
-                                    <input type="password" id="newPassword2" class="sec-input" placeholder="确认新密码" autocomplete="new-password">
+                                    <input type="password" id="curPassword" class="sec-input" placeholder="当前密码" autocomplete="current-password" data-i18n-placeholder="profile.password.cur">
+                                    <input type="password" id="newPassword" class="sec-input" placeholder="新密码（至少 6 位）" autocomplete="new-password" data-i18n-placeholder="profile.password.new">
+                                    <input type="password" id="newPassword2" class="sec-input" placeholder="确认新密码" autocomplete="new-password" data-i18n-placeholder="profile.password.confirm">
                                     <button class="action-btn" id="changePasswordBtn">
-                                        <i class="ri-lock-password-line"></i> 更新密码
+                                        <i class="ri-lock-password-line"></i> <span data-i18n="profile.password.update">更新密码</span>
                                     </button>
                                 </div>
                             </div>
 
                             <!-- 修改邮箱 -->
                             <div class="security-block">
-                                <h4>修改邮箱</h4>
+                                <h4 data-i18n="profile.email.change">修改邮箱</h4>
                                 <div class="security-form">
-                                    <input type="password" id="emailPassword" class="sec-input" placeholder="当前密码" autocomplete="current-password">
-                                    <input type="email" id="newEmailInput" class="sec-input" placeholder="新邮箱地址">
+                                    <input type="password" id="emailPassword" class="sec-input" placeholder="当前密码" autocomplete="current-password" data-i18n-placeholder="profile.password.cur">
+                                    <input type="email" id="newEmailInput" class="sec-input" placeholder="新邮箱地址" data-i18n-placeholder="profile.email.new">
                                     <button class="action-btn" id="sendEmailCodeBtn">
-                                        <i class="ri-mail-send-line"></i> 发送验证码到新邮箱
+                                        <i class="ri-mail-send-line"></i> <span data-i18n="profile.email.send">发送验证码到新邮箱</span>
                                     </button>
                                     <div id="emailCodeRow">
-                                        <input type="text" id="emailCode" class="sec-input" placeholder="输入新邮箱收到的验证码" inputmode="numeric" maxlength="6">
+                                        <input type="text" id="emailCode" class="sec-input" placeholder="输入新邮箱收到的验证码" inputmode="numeric" maxlength="6" data-i18n-placeholder="profile.email.code">
                                         <button class="action-btn" id="confirmEmailBtn">
-                                            <i class="ri-check-line"></i> 确认修改邮箱
+                                            <i class="ri-check-line"></i> <span data-i18n="profile.email.confirm">确认修改邮箱</span>
                                         </button>
                                     </div>
                                 </div>
@@ -740,24 +832,24 @@
                         <div class="profile-card">
                             <h3>
                                 <i class="ri-settings-3-line"></i>
-                                账户操作
+                                <span data-i18n="profile.actions">账户操作</span>
                             </h3>
                             <div class="account-actions">
                                 <a href="/dashboard.html" class="action-btn">
                                     <i class="ri-image-2-line"></i>
-                                    管理我的图片
+                                    <span data-i18n="page.dashboard.title">管理我的图片</span>
                                 </a>
                                 <a href="/" class="action-btn">
                                     <i class="ri-upload-cloud-2-line"></i>
-                                    上传新图片
+                                    <span data-i18n="common.uploadNew">上传新图片</span>
                                 </a>
                                 <a href="#" class="action-btn" id="themeToggleBtn">
                                     <i class="ri-palette-line"></i>
-                                    切换主题模式
+                                    <span data-i18n="settings.theme">切换主题模式</span>
                                 </a>
                                 <a href="#" class="action-btn danger" id="logoutProfileBtn">
                                     <i class="ri-logout-box-line"></i>
-                                    退出登录
+                                    <span data-i18n="menu.logout">退出登录</span>
                                 </a>
                             </div>
                         </div>
@@ -780,7 +872,10 @@
 
     <!-- 引入脚本 -->
     <!-- 主题管理器 -->
+    <script src="./js/shell.js"></script>
     <script src="./js/theme-manager.js"></script>
+    <script src="./js/user-prefs.js"></script>
+    <script src="./js/palettes.js"></script>
     <script src="./js/common.js"></script>
     <script src="./js/auth.js"></script>
     <script src="./js/menu-system.js"></script>

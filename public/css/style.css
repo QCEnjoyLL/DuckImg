@@ -102,7 +102,8 @@ body {
     color: var(--text-color);
     line-height: 1.7;
     font-size: 16px;
-    transition: background-color var(--transition), color var(--transition);
+    /* ponytail: no bg transition — theme switch must be instant with cards */
+    transition: none;
     overflow-x: hidden;
 }
 
@@ -142,10 +143,11 @@ a.animated-link:hover::after {
     width: 100%;
 }
 
+/* layout owned by shell.css — do not constrain width here */
 .app-container {
-    max-width: var(--container-width);
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
+    max-width: none;
+    margin: 0;
+    padding: 0;
 }
 
 /* 滚动条美化 */

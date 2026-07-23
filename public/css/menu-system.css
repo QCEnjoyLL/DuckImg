@@ -351,83 +351,24 @@ body.dark-mode .menu-footer {
   opacity: 0;
 }
 
-/* 移动端适配 */
+/* 移动端适配 — 视觉由 shell.css 接管；transform 由 DuckShell/Motion 驱动 */
 @media (max-width: 768px) {
   .side-menu {
-    transform: translateX(-100%);
-    width: 320px;
-    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+    width: min(320px, 86vw);
   }
-  
-  .side-menu.mobile-visible {
-    transform: translateX(0);
-  }
-  
-  /* 移动端时强制移除折叠状态，避免冲突 */
-  .side-menu.collapsed {
-    transform: translateX(-100%); /* 移动端折叠状态也是隐藏 */
-    width: 320px; /* 保持移动端宽度 */
-  }
-  
-  .side-menu.collapsed.mobile-visible {
-    transform: translateX(0); /* 移动端显示时正常显示 */
-  }
-  
+
+  .app-container,
   .app-container.menu-expanded,
   .app-container.menu-collapsed {
-    padding-left: 0;
+    padding-left: 0 !important;
   }
-  
-  .menu-item {
-    padding: 18px 20px;
-    margin: 3px 8px;
-    min-height: 54px;
-    border-radius: 12px;
-  }
-  
-  .menu-item-icon {
-    min-width: 26px;
-    height: 26px;
-    font-size: 20px;
-  }
-  
-  .menu-item-text {
-    font-size: 15px;
-    font-weight: 500;
-  }
-  
-  .menu-category {
-    padding: 0 20px;
-    margin: 25px 0 12px;
-    font-size: 10px;
-    letter-spacing: 1.8px;
-  }
-  
-  .menu-header {
-    padding: 0 20px;
-    height: 75px;
-  }
-  
-  .menu-footer {
-    padding: 0 20px;
-    height: 65px;
-  }
-  
+
   .menu-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 999;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    inset: 0;
+    z-index: 200;
   }
-  
+
   .menu-overlay.active {
     opacity: 1;
     visibility: visible;

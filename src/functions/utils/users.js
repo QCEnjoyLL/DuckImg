@@ -35,6 +35,12 @@ export function normalizeUser(user, env) {
       ? user.uploadLimit
       : null,
     lastLoginAt: user.lastLoginAt || null,
+    // 用户偏好（登录提醒、公开默认、语言等）
+    prefs: {
+      loginNotify: !!(user.prefs && user.prefs.loginNotify),
+      public: user.prefs && user.prefs.public === false ? false : true,
+      language: (user.prefs && user.prefs.language) || 'zh-CN',
+    },
   };
 
   // 角色按环境变量实时计算，不持久化

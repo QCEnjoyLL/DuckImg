@@ -11,32 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * 初始化页面加载动画
+ * 页面加载遮罩：尽快隐藏（shell.js 也会处理）
  */
 function initPageLoader() {
-    const pageLoader = document.getElementById('pageLoader');
-    
-    if (pageLoader) {
-        // 页面加载完成后隐藏加载动画
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                pageLoader.style.opacity = '0';
-                setTimeout(() => {
-                    pageLoader.style.display = 'none';
-                }, 300);
-            }, 500); // 延迟500ms让用户看到加载动画
-        });
-        
-        // 如果页面已经加载完成（防止事件错过）
-        if (document.readyState === 'complete') {
-            setTimeout(() => {
-                pageLoader.style.opacity = '0';
-                setTimeout(() => {
-                    pageLoader.style.display = 'none';
-                }, 300);
-            }, 500);
-        }
+    if (window.DuckShell && window.DuckShell.hidePageLoader) {
+        window.DuckShell.hidePageLoader();
+        return;
     }
+    const pageLoader = document.getElementById('pageLoader');
+    if (!pageLoader) return;
+    const hide = () => {
+        pageLoader.classList.add('loaded', 'is-hidden');
+        setTimeout(() => { pageLoader.style.display = 'none'; }, 250);
+    };
+    if (document.readyState === 'complete') hide();
+    else window.addEventListener('load', hide);
 }
 
 /**

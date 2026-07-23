@@ -1,0 +1,228 @@
+/**
+ * DuckImg design tokens — restrained iOS-like system
+ * Load after style.css so these override legacy variables.
+ */
+
+:root {
+  /* Brand accent — muted indigo, not neon */
+  --primary-color: #3b82f6;
+  --primary-light: #60a5fa;
+  --primary-dark: #2563eb;
+  --primary-light-rgb: 96, 165, 250;
+  --primary-dark-rgb: 37, 99, 235;
+  --primary-gradient: linear-gradient(180deg, #60a5fa, #2563eb);
+  --primary-soft-glow: 0 0 0 transparent;
+
+  --secondary-color: #6366f1;
+  --secondary-light: #818cf8;
+  --secondary-dark: #4f46e5;
+  --accent-color: #3b82f6;
+  --accent-light: #60a5fa;
+  --accent-dark: #2563eb;
+  --success-color: #34c759;
+  --success-light: #30d158;
+  --warning-color: #ff9f0a;
+  --warning-light: #ffb340;
+  --error-color: #ff3b30;
+  --error-light: #ff6961;
+
+  /* Light surfaces (Apple-ish greys) */
+  --text-color: #1d1d1f;
+  --text-light: #6e6e73;
+  --text-lighter: #86868b;
+  --bg-color: #f5f5f7;
+  --card-bg: #ffffff;
+  --card-bg-hover: #f0f0f2;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --divider-color: rgba(0, 0, 0, 0.06);
+  --fill-tertiary: rgba(120, 120, 128, 0.12);
+  --fill-secondary: rgba(120, 120, 128, 0.16);
+  --fill-primary: rgba(120, 120, 128, 0.2);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --scrim: rgba(0, 0, 0, 0.28);
+
+  /* Dark surfaces */
+  --dark-bg: #000000;
+  --dark-card-bg: #1c1c1e;
+  --dark-card-bg-hover: #2c2c2e;
+  --dark-text: #f5f5f7;
+  --dark-text-light: #a1a1a6;
+  --dark-text-lighter: #6e6e73;
+  --dark-border: rgba(255, 255, 255, 0.1);
+  --dark-divider: rgba(255, 255, 255, 0.08);
+  --dark-glass-bg: rgba(28, 28, 30, 0.78);
+  --dark-glass-border: rgba(255, 255, 255, 0.08);
+
+  /* Radius */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Shadows — whisper only */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.12);
+  --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-colored: var(--shadow-sm);
+  --shadow-colored-lg: var(--shadow);
+
+  /* Motion: calm, critically damped feel via CSS fallbacks */
+  --transition-bounce: 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  --transition-fast: 0.15s cubic-bezier(0.32, 0.72, 0, 1);
+  --transition: 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  --transition-slow: 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+  --transition-ultra-slow: 0.55s cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Layout */
+  --container-width: 980px;
+  --spacing-3xs: 2px;
+  --spacing-2xs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+
+  /* Shell */
+  --menu-width: 260px;
+  --menu-collapsed-width: 72px;
+  --header-height: 52px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* z-index scale */
+  --z-header: 100;
+  --z-overlay: 200;
+  --z-drawer: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-loader: 600;
+
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  background: var(--bg-color);
+  color: var(--text-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* dark tokens on html so html+body+shell share one paint surface */
+html.dark-mode,
+body.dark-mode {
+  background: var(--dark-bg) !important;
+  color: var(--dark-text);
+  --bg-color: #000000;
+  --card-bg: #1c1c1e;
+  --card-bg-hover: #2c2c2e;
+  --text-color: #f5f5f7;
+  --text-light: #a1a1a6;
+  --text-lighter: #6e6e73;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --divider-color: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(28, 28, 30, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --fill-tertiary: rgba(120, 120, 128, 0.24);
+  --fill-secondary: rgba(120, 120, 128, 0.28);
+  --fill-primary: rgba(120, 120, 128, 0.36);
+  --scrim: rgba(0, 0, 0, 0.5);
+}
+
+.dark-mode-transition {
+  transition: none !important;
+}
+
+/* Typography helpers */
+.dk-display {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+
+.dk-title {
+  font-size: 1.375rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.dk-body {
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+.dk-caption {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--text-light);
+}
+
+/* Instant press feedback (apple-design §1) */
+.dk-press:active,
+button:active:not(:disabled),
+.menu-item:active,
+.action-btn:active,
+.copy-btn:active,
+.login-btn:active,
+.header-action-btn:active {
+  transform: scale(0.97);
+  transition: transform 100ms ease-out;
+}
+
+/* Touch targets & inputs never zoom-trap on iOS */
+input,
+textarea,
+select,
+button {
+  font-size: 16px;
+  font-family: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-bg: #ffffff;
+    --dark-glass-bg: #1c1c1e;
+  }
+  body.dark-mode {
+    --glass-bg: #1c1c1e;
+  }
+}

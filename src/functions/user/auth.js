@@ -5,7 +5,7 @@ import { generateToken, hashPassword, verifyPassword, deriveVerifyCode, verifyCo
 import { errorHandling, telemetryData } from '../utils/middleware';
 import { normalizeUser, getUserByName, saveUser, publicUser, isAdmin, getUserImageCount, userMeta } from '../utils/users';
 import { getSettings } from '../utils/settings';
-import { generateCode, sendVerificationCode } from '../utils/email';
+import { generateCode, sendVerificationCode, sendLoginNotify } from '../utils/email';
 
 // 验证码有效期（毫秒）与重发间隔
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -201,11 +201,27 @@ export async function login(c) {
 
     // 正常登录（写节流：同一 UTC 天不重复写 user:）
     const lastLoginAt = Date.now();
-    if (loginShouldWrite(rawUser)) {
+    const shouldWrite = loginShouldWrite(rawUser);
+    if (shouldWrite) {
       const toSave = normalizeUser(rawUser, c.env);
       toSave.lastLoginAt = lastLoginAt;
       await saveUser(c.env, toSave);
     }
+
+    // 登录提醒：用户开启 prefs.loginNotify 时，在「当日首次登录写回」时发邮件（避免刷接口）
+    try {
+      if (user.prefs && user.prefs.loginNotify && shouldWrite && user.email) {
+        const ua = c.req.header('user-agent') || '';
+        await sendLoginNotify(c.env, user.email, {
+          username: user.username,
+          timeText: new Date(lastLoginAt).toLocaleString('zh-CN'),
+          ua,
+        });
+      }
+    } catch (e) {
+      console.warn('登录提醒邮件失败（忽略）:', e);
+    }
+
     const token = await generateToken({ id: user.id, username: user.username, role: 'user' }, c.env);
     return c.json({ message: '登录成功', user: publicUser({ ...user, lastLoginAt }), token });
   } catch (error) {
@@ -544,5 +560,35 @@ export async function resetPassword(c) {
   } catch (error) {
     console.error('重置密码错误:', error);
     return c.json({ error: '重置密码失败' }, 500);
+  }
+}
+
+/**
+ * 更新用户偏好（登录提醒 / 公开默认 / 语言）
+ */
+export async function updateUserPrefs(c) {
+  try {
+    await errorHandling(c);
+    telemetryData(c);
+
+    const tokenUser = c.get('user');
+    const body = await c.req.json().catch(() => ({}));
+    const rawJson = await c.env.users.get(`user:${tokenUser.username}`);
+    if (!rawJson) return c.json({ error: '用户不存在' }, 404);
+
+    const rawUser = JSON.parse(rawJson);
+    const prev = rawUser.prefs || {};
+    const next = {
+      loginNotify: body.loginNotify !== undefined ? !!body.loginNotify : !!prev.loginNotify,
+      public: body.public === false ? false : (body.public === true ? true : (prev.public !== false)),
+      language: typeof body.language === 'string' ? body.language : (prev.language || 'zh-CN'),
+    };
+    rawUser.prefs = next;
+    await saveUser(c.env, rawUser);
+
+    return c.json({ message: '偏好已保存', prefs: next });
+  } catch (error) {
+    console.error('更新偏好错误:', error);
+    return c.json({ error: '保存偏好失败' }, 500);
   }
 }

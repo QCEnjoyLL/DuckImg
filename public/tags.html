@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}}catch(e){}})();</script>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>标签管理 - 鸭鸭图床 | 免费图床</title>
@@ -11,14 +11,12 @@
     <meta name="keywords" content="标签管理,图片标签,分类管理,鸭鸭图床">
     <meta name="theme-color" content="#4361ee">
     <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
-    <link rel="stylesheet" href="./css/animations-premium.css">
-    <link rel="stylesheet" href="./css/advanced-cards.css">
-    <link rel="stylesheet" href="./css/buttons-premium.css">
-    <link rel="stylesheet" href="./css/forms-premium.css">
-    <link rel="stylesheet" href="./css/modals-premium.css">
-    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/menu-system.css">
     <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="stylesheet" href="./css/shell.css">
+    <link rel="stylesheet" href="./css/palettes.css">
+    <link rel="stylesheet" href="./css/page-common.css">
     <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -138,7 +136,7 @@
 
         .search-box {
             flex: 1;
-            min-width: 250px;
+            min-width: 0;
             position: relative;
         }
 
@@ -235,7 +233,7 @@
             position: absolute;
             top: 100%;
             right: 0;
-            min-width: 200px;
+            min-width: 0;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-sm);
@@ -824,7 +822,16 @@
 
             .tags-stats {
                 width: 100%;
-                justify-content: space-between;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.6rem;
+            }
+
+            .tags-stat {
+                text-align: center;
+                min-width: 0;
+                width: 100%;
+                box-sizing: border-box;
             }
 
             .search-create-bar {
@@ -858,12 +865,18 @@
 
         @media (max-width: 480px) {
             .tags-stats {
-                flex-direction: column;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.55rem;
                 width: 100%;
             }
 
             .tags-stat {
-                text-align: left;
+                text-align: center;
+                min-width: 0;
+                width: 100%;
+                box-sizing: border-box;
+                padding: 0.6rem 0.5rem;
             }
 
             .color-picker-grid {
@@ -1046,18 +1059,18 @@
                     <div>
                         <h1 class="tags-title">
                             <i class="ri-price-tag-3-fill"></i>
-                            标签管理
+                            <span data-i18n="page.tags.title">标签管理</span>
                         </h1>
-                        <p style="margin: 0.5rem 0 0; color: var(--text-light); position: relative; z-index: 1;">创建和管理您的图片标签</p>
+                        <p style="margin: 0.5rem 0 0; color: var(--text-light); position: relative; z-index: 1;" data-i18n="page.tags.sub">创建和管理您的图片标签</p>
                     </div>
                     <div class="tags-stats">
                         <div class="tags-stat">
                             <div class="tags-stat-value" id="totalTags">0</div>
-                            <div class="tags-stat-label">标签总数</div>
+                            <div class="tags-stat-label" data-i18n="tags.all">标签总数</div>
                         </div>
                         <div class="tags-stat">
                             <div class="tags-stat-value" id="totalImages">0</div>
-                            <div class="tags-stat-label">已标记图片</div>
+                            <div class="tags-stat-label" data-i18n="common.images">已标记图片</div>
                         </div>
                     </div>
                 </div>
@@ -1065,12 +1078,12 @@
                 <div class="search-create-bar">
                     <div class="search-box">
                         <i class="ri-search-line search-icon"></i>
-                        <input type="text" class="search-input" placeholder="搜索标签..." id="searchInput">
+                        <input type="text" class="search-input" placeholder="搜索标签…" id="searchInput" data-i18n-placeholder="tags.search">
                     </div>
-                    
+
                     <button class="create-tag-btn" id="createTagBtn">
                         <i class="ri-add-line"></i>
-                        <span>创建标签</span>
+                        <span data-i18n="tags.create">创建标签</span>
                     </button>
                 </div>
 
@@ -1078,25 +1091,25 @@
                     <div class="filter-dropdown" id="sortDropdown">
                         <button class="filter-btn" id="sortBtn">
                             <i class="ri-sort-desc"></i>
-                            <span>按名称排序</span>
+                            <span data-i18n="tags.sort.name">按名称排序</span>
                             <i class="ri-arrow-down-s-line"></i>
                         </button>
                         <div class="filter-dropdown-content">
                             <div class="filter-option active" data-sort="name">
                                 <i class="ri-font-size"></i>
-                                <span>按名称排序</span>
+                                <span data-i18n="tags.sort.name">按名称排序</span>
                             </div>
                             <div class="filter-option" data-sort="count">
                                 <i class="ri-image-line"></i>
-                                <span>按图片数量</span>
+                                <span data-i18n="tags.sort.count">按图片数量</span>
                             </div>
                             <div class="filter-option" data-sort="date">
                                 <i class="ri-calendar-line"></i>
-                                <span>按创建时间</span>
+                                <span data-i18n="tags.sort.date">按创建时间</span>
                             </div>
                             <div class="filter-option" data-sort="color">
                                 <i class="ri-palette-line"></i>
-                                <span>按颜色分组</span>
+                                <span data-i18n="tags.sort.color">按颜色分组</span>
                             </div>
                         </div>
                     </div>
@@ -1104,21 +1117,21 @@
                     <div class="filter-dropdown" id="filterDropdown">
                         <button class="filter-btn" id="filterBtn">
                             <i class="ri-filter-line"></i>
-                            <span>全部标签</span>
+                            <span data-i18n="tags.all">全部标签</span>
                             <i class="ri-arrow-down-s-line"></i>
                         </button>
                         <div class="filter-dropdown-content">
                             <div class="filter-option active" data-filter="all">
                                 <i class="ri-stack-line"></i>
-                                <span>全部标签</span>
+                                <span data-i18n="tags.all">全部标签</span>
                             </div>
                             <div class="filter-option" data-filter="used">
                                 <i class="ri-image-line"></i>
-                                <span>已使用标签</span>
+                                <span data-i18n="tags.used">已使用标签</span>
                             </div>
                             <div class="filter-option" data-filter="unused">
                                 <i class="ri-ghost-line"></i>
-                                <span>未使用标签</span>
+                                <span data-i18n="tags.unused">未使用标签</span>
                             </div>
                         </div>
                     </div>
@@ -1132,11 +1145,11 @@
                     <div class="empty-icon">
                         <i class="ri-price-tag-3-line"></i>
                     </div>
-                    <h3 class="empty-title">还没有标签</h3>
-                    <p class="empty-text">创建您的第一个标签来更好地组织和管理您的图片。</p>
+                    <h3 class="empty-title" data-i18n="tags.empty.title">还没有标签</h3>
+                    <p class="empty-text" data-i18n="tags.empty.text">创建您的第一个标签来更好地组织和管理图片。</p>
                     <button class="empty-action" id="emptyCreateTagBtn">
                         <i class="ri-add-line"></i>
-                        创建标签
+                        <span data-i18n="tags.create">创建标签</span>
                     </button>
                 </div>
             </div>
@@ -1151,19 +1164,19 @@
     <div class="tag-modal" id="tagModal">
         <div class="tag-modal-content">
             <div class="tag-modal-header">
-                <h3 class="tag-modal-title" id="tagModalTitle">创建标签</h3>
+                <h3 class="tag-modal-title" id="tagModalTitle" data-i18n="tags.create">创建标签</h3>
                 <button class="tag-modal-close" id="tagModalClose">&times;</button>
             </div>
-            
+
             <form id="tagForm">
                 <div class="form-group">
-                    <label for="tagName" class="form-label">标签名称</label>
-                    <input type="text" id="tagName" class="form-control" placeholder="输入标签名称..." required>
+                    <label for="tagName" class="form-label" data-i18n="tags.name">标签名称</label>
+                    <input type="text" id="tagName" class="form-control" placeholder="输入标签名称…" required data-i18n-placeholder="tags.name.ph">
                 </div>
-                
+
                 <div class="form-group">
-                    <label for="tagDescription" class="form-label">标签描述</label>
-                    <textarea id="tagDescription" class="form-control" rows="3" placeholder="输入标签描述（可选）..."></textarea>
+                    <label for="tagDescription" class="form-label" data-i18n="tags.desc">标签描述</label>
+                    <textarea id="tagDescription" class="form-control" rows="3" placeholder="输入标签描述（可选）…" data-i18n-placeholder="tags.desc.ph"></textarea>
                 </div>
                 
                 <div class="form-group">
@@ -1208,7 +1221,11 @@
 
     <!-- JavaScript 文件 -->
     <!-- 主题管理器 -->
+    <script src="./js/shell.js"></script>
     <script src="./js/theme-manager.js"></script>
+    <script src="./js/user-prefs.js"></script>
+    <script src="./js/palettes.js"></script>
+    <script src="./js/auth.js"></script>
     <script src="./js/menu-system.js"></script>
     <script src="./js/common.js"></script>
     <script src="./js/tags.js"></script>

@@ -1,35 +1,27 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}}catch(e){}})();</script>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>鸭鸭图床 | 免费图床</title>
     <meta name="description" content="基于Telegram的免费图片上传服务，简单高效的图片托管解决方案">
     <meta name="keywords" content="图床,Telegram,图片上传,免费图床,图片托管">
-    <meta name="theme-color" content="#4361ee">
+    <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
     <link rel="stylesheet" href="./css/style.css">
-    <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="./css/buttons-premium.css">
-    <link rel="stylesheet" href="./css/forms-premium.css">
-    <link rel="stylesheet" href="./css/images-premium.css">
-    <link rel="stylesheet" href="./css/loaders-premium.css">
-    <link rel="stylesheet" href="./css/mobile-nav-enhance.css">
-    <link rel="stylesheet" href="./css/modals-premium.css">
+    <link rel="stylesheet" href="./css/tokens.css">
     <link rel="stylesheet" href="./css/menu-system.css">
     <link rel="stylesheet" href="./css/header-modern.css">
-    <link rel="stylesheet" href="./css/upload-modern.css">
+    <link rel="stylesheet" href="./css/shell.css">
+    <link rel="stylesheet" href="./css/palettes.css">
+    <link rel="stylesheet" href="./css/page-index.css">
     <link rel="stylesheet" href="./css/share.css">
-    <link rel="stylesheet" href="./css/ultimate-beauty.css">
-    <!-- 图像编辑器样式 -->
     <link rel="stylesheet" href="./css/image-editor.css">
-    <!-- 批量处理器样式 -->
     <link rel="stylesheet" href="./css/batch-processor.css">
-    <!-- 引入图标库 -->
+    <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
 <body class="dark-mode-transition"><script data-early-theme-body>(function(){try{if(document.documentElement.classList.contains("dark-mode")){document.body.classList.add("dark-mode");}}catch(e){}})();</script>
@@ -222,11 +214,11 @@
                     <div class="upload-icon">
                         <i class="ri-upload-cloud-2-line"></i>
                     </div>
-                    <p class="upload-text">拖放图片到这里或<span class="browse-text">选择文件</span></p>
+                    <p class="upload-text"><span data-i18n="upload.drop">拖放图片到这里或</span><span class="browse-text" data-i18n="upload.browse">选择文件</span></p>
                     <p class="upload-hint">
-                        <span class="upload-hint-item"><i class="ri-image-line"></i> 支持多种图片格式</span>
-                        <span class="upload-hint-item"><i class="ri-file-copy-line"></i> 支持批量上传</span>
-                        <span class="upload-hint-item"><i class="ri-clipboard-line"></i> 支持<kbd>Ctrl</kbd>+<kbd>V</kbd>粘贴上传</span>
+                        <span class="upload-hint-item"><i class="ri-image-line"></i> <span data-i18n="upload.hint.formats">支持多种图片格式</span></span>
+                        <span class="upload-hint-item"><i class="ri-file-copy-line"></i> <span data-i18n="upload.hint.batch">支持批量上传</span></span>
+                        <span class="upload-hint-item"><i class="ri-clipboard-line"></i> <span data-i18n="upload.hint.paste">支持粘贴上传</span> <kbd>Ctrl</kbd>+<kbd>V</kbd></span>
                     </p>
                     <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
                     <div class="upload-status" id="uploadStatus"></div>
@@ -319,22 +311,18 @@
         </svg>
     </div>
 
-    <!-- 移动端菜单遮罩 -->
-    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
-
     <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
-    <!-- 主题管理器 -->
+    <script src="./js/shell.js"></script>
     <script src="./js/theme-manager.js"></script>
-    <!-- 图像处理和编辑器脚本 -->
+    <script src="./js/palettes.js"></script>
+    <script src="./js/user-prefs.js"></script>
     <script src="./js/image-processor.js"></script>
     <script src="./js/image-editor-main.js"></script>
-    <!-- 批量处理器脚本 -->
     <script src="./js/batch-processor.js"></script>
     <script src="./js/app.js"></script>
     <script src="./js/auth.js"></script>
     <script src="./js/menu-system.js"></script>
     <script src="./js/share.js"></script>
-    <script src="./js/beauty-effects.js"></script>
     <script src="./js/announcement.js"></script>
     <script src="./js/site-config.js"></script>
 </body>

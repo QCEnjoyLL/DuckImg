@@ -1,0 +1,533 @@
+/**
+ * Home / upload page — single surface, wide dropzone
+ * Overrides style.css card-in-card chrome for .upload-container
+ */
+
+/* wide content column — desktop only; mobile is full width via shell */
+@media (min-width: 769px) {
+  .app-container main {
+    max-width: 960px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container main {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .upload-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0 32px !important;
+    padding: 0 !important;
+  }
+
+  .upload-header {
+    padding: 0 4px;
+    margin-bottom: 16px;
+  }
+
+  .upload-title {
+    font-size: 1.5rem !important;
+    flex-wrap: wrap;
+  }
+
+  .upload-quota {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    text-align: center;
+    white-space: normal !important;
+    line-height: 1.4;
+    border-radius: 12px !important;
+  }
+
+  .upload-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 280px !important;
+    padding: 40px 16px !important;
+    box-sizing: border-box;
+  }
+
+  .upload-hint {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .upload-hint-item {
+    justify-content: center;
+  }
+}
+
+/* kill outer “card shell” — page bg shows through; dropzone is the only surface */
+.upload-container {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 auto 40px !important;
+  padding: 8px 0 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  position: relative;
+  z-index: 1;
+}
+
+body.dark-mode .upload-container {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.upload-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 0 8px;
+}
+
+.upload-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: clamp(1.65rem, 3.5vw, 2.15rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--text-color);
+  background: none !important;
+  -webkit-text-fill-color: unset !important;
+  margin: 0 0 8px;
+}
+
+.upload-title i {
+  color: var(--primary-color);
+  font-size: 1.1em;
+}
+
+.upload-subtitle {
+  color: var(--text-light);
+  font-size: 1rem;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.upload-quota {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px !important;
+  padding: 8px 16px !important;
+  border-radius: 999px;
+  background: var(--fill-tertiary) !important;
+  color: var(--text-light) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  border: 1px solid var(--border-color);
+}
+
+/* ONE drop surface — frosted glass */
+.upload-area {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1.5px dashed color-mix(in srgb, var(--border-color) 85%, transparent) !important;
+  border-radius: 22px !important;
+  background: color-mix(in srgb, var(--card-bg) 52%, transparent) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+  padding: 80px 40px !important;
+  min-height: 360px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
+    var(--shadow-sm) !important;
+  overflow: hidden;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease !important;
+  transform: none !important;
+}
+
+/* kill legacy gradient overlays / slide sheen from style.css */
+.upload-area::before,
+.upload-area::after {
+  display: none !important;
+  content: none !important;
+}
+
+body.dark-mode .upload-area {
+  background: color-mix(in srgb, var(--card-bg) 42%, transparent) !important;
+  border-color: color-mix(in srgb, var(--border-color) 90%, transparent) !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    var(--shadow-sm) !important;
+}
+
+.upload-area:hover,
+.upload-area.drag-over {
+  border-color: var(--primary-color) !important;
+  border-style: solid !important;
+  background: color-mix(in srgb, var(--primary-color) 10%, color-mix(in srgb, var(--card-bg) 48%, transparent)) !important;
+  transform: none !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 32%, transparent) inset,
+    0 8px 28px color-mix(in srgb, var(--primary-color) 16%, transparent) !important;
+}
+
+body.dark-mode .upload-area:hover,
+body.dark-mode .upload-area.drag-over {
+  background: color-mix(in srgb, var(--primary-color) 14%, color-mix(in srgb, var(--card-bg) 38%, transparent)) !important;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .upload-area,
+  body.dark-mode .upload-area,
+  .result-container,
+  body.dark-mode .result-container {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--card-bg) !important;
+  }
+}
+
+.upload-area:active {
+  transform: scale(0.995) !important;
+}
+
+.upload-icon {
+  width: 88px !important;
+  height: 88px !important;
+  margin: 0 auto 22px !important;
+  border-radius: 24px !important;
+  background: color-mix(in srgb, var(--card-bg) 55%, transparent) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem !important;
+  color: var(--primary-color) !important;
+  flex-shrink: 0;
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 20%, transparent) inset !important;
+  transform: none !important;
+  transition: background 0.15s ease, border-color 0.15s ease !important;
+}
+
+.upload-area:hover .upload-icon {
+  transform: none !important;
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset !important;
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent) !important;
+  border-color: color-mix(in srgb, var(--primary-color) 35%, transparent);
+}
+
+.upload-text {
+  font-size: 1.2rem !important;
+  font-weight: 500;
+  color: var(--text-color) !important;
+  margin: 0 0 14px !important;
+  letter-spacing: -0.01em;
+}
+
+.browse-text {
+  color: var(--primary-color);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.upload-hint {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+  margin: 0;
+  color: var(--text-lighter);
+  font-size: 0.875rem;
+}
+
+.upload-hint-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.upload-hint kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--fill-secondary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  border: 1px solid var(--border-color);
+}
+
+.file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.upload-status {
+  margin-top: 16px;
+  min-height: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-light);
+  position: relative;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Result — same glass language as dropzone */
+.result-container {
+  margin-top: 24px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  background: color-mix(in srgb, var(--card-bg) 58%, transparent) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+  border-radius: 22px !important;
+  border: 1px solid color-mix(in srgb, var(--border-color) 90%, transparent);
+  padding: 28px !important;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 22%, transparent) inset,
+    var(--shadow-sm) !important;
+  text-align: left;
+  box-sizing: border-box;
+  transition: none !important;
+}
+
+body.dark-mode .result-container {
+  background: color-mix(in srgb, var(--card-bg) 45%, transparent) !important;
+}
+
+.result-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.result-header h3,
+.result-container h3 {
+  font-size: 1.25rem !important;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  color: var(--text-color) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: none !important;
+  -webkit-text-fill-color: unset !important;
+}
+
+.result-container h3::before {
+  display: none !important;
+  content: none !important;
+}
+
+.result-header h3 i {
+  color: var(--success-color);
+}
+
+.result-subtitle {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin: 0;
+  text-align: center;
+}
+
+.image-preview {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--fill-tertiary);
+  margin: 0 auto 20px;
+  max-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  display: block;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.image-preview-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.image-preview:hover .image-preview-overlay {
+  opacity: 1;
+}
+
+.link-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.link-item label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+
+.copy-container {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.copy-container input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 16px;
+  outline: none;
+}
+
+.copy-container input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.copy-btn {
+  flex-shrink: 0;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: none;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+}
+
+.copy-btn:hover {
+  opacity: 0.92;
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 40px;
+  transition: background 0.15s ease, transform 100ms ease-out;
+}
+
+.action-btn:hover {
+  background: var(--fill-tertiary);
+}
+
+.action-btn-primary {
+  background: var(--primary-color);
+  border-color: transparent;
+  color: #fff;
+}
+
+.action-btn-primary:hover {
+  background: var(--primary-dark);
+  opacity: 1;
+}
+
+.action-btn-secondary,
+.action-btn-accent {
+  background: var(--fill-tertiary);
+}
+
+.action-btn-outline {
+  background: transparent;
+}
+
+@media (max-width: 576px) {
+  .app-container main {
+    max-width: 100% !important;
+  }
+
+  .upload-area {
+    padding: 52px 18px !important;
+    min-height: 280px !important;
+    border-radius: 16px !important;
+  }
+
+  .upload-icon {
+    width: 68px !important;
+    height: 68px !important;
+    font-size: 1.85rem !important;
+  }
+
+  .copy-container {
+    flex-direction: column;
+  }
+
+  .copy-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .result-actions {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

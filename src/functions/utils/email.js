@@ -115,6 +115,25 @@ export async function sendViolationWarning(env, to, { username, siteName, siteUr
 }
 
 /**
+ * 新设备/新会话登录提醒
+ */
+export async function sendLoginNotify(env, to, { username, timeText, ua } = {}) {
+  const name = username || '用户';
+  const html = `
+    <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#333;line-height:1.75;">
+      <h2 style="color:#4361ee;margin:0 0 14px;">登录提醒</h2>
+      <p>${name} 您好：</p>
+      <p>您的鸭鸭图床账户刚刚成功登录。</p>
+      <div style="background:#f5f7ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px 16px;margin:14px 0;">
+        <div>时间：<b>${timeText || new Date().toLocaleString('zh-CN')}</b></div>
+        ${ua ? `<div style="margin-top:6px;word-break:break-all;">设备：${String(ua).slice(0, 180)}</div>` : ''}
+      </div>
+      <p style="color:#888;font-size:13px;">若非本人操作，请尽快修改密码并联系管理员。</p>
+    </div>`;
+  return sendMail(env, { to, subject: '【鸭鸭图床】账户登录提醒', html });
+}
+
+/**
  * 发送测试邮件（后台"测试发信"使用）。
  */
 export async function sendTestEmail(env, to) {

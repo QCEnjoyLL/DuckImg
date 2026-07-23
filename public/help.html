@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}}catch(e){}})();</script>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>帮助文档 - 鸭鸭图床 | 免费图床</title>
@@ -11,14 +11,12 @@
     <meta name="keywords" content="帮助文档,使用指南,FAQ,技术支持,鸭鸭图床">
     <meta name="theme-color" content="#4361ee">
     <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/dashboard-enhanced.css">
-    <link rel="stylesheet" href="./css/animations-premium.css">
-    <link rel="stylesheet" href="./css/advanced-cards.css">
-    <link rel="stylesheet" href="./css/buttons-premium.css">
-    <link rel="stylesheet" href="./css/forms-premium.css">
-    <link rel="stylesheet" href="./css/modals-premium.css">
-    <link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/menu-system.css">
     <link rel="stylesheet" href="./css/header-modern.css">
+    <link rel="stylesheet" href="./css/shell.css">
+    <link rel="stylesheet" href="./css/palettes.css">
+    <link rel="stylesheet" href="./css/page-common.css">
     <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -672,11 +670,16 @@
             <div class="help-container">
                 <!-- 帮助页面头部 -->
                 <div class="help-header">
-                    <h1 class="help-title">帮助文档</h1>
-                    <p class="help-subtitle">欢迎使用 鸭鸭图床！在这里您可以找到使用指南、常见问题解答和技术支持。</p>
+                    <div>
+                        <h1 class="help-title">
+                            <i class="ri-question-line"></i>
+                            <span data-i18n="page.help.title">帮助文档</span>
+                        </h1>
+                        <p class="help-subtitle" data-i18n="page.help.sub">欢迎使用鸭鸭图床！在这里可以找到使用指南、常见问题和技术支持。</p>
+                    </div>
                     <div class="help-search">
                         <i class="ri-search-line help-search-icon"></i>
-                        <input type="text" class="help-search-input" placeholder="搜索帮助内容..." id="helpSearchInput">
+                        <input type="text" class="help-search-input" placeholder="搜索帮助内容…" id="helpSearchInput" data-i18n-placeholder="page.help.search">
                     </div>
                 </div>
 
@@ -685,30 +688,30 @@
                     <!-- 侧边导航 -->
                     <div class="help-sidebar">
                         <div class="help-nav">
-                            <h3 class="help-nav-title">导航菜单</h3>
+                            <h3 class="help-nav-title" data-i18n="help.nav">导航菜单</h3>
                             <a href="#getting-started" class="help-nav-item active" data-section="getting-started">
                                 <i class="ri-rocket-line" style="margin-right: 0.5rem;"></i>
-                                快速开始
+                                <span data-i18n="help.gettingStarted">快速开始</span>
                             </a>
                             <a href="#features" class="help-nav-item" data-section="features">
                                 <i class="ri-star-line" style="margin-right: 0.5rem;"></i>
-                                功能介绍
+                                <span data-i18n="help.features">功能介绍</span>
                             </a>
                             <a href="#account" class="help-nav-item" data-section="account">
                                 <i class="ri-shield-user-line" style="margin-right: 0.5rem;"></i>
-                                账户与安全
+                                <span data-i18n="help.account">账户与安全</span>
                             </a>
                             <a href="#faq" class="help-nav-item" data-section="faq">
                                 <i class="ri-question-line" style="margin-right: 0.5rem;"></i>
-                                常见问题
+                                <span data-i18n="help.faq">常见问题</span>
                             </a>
                             <a href="#policy" class="help-nav-item" data-section="policy">
                                 <i class="ri-shield-check-line" style="margin-right: 0.5rem;"></i>
-                                合规与隐私
+                                <span data-i18n="help.policy">合规与隐私</span>
                             </a>
                             <a href="#contact" class="help-nav-item" data-section="contact">
                                 <i class="ri-customer-service-line" style="margin-right: 0.5rem;"></i>
-                                联系我们
+                                <span data-i18n="help.contact">联系我们</span>
                             </a>
                         </div>
                     </div>
@@ -721,50 +724,50 @@
                                 <div class="help-section-icon">
                                     <i class="ri-rocket-line"></i>
                                 </div>
-                                快速开始
+                                <span data-i18n="help.gettingStarted">快速开始</span>
                             </div>
-                            
-                            <p style="margin-bottom: 2rem; color: var(--text-light); line-height: 1.6;">
+
+                            <p style="margin-bottom: 2rem; color: var(--text-light); line-height: 1.6;" data-i18n="help.gs.intro">
                                 鸭鸭图床 是一个基于 Telegram + Cloudflare 的图床服务，让您轻松上传、管理和分享图片。按以下步骤即可上手：
                             </p>
 
                             <div class="guide-step">
                                 <div class="guide-step-number">1</div>
                                 <div class="guide-step-content">
-                                    <h4>注册账户</h4>
-                                    <p>打开登录页，切换到「注册」，填写用户名、邮箱和密码完成注册。上传需要登录后进行。</p>
+                                    <h4 data-i18n="help.gs.1.t">注册账户</h4>
+                                    <p data-i18n="help.gs.1.d">打开登录页，切换到「注册」，填写用户名、邮箱和密码完成注册。上传需要登录后进行。</p>
                                 </div>
                             </div>
 
                             <div class="guide-step">
                                 <div class="guide-step-number">2</div>
                                 <div class="guide-step-content">
-                                    <h4>验证邮箱</h4>
-                                    <p>注册后系统会向你的邮箱发送 6 位验证码，输入即可完成验证。若站点开启了「强制邮箱验证」，老用户重新登录时也需验证一次（管理员账户免验证）。</p>
+                                    <h4 data-i18n="help.gs.2.t">验证邮箱</h4>
+                                    <p data-i18n="help.gs.2.d">注册后系统会向你的邮箱发送 6 位验证码，输入即可完成验证。若站点开启了「强制邮箱验证」，老用户重新登录时也需验证一次（管理员账户免验证）。</p>
                                 </div>
                             </div>
 
                             <div class="guide-step">
                                 <div class="guide-step-number">3</div>
                                 <div class="guide-step-content">
-                                    <h4>上传图片</h4>
-                                    <p>在首页把图片拖到上传区，或点击选择文件；也可以直接 <kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴剪贴板里的图片。支持批量上传，JPG / PNG / GIF / WebP 等常见格式。</p>
+                                    <h4 data-i18n="help.gs.3.t">上传图片</h4>
+                                    <p data-i18n="help.gs.3.d">在首页把图片拖到上传区，或点击选择文件；也可以直接 Ctrl+V 粘贴剪贴板里的图片。支持批量上传，JPG / PNG / GIF / WebP 等常见格式。</p>
                                 </div>
                             </div>
 
                             <div class="guide-step">
                                 <div class="guide-step-number">4</div>
                                 <div class="guide-step-content">
-                                    <h4>复制链接</h4>
-                                    <p>上传成功后会生成四种链接：直接链接、预览链接、HTML 代码、Markdown 代码，点对应「复制」按钮即可在任意平台使用。点击预览图还能查看大图。</p>
+                                    <h4 data-i18n="help.gs.4.t">复制链接</h4>
+                                    <p data-i18n="help.gs.4.d">上传成功后会生成四种链接：直接链接、预览链接、HTML 代码、Markdown 代码，点对应「复制」按钮即可在任意平台使用。点击预览图还能查看大图。</p>
                                 </div>
                             </div>
 
                             <div class="guide-step">
                                 <div class="guide-step-number">5</div>
                                 <div class="guide-step-content">
-                                    <h4>管理图片</h4>
-                                    <p>在「我的图片」查看、搜索、收藏、打标签或删除你上传的全部图片，并能在「统计信息」中查看总数与占用空间。</p>
+                                    <h4 data-i18n="help.gs.5.t">管理图片</h4>
+                                    <p data-i18n="help.gs.5.d">在「我的图片」查看、搜索、收藏、打标签或删除你上传的全部图片，并能在「统计信息」中查看总数与占用空间。</p>
                                 </div>
                             </div>
                         </div>
@@ -775,7 +778,7 @@
                                 <div class="help-section-icon">
                                     <i class="ri-star-line"></i>
                                 </div>
-                                功能介绍
+                                <span data-i18n="help.features">功能介绍</span>
                             </div>
 
                             <div class="feature-grid">
@@ -783,48 +786,48 @@
                                     <div class="feature-icon">
                                         <i class="ri-upload-cloud-2-line"></i>
                                     </div>
-                                    <h4 class="feature-title">多种上传方式</h4>
-                                    <p class="feature-desc">拖拽上传、点击选择、批量上传，以及 <kbd>Ctrl</kbd>+<kbd>V</kbd> 直接粘贴剪贴板图片，怎么顺手怎么来。</p>
+                                    <h4 class="feature-title" data-i18n="help.ft.1.t">多种上传方式</h4>
+                                    <p class="feature-desc" data-i18n="help.ft.1.d">拖拽上传、点击选择、批量上传，以及 Ctrl+V 直接粘贴剪贴板图片，怎么顺手怎么来。</p>
                                 </div>
 
                                 <div class="feature-card">
                                     <div class="feature-icon">
                                         <i class="ri-link"></i>
                                     </div>
-                                    <h4 class="feature-title">四种分享链接</h4>
-                                    <p class="feature-desc">上传后一键复制直接链接、预览链接、HTML 代码、Markdown 代码，适配论坛、博客、文档等各种场景。</p>
+                                    <h4 class="feature-title" data-i18n="help.ft.2.t">四种分享链接</h4>
+                                    <p class="feature-desc" data-i18n="help.ft.2.d">上传后一键复制直接链接、预览链接、HTML 代码、Markdown 代码，适配论坛、博客、文档等各种场景。</p>
                                 </div>
 
                                 <div class="feature-card">
                                     <div class="feature-icon">
                                         <i class="ri-image-2-line"></i>
                                     </div>
-                                    <h4 class="feature-title">多格式 · 原图质量</h4>
-                                    <p class="feature-desc">支持 JPG、PNG、GIF、WebP 等常见格式；以文档方式存储，尽量保留原图清晰度。</p>
+                                    <h4 class="feature-title" data-i18n="help.ft.3.t">多格式 · 原图质量</h4>
+                                    <p class="feature-desc" data-i18n="help.ft.3.d">支持 JPG、PNG、GIF、WebP 等常见格式；以文档方式存储，尽量保留原图清晰度。</p>
                                 </div>
 
                                 <div class="feature-card">
                                     <div class="feature-icon">
                                         <i class="ri-star-line"></i>
                                     </div>
-                                    <h4 class="feature-title">收藏与标签</h4>
-                                    <p class="feature-desc">给图片加收藏、打标签，在「收藏图片」「标签管理」中快速归类与查找。</p>
+                                    <h4 class="feature-title" data-i18n="help.ft.4.t">收藏与标签</h4>
+                                    <p class="feature-desc" data-i18n="help.ft.4.d">给图片加收藏、打标签，在「收藏图片」「标签管理」中快速归类与查找。</p>
                                 </div>
 
                                 <div class="feature-card">
                                     <div class="feature-icon">
                                         <i class="ri-dashboard-line"></i>
                                     </div>
-                                    <h4 class="feature-title">图片管理与统计</h4>
-                                    <p class="feature-desc">在「我的图片」搜索、查看大图、删除；「统计信息」展示总数、占用空间、最近上传与上传趋势。</p>
+                                    <h4 class="feature-title" data-i18n="help.ft.5.t">图片管理与统计</h4>
+                                    <p class="feature-desc" data-i18n="help.ft.5.d">在「我的图片」搜索、查看大图、删除；「统计信息」展示总数、占用空间、最近上传与上传趋势。</p>
                                 </div>
 
                                 <div class="feature-card">
                                     <div class="feature-icon">
                                         <i class="ri-moon-line"></i>
                                     </div>
-                                    <h4 class="feature-title">深色模式 · 响应式</h4>
-                                    <p class="feature-desc">支持明/暗主题切换，桌面与手机自适应；顶部「公告」按钮可随时查看站点公告。</p>
+                                    <h4 class="feature-title" data-i18n="help.ft.6.t">深色模式 · 响应式</h4>
+                                    <p class="feature-desc" data-i18n="help.ft.6.d">支持明/暗主题切换，桌面与手机自适应；顶部「公告」按钮可随时查看站点公告。</p>
                                 </div>
                             </div>
                         </div>
@@ -835,116 +838,116 @@
                                 <div class="help-section-icon">
                                     <i class="ri-question-line"></i>
                                 </div>
-                                常见问题
+                                <span data-i18n="help.faq">常见问题</span>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>注册后收不到验证码，或一直提示验证失败？</span>
+                                    <span data-i18n="help.faq.1.q">注册后收不到验证码，或一直提示验证失败？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p>请先检查邮箱的「垃圾邮件 / 推广」文件夹。验证码为 6 位数字、数分钟内有效；可点弹窗里的「重新发送」（有 60 秒冷却）重新获取最新验证码（旧验证码可能已失效）。如果管理员尚未配置邮件服务，验证码会以提示形式直接显示在页面上（降级模式）。</p>
-                                </div>
-                            </div>
-
-                            <div class="faq-item">
-                                <div class="faq-question">
-                                    <span>登录时提示"请先验证邮箱"怎么办？</span>
-                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
-                                </div>
-                                <div class="faq-answer">
-                                    <p>说明站点开启了「强制邮箱验证」。按弹出的输入框填写发送到你邮箱的验证码即可登录；验证一次后即可正常使用。管理员账户无需验证。</p>
+                                    <p data-i18n="help.faq.1.a">请先检查邮箱的「垃圾邮件 / 推广」文件夹。验证码为 6 位数字、数分钟内有效；可点弹窗里的「重新发送」（有 60 秒冷却）重新获取最新验证码（旧验证码可能已失效）。如果管理员尚未配置邮件服务，验证码会以提示形式直接显示在页面上（降级模式）。</p>
                                 </div>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>每天能上传多少张？达到上限怎么办？</span>
+                                    <span data-i18n="help.faq.2.q">登录时提示"请先验证邮箱"怎么办？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p>每日上传上限由管理员设置（0 表示不限制）。上传区会显示「今日已上传 X / 上限」。达到上限请次日再传，或联系管理员为你单独调整上限。管理员账户不受限制。</p>
+                                    <p data-i18n="help.faq.2.a">说明站点开启了「强制邮箱验证」。按弹出的输入框填写发送到你邮箱的验证码即可登录；验证一次后即可正常使用。管理员账户无需验证。</p>
                                 </div>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>支持哪些格式？有大小限制吗？</span>
+                                    <span data-i18n="help.faq.3.q">每天能上传多少张？达到上限怎么办？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p>支持 JPG/JPEG、PNG、GIF、WebP 等主流图片格式。图片以「文档」方式存储以尽量保留原图质量；单张大小受 Telegram 限制（通常足够日常使用），过大的文件可能上传失败。</p>
+                                    <p data-i18n="help.faq.3.a">每日上传上限由管理员设置（0 表示不限制）。上传区会显示「今日已上传 X / 上限」。达到上限请次日再传，或联系管理员为你单独调整上限。管理员账户不受限制。</p>
                                 </div>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>如何用 Ctrl+V 粘贴上传？</span>
+                                    <span data-i18n="help.faq.4.q">支持哪些格式？有大小限制吗？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p>先用截图工具或在网页上「复制图片」，再回到首页上传区按 <kbd>Ctrl</kbd>+<kbd>V</kbd> 即可上传。注意：当光标在搜索框、密码框等输入框内时不会触发上传（以免干扰正常文本粘贴）。</p>
+                                    <p data-i18n="help.faq.4.a">支持 JPG/JPEG、PNG、GIF、WebP 等主流图片格式。图片以「文档」方式存储以尽量保留原图质量；单张大小受 Telegram 限制（通常足够日常使用），过大的文件可能上传失败。</p>
                                 </div>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>四种链接有什么区别？</span>
+                                    <span data-i18n="help.faq.5.q">如何用 Ctrl+V 粘贴上传？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p><strong>直接链接</strong>：图片的直链，可直接嵌入；<strong>预览链接</strong>：带精美预览页；<strong>HTML</strong>：<code>&lt;img&gt;</code> 标签代码；<strong>Markdown</strong>：<code>![](url)</code> 代码。按需复制对应格式即可。</p>
+                                    <p data-i18n="help.faq.5.a">先用截图工具或在网页上「复制图片」，再回到首页上传区按 Ctrl+V 即可上传。注意：当光标在搜索框、密码框等输入框内时不会触发上传（以免干扰正常文本粘贴）。</p>
                                 </div>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>删除图片后，链接还能访问吗？</span>
+                                    <span data-i18n="help.faq.6.q">四种链接有什么区别？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p>删除会把图片从你的账户与统计中移除。本次升级之后<strong>新上传</strong>的图片，删除时会同时从 Telegram 删除原文件、直链随即失效；而更早的旧图由于 Telegram 仍保存着原文件，其直链可能仍可访问（这是 Telegram 存储的限制）。</p>
+                                    <p data-i18n="help.faq.6.a">直接链接：图片的直链，可直接嵌入；预览链接：带精美预览页；HTML：img 标签代码；Markdown：![](url) 代码。按需复制对应格式即可。</p>
                                 </div>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>收藏、标签在哪里使用？</span>
+                                    <span data-i18n="help.faq.7.q">删除图片后，链接还能访问吗？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p>在「我的图片」对单张图片进行收藏、或在编辑里添加标签；随后可在「收藏图片」查看收藏，在「标签管理」按标签聚合查看，点击某标签会跳到「我的图片」按该标签筛选。</p>
+                                    <p data-i18n="help.faq.7.a">删除会把图片从你的账户与统计中移除。新上传的图片删除时会同时从 Telegram 删除原文件、直链随即失效；更早的旧图由于 Telegram 仍保存着原文件，其直链可能仍可访问。</p>
                                 </div>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>如何修改密码或重新绑定邮箱？</span>
+                                    <span data-i18n="help.faq.8.q">收藏、标签在哪里使用？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p>进入「用户资料 → 账户安全」：修改密码需输入当前密码；换绑邮箱需输入密码并向新邮箱发送验证码确认。忘记密码且无法登录时，请联系管理员协助。</p>
+                                    <p data-i18n="help.faq.8.a">在「我的图片」对单张图片进行收藏、或在编辑里添加标签；随后可在「收藏图片」查看收藏，在「标签管理」按标签聚合查看，点击某标签会跳到「我的图片」按该标签筛选。</p>
                                 </div>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>为什么我的图片上传被拦截了？</span>
+                                    <span data-i18n="help.faq.9.q">如何修改密码或重新绑定邮箱？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p>若管理员启用了「图片鉴黄」，命中违规内容的图片会在上传时被自动拦截、不予保存。请遵守站点的内容规范（详见「合规与隐私」）。</p>
+                                    <p data-i18n="help.faq.9.a">进入「用户资料 → 账户安全」：修改密码需输入当前密码；换绑邮箱需输入密码并向新邮箱发送验证码确认。忘记密码且无法登录时，请联系管理员协助。</p>
                                 </div>
                             </div>
 
                             <div class="faq-item">
                                 <div class="faq-question">
-                                    <span>能批量管理吗？</span>
+                                    <span data-i18n="help.faq.10.q">为什么我的图片上传被拦截了？</span>
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p>可以。在「我的图片」可对图片进行删除、复制链接、打标签等操作；管理员在后台还能对用户进行批量封禁/解封/设上限/删除等管理。</p>
+                                    <p data-i18n="help.faq.10.a">若管理员启用了「图片鉴黄」，命中违规内容的图片会在上传时被自动拦截、不予保存。请遵守站点的内容规范（详见「合规与隐私」）。</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <div class="faq-question">
+                                    <span data-i18n="help.faq.11.q">能批量管理吗？</span>
+                                    <i class="ri-arrow-down-s-line faq-toggle"></i>
+                                </div>
+                                <div class="faq-answer">
+                                    <p data-i18n="help.faq.11.a">可以。在「我的图片」可对图片进行删除、复制链接、打标签等操作；管理员在后台还能对用户进行批量封禁/解封/设上限/删除等管理。</p>
                                 </div>
                             </div>
                         </div>
@@ -955,50 +958,50 @@
                                 <div class="help-section-icon">
                                     <i class="ri-shield-user-line"></i>
                                 </div>
-                                账户与安全
+                                <span data-i18n="help.account">账户与安全</span>
                             </div>
 
-                            <p style="margin-bottom: 1.5rem; color: var(--text-light); line-height: 1.6;">
+                            <p style="margin-bottom: 1.5rem; color: var(--text-light); line-height: 1.6;" data-i18n="help.ac.intro">
                                 与账户、邮箱、密码和上传额度相关的设置都在这里。账户安全设置位于「用户资料 → 账户安全」。
                             </p>
 
                             <div class="guide-step">
                                 <div class="guide-step-number"><i class="ri-mail-check-line"></i></div>
                                 <div class="guide-step-content">
-                                    <h4>邮箱验证</h4>
-                                    <p>注册时需验证邮箱；若站点开启「强制邮箱验证」，老用户重新登录也需验证一次（管理员免验证）。收不到验证码请查看垃圾箱，或点「重新发送」（60 秒冷却）获取最新验证码。</p>
+                                    <h4 data-i18n="help.ac.1.t">邮箱验证</h4>
+                                    <p data-i18n="help.ac.1.d">注册时需验证邮箱；若站点开启「强制邮箱验证」，老用户重新登录也需验证一次（管理员免验证）。收不到验证码请查看垃圾箱，或点「重新发送」（60 秒冷却）获取最新验证码。</p>
                                 </div>
                             </div>
 
                             <div class="guide-step">
                                 <div class="guide-step-number"><i class="ri-lock-password-line"></i></div>
                                 <div class="guide-step-content">
-                                    <h4>修改密码</h4>
-                                    <p>在「用户资料 → 账户安全」输入当前密码与新密码即可修改，修改后请用新密码重新登录。</p>
+                                    <h4 data-i18n="help.ac.2.t">修改密码</h4>
+                                    <p data-i18n="help.ac.2.d">在「用户资料 → 账户安全」输入当前密码与新密码即可修改，修改后请用新密码重新登录。</p>
                                 </div>
                             </div>
 
                             <div class="guide-step">
                                 <div class="guide-step-number"><i class="ri-mail-send-line"></i></div>
                                 <div class="guide-step-content">
-                                    <h4>重新绑定邮箱</h4>
-                                    <p>输入当前密码与新邮箱，系统会向新邮箱发送验证码，输入验证码确认后完成换绑。</p>
+                                    <h4 data-i18n="help.ac.3.t">重新绑定邮箱</h4>
+                                    <p data-i18n="help.ac.3.d">输入当前密码与新邮箱，系统会向新邮箱发送验证码，输入验证码确认后完成换绑。</p>
                                 </div>
                             </div>
 
                             <div class="guide-step">
                                 <div class="guide-step-number"><i class="ri-upload-2-line"></i></div>
                                 <div class="guide-step-content">
-                                    <h4>每日上传上限</h4>
-                                    <p>普通用户每天可上传的数量由管理员统一设置（0 表示不限）；管理员也可为单个用户单独设定上限。上传区会实时显示「今日已上传 X / 上限」。</p>
+                                    <h4 data-i18n="help.ac.4.t">每日上传上限</h4>
+                                    <p data-i18n="help.ac.4.d">普通用户每天可上传的数量由管理员统一设置（0 表示不限）；管理员也可为单个用户单独设定上限。上传区会实时显示「今日已上传 X / 上限」。</p>
                                 </div>
                             </div>
 
                             <div class="guide-step">
                                 <div class="guide-step-number"><i class="ri-user-3-line"></i></div>
                                 <div class="guide-step-content">
-                                    <h4>头像</h4>
-                                    <p>在「用户资料」点击头像即可填写头像图片链接进行更换。</p>
+                                    <h4 data-i18n="help.ac.5.t">头像</h4>
+                                    <p data-i18n="help.ac.5.d">在「用户资料」点击头像即可填写头像图片链接进行更换。</p>
                                 </div>
                             </div>
                         </div>
@@ -1009,23 +1012,23 @@
                                 <div class="help-section-icon">
                                     <i class="ri-shield-check-line"></i>
                                 </div>
-                                合规与隐私
+                                <span data-i18n="help.policy">合规与隐私</span>
                             </div>
 
-                            <p style="margin-bottom: 1.5rem; color: var(--text-light); line-height: 1.6;">
+                            <p style="margin-bottom: 1.5rem; color: var(--text-light); line-height: 1.6;" data-i18n="help.pol.intro">
                                 请在使用前阅读以下内容规范。上传即视为同意本规范，并对所上传内容承担全部法律责任。
                             </p>
 
                             <div style="background: rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); border-radius: var(--radius); padding: 1.2rem 1.4rem; margin-bottom: 1.5rem; line-height: 1.9;">
-                                <p style="margin:0 0 0.5rem;"><strong style="color:#ef4444;">严禁上传任何违反法律法规的内容</strong>，包括但不限于：色情淫秽、暴力恐怖、血腥、涉政违规、赌博诈骗、侵犯他人隐私 / 肖像 / 版权等违法或不良信息。</p>
-                                <p style="margin:0;">本站对上传内容进行机器审核（鉴黄）与人工抽查；一经发现违规，将立即删除并封禁账号，情节严重者保留向有关部门举报的权利。</p>
+                                <p style="margin:0 0 0.5rem;"><strong style="color:#ef4444;" data-i18n="help.pol.warn1">严禁上传任何违反法律法规的内容，包括但不限于：色情淫秽、暴力恐怖、血腥、涉政违规、赌博诈骗、侵犯他人隐私 / 肖像 / 版权等违法或不良信息。</strong></p>
+                                <p style="margin:0;" data-i18n="help.pol.warn2">本站对上传内容进行机器审核（鉴黄）与人工抽查；一经发现违规，将立即删除并封禁账号，情节严重者保留向有关部门举报的权利。</p>
                             </div>
 
                             <ul style="color: var(--text-light); line-height: 2; padding-left: 1.2rem;">
-                                <li>请勿上传重要或隐私文件，并请自行做好备份；图床不承诺作为唯一存储。</li>
-                                <li>图片直链对持有链接者可见，请勿用于存放敏感、私密内容。</li>
-                                <li>管理员可查看与清理用户上传的内容，以维护合规与安全。</li>
-                                <li>因违规上传导致的一切后果由上传者自行承担，与本站无关。</li>
+                                <li data-i18n="help.pol.1">请勿上传重要或隐私文件，并请自行做好备份；图床不承诺作为唯一存储。</li>
+                                <li data-i18n="help.pol.2">图片直链对持有链接者可见，请勿用于存放敏感、私密内容。</li>
+                                <li data-i18n="help.pol.3">管理员可查看与清理用户上传的内容，以维护合规与安全。</li>
+                                <li data-i18n="help.pol.4">因违规上传导致的一切后果由上传者自行承担，与本站无关。</li>
                             </ul>
                         </div>
 
@@ -1035,10 +1038,10 @@
                                 <div class="help-section-icon">
                                     <i class="ri-customer-service-line"></i>
                                 </div>
-                                联系我们
+                                <span data-i18n="help.contact">联系我们</span>
                             </div>
 
-                            <p style="margin-bottom: 2rem; color: var(--text-light); line-height: 1.6;">
+                            <p style="margin-bottom: 2rem; color: var(--text-light); line-height: 1.6;" data-i18n="help.ct.intro">
                                 使用中遇到问题、或有建议与反馈，欢迎通过以下方式联系：
                             </p>
 
@@ -1047,24 +1050,24 @@
                                     <div class="contact-icon">
                                         <i class="ri-github-line"></i>
                                     </div>
-                                    <h4 class="contact-title">GitHub</h4>
-                                    <p class="contact-info">提交 Issue 反馈问题或建议</p>
+                                    <h4 class="contact-title" data-i18n="help.ct.1.t">GitHub</h4>
+                                    <p class="contact-info" data-i18n="help.ct.1.d">提交 Issue 反馈问题或建议</p>
                                 </div>
 
                                 <div class="contact-item">
                                     <div class="contact-icon">
                                         <i class="ri-shield-star-line"></i>
                                     </div>
-                                    <h4 class="contact-title">联系管理员</h4>
-                                    <p class="contact-info">账号、上限、违规申诉等请联系站点管理员</p>
+                                    <h4 class="contact-title" data-i18n="help.ct.2.t">联系管理员</h4>
+                                    <p class="contact-info" data-i18n="help.ct.2.d">账号、上限、违规申诉等请联系站点管理员</p>
                                 </div>
 
                                 <div class="contact-item">
                                     <div class="contact-icon">
                                         <i class="ri-notification-3-line"></i>
                                     </div>
-                                    <h4 class="contact-title">站点公告</h4>
-                                    <p class="contact-info">点击顶部「公告」按钮查看最新通知</p>
+                                    <h4 class="contact-title" data-i18n="help.ct.3.t">站点公告</h4>
+                                    <p class="contact-info" data-i18n="help.ct.3.d">点击顶部「公告」按钮查看最新通知</p>
                                 </div>
                             </div>
                         </div>
@@ -1080,9 +1083,13 @@
 
     <!-- JavaScript 文件 -->
     <!-- 主题管理器 -->
+    <script src="./js/shell.js"></script>
     <script src="./js/theme-manager.js"></script>
+    <script src="./js/user-prefs.js"></script>
+    <script src="./js/palettes.js"></script>
     <script src="./js/common.js"></script>
     <script src="./js/help.js"></script>
+    <script src="./js/auth.js"></script>
     <script src="./js/menu-system.js"></script>
     <script src="./js/announcement.js"></script>
     <script src="./js/site-config.js"></script>
