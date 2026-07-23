@@ -1,6 +1,6 @@
 {
   "name": "duckimg",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "鸭鸭图床 — 基于 Telegram + Cloudflare 的免费图床服务",
   "main": "index.js",
   "scripts": {
