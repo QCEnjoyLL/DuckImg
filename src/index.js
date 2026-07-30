@@ -3,7 +3,7 @@ import { authenticatedUpload } from './functions/upload';
 import { fileHandler } from './functions/file/[id]';
 import { register, login, getCurrentUser, updateUserAvatar, getUserProfile, getQuota, changePassword, changeEmail, confirmEmail, forgotPassword, resetPassword, updateUserPrefs } from './functions/user/auth';
 import { sendCode, verifyCode } from './functions/user/verify';
-import { getUserImages, deleteUserImage, updateImageInfo, searchUserImages, claimUserImage } from './functions/user/images';
+import { getUserImages, deleteUserImage, updateImageInfo, searchUserImages, claimUserImage, batchImages } from './functions/user/images';
 import { authMiddleware, adminMiddleware } from './functions/utils/auth';
 import {
   adminStats, adminListUsers, adminSetUserStatus, adminDeleteUser,
@@ -76,6 +76,7 @@ app.put('/api/auth/prefs', authMiddleware, updateUserPrefs);
 app.get('/api/images', authMiddleware, getUserImages);
 app.get('/api/images/search', authMiddleware, searchUserImages);
 app.post('/api/images/claim', authMiddleware, claimUserImage);
+app.post('/api/images/batch', authMiddleware, batchImages);
 app.delete('/api/images/:id', authMiddleware, deleteUserImage);
 app.put('/api/images/:id', authMiddleware, updateImageInfo);
 

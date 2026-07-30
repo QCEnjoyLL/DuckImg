@@ -1894,58 +1894,40 @@ function updateSelectedCount() {
 // 批量添加标签到图片
 async function batchAddTagToImages(tag) {
     if (selectedImages.size === 0 || !tag) return;
+    const notify = window.showNotification || alert;
+    const ids = [...selectedImages];
+    notify(`正在为 ${ids.length} 张图片添加标签…`, 'info');
 
-    let successCount = 0;
-    let failCount = 0;
-
-    // 显示加载状态
-    alert(`正在处理 ${selectedImages.size} 张图片...`);
-
-    // 逐个处理图片
-    for (const imageId of selectedImages) {
+    let updated = 0;
+    let failed = 0;
+    // 批量端点每次最多 40 张，分块提交
+    for (let i = 0; i < ids.length; i += 40) {
+        const chunk = ids.slice(i, i + 40);
         try {
-            const image = currentImages.find(img => img.id === imageId);
-            if (!image) continue;
-
-            // 检查标签是否已存在
-            const currentImageTags = image.tags || [];
-            if (currentImageTags.includes(tag)) {
-                successCount++;
-                continue; // 标签已存在，跳过
-            }
-
-            // 添加新标签
-            const newTags = [...currentImageTags, tag];
-
-            const response = await fetch(`/api/images/${imageId}`, {
-                method: 'PUT',
+            const response = await fetch('/api/images/batch', {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     ...getAuthHeader()
                 },
-                body: JSON.stringify({
-                    fileName: image.fileName,
-                    tags: newTags
-                })
+                body: JSON.stringify({ action: 'tag', ids: chunk, tags: [tag] })
             });
-
             if (response.ok) {
-                successCount++;
+                const data = await response.json();
+                updated += data.updated || 0;
             } else {
-                failCount++;
+                failed += chunk.length;
             }
         } catch (error) {
-            console.error(`为图片 ${imageId} 添加标签失败:`, error);
-            failCount++;
+            console.error('批量添加标签失败:', error);
+            failed += chunk.length;
         }
     }
 
-    // 显示结果
-    if (failCount === 0) {
-        alert(`成功为 ${successCount} 张图片添加标签`);
-    } else {
-        alert(`成功: ${successCount} 张, 失败: ${failCount} 张`);
-    }
+    notify(
+        failed === 0 ? `成功为 ${updated} 张图片添加标签` : `成功: ${updated} 张, 失败: ${failed} 张`,
+        failed ? 'error' : 'success'
+    );
 
     // 重新加载图片列表
     loadUserImages(currentPage);
@@ -1957,38 +1939,40 @@ async function batchAddTagToImages(tag) {
 // 批量删除图片
 async function batchDeleteImages() {
     if (selectedImages.size === 0) return;
+    const notify = window.showNotification || alert;
+    const ids = [...selectedImages];
+    notify(`正在删除 ${ids.length} 张图片…`, 'info');
 
-    let successCount = 0;
-    let failCount = 0;
-
-    // 显示加载状态
-    alert(`正在删除 ${selectedImages.size} 张图片...`);
-
-    // 逐个删除图片
-    for (const imageId of selectedImages) {
+    let deleted = 0;
+    let failed = 0;
+    // 批量端点每次最多 40 张，分块提交
+    for (let i = 0; i < ids.length; i += 40) {
+        const chunk = ids.slice(i, i + 40);
         try {
-            const response = await fetch(`/api/images/${imageId}`, {
-                method: 'DELETE',
-                headers: getAuthHeader()
+            const response = await fetch('/api/images/batch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeader()
+                },
+                body: JSON.stringify({ action: 'delete', ids: chunk })
             });
-
             if (response.ok) {
-                successCount++;
+                const data = await response.json();
+                deleted += data.deleted || 0;
             } else {
-                failCount++;
+                failed += chunk.length;
             }
         } catch (error) {
-            console.error(`删除图片 ${imageId} 失败:`, error);
-            failCount++;
+            console.error('批量删除失败:', error);
+            failed += chunk.length;
         }
     }
 
-    // 显示结果
-    if (failCount === 0) {
-        alert(`成功删除 ${successCount} 张图片`);
-    } else {
-        alert(`成功: ${successCount} 张, 失败: ${failCount} 张`);
-    }
+    notify(
+        failed === 0 ? `成功删除 ${deleted} 张图片` : `成功: ${deleted} 张, 失败: ${failed} 张`,
+        failed ? 'error' : 'success'
+    );
 
     // 重新加载图片列表
     loadUserImages(currentPage);

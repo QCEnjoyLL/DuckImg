@@ -338,6 +338,38 @@ export async function dbDeleteImage(env, id) {
   await db(env).prepare('DELETE FROM images WHERE id = ?').bind(id).run();
 }
 
+// —— 批量操作（调用方需保证 ids ≤ 40，受 D1 每语句 100 绑定参数限制）——
+
+export async function dbBatchImagesByIds(env, userId, ids) {
+  if (!ids || !ids.length) return [];
+  const ph = ids.map(() => '?').join(',');
+  const res = await db(env)
+    .prepare(`SELECT id, message_id, tags FROM images WHERE user_id = ? AND id IN (${ph})`)
+    .bind(userId, ...ids)
+    .all();
+  return res.results || [];
+}
+
+export async function dbDeleteImagesByIds(env, userId, ids) {
+  if (!ids || !ids.length) return;
+  const ph = ids.map(() => '?').join(',');
+  await db(env)
+    .prepare(`DELETE FROM images WHERE user_id = ? AND id IN (${ph})`)
+    .bind(userId, ...ids)
+    .run();
+}
+
+/** entries: [{ id, tags: string[] }]，一次 batch 往返 */
+export async function dbUpdateImageTags(env, userId, entries) {
+  if (!entries || !entries.length) return;
+  const stmts = entries.map((e) =>
+    db(env)
+      .prepare('UPDATE images SET tags = ? WHERE user_id = ? AND id = ?')
+      .bind(JSON.stringify(e.tags), userId, e.id)
+  );
+  await db(env).batch(stmts);
+}
+
 export async function dbCountUserImages(env, userId) {
   if (!userId) return 0;
   const row = await db(env)

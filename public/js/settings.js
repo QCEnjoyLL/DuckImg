@@ -580,34 +580,50 @@ async function deleteAllImages() {
         }
 
         showNotification('正在获取图片列表…', 'info');
-        const listRes = await fetch('/api/images?page=1&limit=5000', {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!listRes.ok) throw new Error('获取图片列表失败');
-        const data = await listRes.json();
-        const files = data.files || [];
-        if (!files.length) {
-            showNotification('没有可删除的图片', 'info');
-            return;
-        }
-
-        showNotification(`正在删除 ${files.length} 张图片…`, 'info');
         let ok = 0;
         let fail = 0;
-        // 串行删除，避免压垮 Worker / TG
-        for (const f of files) {
-            try {
-                const id = f.id;
-                if (!id) { fail++; continue; }
-                const delRes = await fetch(`/api/images/${encodeURIComponent(id)}`, {
-                    method: 'DELETE',
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (delRes.ok) ok++;
-                else fail++;
-            } catch (_) {
-                fail++;
+        let announced = false;
+        // 批量端点每次 40 张；>5000 张时外层再拉一轮
+        for (let round = 0; round < 10 && fail === 0; round++) {
+            const listRes = await fetch('/api/images?page=1&limit=5000', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!listRes.ok) throw new Error('获取图片列表失败');
+            const data = await listRes.json();
+            const files = data.files || [];
+            if (!files.length) break;
+            if (!announced) {
+                showNotification(`正在删除 ${data.totalImages || files.length} 张图片…`, 'info');
+                announced = true;
             }
+
+            for (let i = 0; i < files.length; i += 40) {
+                const ids = files.slice(i, i + 40).map((f) => f.id).filter(Boolean);
+                if (!ids.length) continue;
+                try {
+                    const delRes = await fetch('/api/images/batch', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ action: 'delete', ids })
+                    });
+                    if (delRes.ok) {
+                        const d = await delRes.json();
+                        ok += d.deleted || 0;
+                    } else {
+                        fail += ids.length;
+                    }
+                } catch (_) {
+                    fail += ids.length;
+                }
+            }
+        }
+
+        if (ok === 0 && fail === 0) {
+            showNotification('没有可删除的图片', 'info');
+            return;
         }
 
         if (fail === 0) {

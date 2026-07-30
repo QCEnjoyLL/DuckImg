@@ -2,7 +2,13 @@
  * 用户图片管理 API（D1）
  */
 import { deleteTelegramMessage } from '../upload';
-import { dbGetImage, dbUpsertImage, dbDeleteImage, dbUserImagesPage } from '../utils/db';
+import {
+  dbGetImage, dbUpsertImage, dbDeleteImage, dbUserImagesPage,
+  dbBatchImagesByIds, dbDeleteImagesByIds, dbUpdateImageTags,
+} from '../utils/db';
+
+// 每次批量 ≤40：Telegram 删消息按张算子请求（Workers 配额 50/请求），D1 绑定参数也有 100 上限
+export const BATCH_MAX = 40;
 
 function clampPage(url) {
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
@@ -69,6 +75,49 @@ export async function searchUserImages(c) {
   } catch (error) {
     console.error('搜索用户图片错误:', error);
     return c.json({ error: '搜索用户图片失败' }, 500);
+  }
+}
+
+export async function batchImages(c) {
+  try {
+    const user = c.get('user');
+    const userId = user.id;
+    const body = await c.req.json().catch(() => ({}));
+    const action = body && body.action;
+    const ids = Array.isArray(body && body.ids)
+      ? body.ids.filter((x) => typeof x === 'string' && x).slice(0, BATCH_MAX)
+      : [];
+    if (!ids.length) return c.json({ error: '请提供图片 id 列表' }, 400);
+    if (action !== 'delete' && action !== 'tag') return c.json({ error: '不支持的操作' }, 400);
+
+    // 只操作确属当前用户的图，其余 id 静默跳过
+    const owned = await dbBatchImagesByIds(c.env, userId, ids);
+    if (!owned.length) return c.json({ error: '没有可操作的图片' }, 403);
+
+    if (action === 'delete') {
+      await dbDeleteImagesByIds(c.env, userId, owned.map((r) => r.id));
+      await Promise.allSettled(
+        owned.filter((r) => r.message_id).map((r) => deleteTelegramMessage(c.env, r.message_id))
+      );
+      return c.json({ message: '删除成功', deleted: owned.length, skipped: ids.length - owned.length });
+    }
+
+    // tag：把新标签合并进每张图现有标签
+    const addTags = Array.isArray(body.tags)
+      ? body.tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 20)
+      : [];
+    if (!addTags.length) return c.json({ error: '请提供标签' }, 400);
+    const entries = owned.map((r) => {
+      let cur = [];
+      try { cur = r.tags ? JSON.parse(r.tags) : []; } catch { cur = []; }
+      if (!Array.isArray(cur)) cur = [];
+      return { id: r.id, tags: [...new Set([...cur, ...addTags])] };
+    });
+    await dbUpdateImageTags(c.env, userId, entries);
+    return c.json({ message: '标签已添加', updated: entries.length, skipped: ids.length - owned.length });
+  } catch (error) {
+    console.error('批量操作错误:', error);
+    return c.json({ error: '批量操作失败' }, 500);
   }
 }
 
