@@ -33,17 +33,31 @@ function initPageLoader() {
  */
 function initScrollProgress() {
     const progressBar = document.getElementById('scrollProgress');
-    
-    if (progressBar) {
-        window.addEventListener('scroll', () => {
-            const windowHeight = window.innerHeight;
-            const documentHeight = document.documentElement.scrollHeight;
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            
-            const progress = (scrollTop / (documentHeight - windowHeight)) * 100;
-            progressBar.style.width = Math.min(progress, 100) + '%';
-        });
+    if (!progressBar) return;
+    // app.js 也实现了同一个进度条，两者只生效一个
+    if (window.__duckScrollProgressBound) return;
+    window.__duckScrollProgressBound = true;
+
+    let ticking = false;
+
+    function update() {
+        ticking = false;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const denom = documentHeight - windowHeight;
+        const progress = denom > 0 ? (scrollTop / denom) * 100 : 0;
+        progressBar.style.width = Math.min(progress, 100) + '%';
     }
+
+    // rAF 节流，避免每个 scroll 事件都读布局属性
+    window.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(update);
+    }, { passive: true });
+
+    update();
 }
 
 /**

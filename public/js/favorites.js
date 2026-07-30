@@ -62,7 +62,7 @@ async function loadFavoriteImages() {
         }
 
         // 拉取用户全部图片并过滤出已收藏的
-        const response = await fetch('/api/images?page=1&limit=1000', {
+        const response = await fetch('/api/images?page=1&limit=5000', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('获取图片失败');

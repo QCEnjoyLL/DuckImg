@@ -59,15 +59,38 @@
         walk(tpl.content, el);
     }
 
-    async function applySiteConfig() {
-        let site;
+    // 站点配置几乎不变，同标签页内缓存 10 分钟，避免每次翻页都打一次 /api/site
+    const SITE_CACHE_KEY = 'siteConfigCache';
+    const SITE_CACHE_TTL = 10 * 60 * 1000;
+
+    function readSiteCache() {
         try {
-            const res = await fetch('/api/site');
-            if (!res.ok) return;
-            const data = await res.json();
-            site = data.site || {};
-        } catch (e) {
-            return; // 拉取失败不影响页面
+            const raw = sessionStorage.getItem(SITE_CACHE_KEY);
+            if (!raw) return null;
+            const c = JSON.parse(raw);
+            if (!c || !c.at || (Date.now() - c.at) > SITE_CACHE_TTL) return null;
+            return c.site || null;
+        } catch { return null; }
+    }
+
+    function writeSiteCache(site) {
+        try {
+            sessionStorage.setItem(SITE_CACHE_KEY, JSON.stringify({ at: Date.now(), site }));
+        } catch { /* 隐私模式等写入失败：忽略 */ }
+    }
+
+    async function applySiteConfig() {
+        let site = readSiteCache();
+        if (!site) {
+            try {
+                const res = await fetch('/api/site');
+                if (!res.ok) return;
+                const data = await res.json();
+                site = data.site || {};
+                writeSiteCache(site);
+            } catch (e) {
+                return; // 拉取失败不影响页面
+            }
         }
 
         // 站点名称/标题：更新 Logo 文字与浏览器标题（仅替换品牌词，保留各页前后缀）

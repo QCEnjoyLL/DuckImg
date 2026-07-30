@@ -52,7 +52,7 @@ async function loadTags() {
             return;
         }
 
-        const response = await fetch('/api/images?page=1&limit=1000', {
+        const response = await fetch('/api/images?page=1&limit=5000', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('获取图片失败');
@@ -442,7 +442,7 @@ function createTagCard(tag) {
                 ${(tag.images || []).slice(0, 4).map(img => {
                     const n = esc(img.name);
                     const u = esc(img.thumbnailUrl);
-                    return `<img src="${u}" alt="${n}" class="tag-image-thumb" title="${n}">`;
+                    return `<img src="${u}" alt="${n}" class="tag-image-thumb" title="${n}" loading="lazy">`;
                 }).join('')}
                 ${tag.imageCount > 4 ? `
                     <div class="tag-more-count">+${Number(tag.imageCount) - 4}</div>

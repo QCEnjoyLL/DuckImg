@@ -20,12 +20,31 @@
         return false;
     }
 
-    async function fetchAnnouncement() {
+    // 同标签页缓存 5 分钟，避免每次翻页都打一次 /api/announcement
+    const ANN_CACHE_KEY = 'announcementCache';
+    const ANN_CACHE_TTL = 5 * 60 * 1000;
+
+    async function fetchAnnouncement(force) {
+        if (!force) {
+            try {
+                const raw = sessionStorage.getItem(ANN_CACHE_KEY);
+                if (raw) {
+                    const c = JSON.parse(raw);
+                    if (c && c.at && (Date.now() - c.at) < ANN_CACHE_TTL) {
+                        cachedAnnouncement = c.announcement || null;
+                        return cachedAnnouncement;
+                    }
+                }
+            } catch { /* 缓存不可用：正常请求 */ }
+        }
         try {
             const res = await fetch('/api/announcement');
             if (!res.ok) return null;
             const data = await res.json();
             cachedAnnouncement = data.announcement || null;
+            try {
+                sessionStorage.setItem(ANN_CACHE_KEY, JSON.stringify({ at: Date.now(), announcement: cachedAnnouncement }));
+            } catch { /* 忽略 */ }
             return cachedAnnouncement;
         } catch (e) {
             console.warn('加载公告失败:', e);

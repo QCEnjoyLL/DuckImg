@@ -80,8 +80,7 @@ function initDashboard() {
     // 初始化批量操作功能
     initBatchOperations();
 
-    // 初始化数据可视化图表
-    initCharts();
+    // 初始化数据可视化图表（Chart.js 改为打开统计面板时按需加载）
 
     // 初始化视图模式切换
     initViewModes();
@@ -492,27 +491,34 @@ function createImageCard(image) {
 }
 
 // 初始化图片卡片事件
+let cardClipboard = null;
+
 function initImageCardEvents() {
-    // 初始化复制按钮 — 成功态只换图标/class，不改文案长度，避免卡片被顶高
-    new ClipboardJS('.copy-btn').on('success', function(e) {
-        const btn = e.trigger;
-        if (btn.dataset.copyBusy === '1') return;
-        btn.dataset.copyBusy = '1';
-        const originalHtml = btn.innerHTML;
-        btn.classList.add('is-copied');
-        // icon-only success — same footprint as “复制”, no reflow
-        btn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-        `;
-        btn.setAttribute('aria-label', tt('common.copied','已复制'));
-        setTimeout(() => {
-            btn.innerHTML = originalHtml;
-            btn.classList.remove('is-copied');
-            btn.dataset.copyBusy = '';
-        }, 1600);
-    });
+    // 复制按钮：ClipboardJS 用选择器时是事件委托，全局建一次即可覆盖后续新卡片。
+    // 之前每次渲染都 new 一个，实例越堆越多，复制一次会触发 N 次回调。
+    if (!cardClipboard) {
+        cardClipboard = new ClipboardJS('.copy-btn');
+        // 成功态只换图标/class，不改文案长度，避免卡片被顶高
+        cardClipboard.on('success', function(e) {
+            const btn = e.trigger;
+            if (btn.dataset.copyBusy === '1') return;
+            btn.dataset.copyBusy = '1';
+            const originalHtml = btn.innerHTML;
+            btn.classList.add('is-copied');
+            // icon-only success — same footprint as “复制”, no reflow
+            btn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            `;
+            btn.setAttribute('aria-label', tt('common.copied','已复制'));
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('is-copied');
+                btn.dataset.copyBusy = '';
+            }, 1600);
+        });
+    }
 
     // 添加编辑按钮事件
     document.querySelectorAll('.edit-btn').forEach(btn => {
@@ -756,14 +762,14 @@ function updateStatistics(data) {
     document.getElementById('recentUploads').textContent = data.recentUploads;
     document.getElementById('avgFileSize').textContent = formatFileSize(data.averageFileSize);
 
-    // 更新图表数据 - 延迟初始化以确保DOM已加载
-    setTimeout(() => {
+    // 图表未创建时不做任何事（面板打开时才建图并灌数据）
+    if (uploadTrendChart && storageUsageChart) {
         try {
             updateCharts();
         } catch (error) {
             console.warn('Charts not available:', error);
         }
-    }, 100);
+    }
 
     // 更新菜单徽章
     updateMenuBadges();
@@ -772,6 +778,36 @@ function updateStatistics(data) {
 // 初始化图表
 let uploadTrendChart = null;
 let storageUsageChart = null;
+let chartLibPromise = null;
+
+// Chart.js 约 200KB，只有打开统计面板时才加载
+function loadChartLib() {
+    if (window.Chart) return Promise.resolve(true);
+    if (chartLibPromise) return chartLibPromise;
+    chartLibPromise = new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+        s.onload = () => resolve(true);
+        s.onerror = () => { chartLibPromise = null; resolve(false); };
+        document.head.appendChild(s);
+    });
+    return chartLibPromise;
+}
+
+// 面板首次打开时建图 + 灌数据
+async function ensureCharts() {
+    if (uploadTrendChart && storageUsageChart) return true;
+    const ok = await loadChartLib();
+    if (!ok) return false;
+    try {
+        initCharts();
+        updateCharts();
+        return true;
+    } catch (e) {
+        console.warn('图表初始化失败:', e);
+        return false;
+    }
+}
 
 function initCharts() {
     // 设置Chart.js全局配置
@@ -2059,6 +2095,8 @@ function openChartsPanel() {
     if (scrim) scrim.classList.add('active');
     if (window.DuckShell) window.DuckShell.lockScroll();
     else document.body.style.overflow = 'hidden';
+    // 首次打开才加载 Chart.js 并建图
+    ensureCharts();
 }
 window.openChartsPanel = openChartsPanel;
 

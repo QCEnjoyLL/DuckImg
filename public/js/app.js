@@ -10,14 +10,30 @@ window.addEventListener('load', () => {
     initScrollAnimations();
 });
 
-// 滚动动画初始化
+// 滚动动画初始化（IntersectionObserver；旧的 scroll 监听版已合并到这里）
 function initScrollAnimations() {
-    const scrollAnimations = document.querySelectorAll('.scroll-animation');
+    // 首页元素按位置补动画类
+    const animationElements = [
+        { selector: '.feature-card:nth-child(1)', animation: 'from-left' },
+        { selector: '.feature-card:nth-child(2)', animation: 'fade-in' },
+        { selector: '.feature-card:nth-child(3)', animation: 'from-right' },
+        { selector: '.upload-area', animation: 'from-bottom' }
+    ];
+    animationElements.forEach(item => {
+        document.querySelectorAll(item.selector).forEach(el => {
+            el.classList.add('scroll-animation', item.animation);
+        });
+    });
 
-    // 如果没有滚动动画元素，直接返回
+    const scrollAnimations = document.querySelectorAll('.scroll-animation:not(.visible)');
     if (scrollAnimations.length === 0) return;
 
-    // 创建Intersection Observer
+    // 老浏览器无 IO：直接全部显示，不降级成 scroll 监听
+    if (!('IntersectionObserver' in window)) {
+        scrollAnimations.forEach(el => el.classList.add('visible'));
+        return;
+    }
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -27,15 +43,12 @@ function initScrollAnimations() {
             }
         });
     }, {
-        root: null, // 相对于视口
-        rootMargin: '0px',
-        threshold: 0.1 // 当元素10%可见时触发
+        root: null,
+        rootMargin: '0px 0px -10% 0px',
+        threshold: 0.1
     });
 
-    // 观察所有滚动动画元素
-    scrollAnimations.forEach(animation => {
-        observer.observe(animation);
-    });
+    scrollAnimations.forEach(el => observer.observe(el));
 }
 
 // 获取认证头
@@ -166,44 +179,6 @@ function initPasteUpload() {
             e.preventDefault();
         }
     });
-}
-
-// 滚动动画初始化
-function initScrollAnimations() {
-    // 添加滚动动画类
-    const animationElements = [
-        { selector: '.feature-card:nth-child(1)', animation: 'from-left' },
-        { selector: '.feature-card:nth-child(2)', animation: 'fade-in' },
-        { selector: '.feature-card:nth-child(3)', animation: 'from-right' },
-        { selector: '.upload-area', animation: 'from-bottom' }
-    ];
-
-    // 添加动画类
-    animationElements.forEach(item => {
-        document.querySelectorAll(item.selector).forEach(el => {
-            el.classList.add('scroll-animation', item.animation);
-        });
-    });
-
-    // 检查元素是否在视口中
-    function checkInView() {
-        const elements = document.querySelectorAll('.scroll-animation');
-        const windowHeight = window.innerHeight;
-
-        elements.forEach(element => {
-            const elementPosition = element.getBoundingClientRect();
-            // 当元素进入视口时添加可见类
-            if (elementPosition.top < windowHeight * 0.9) {
-                element.classList.add('visible');
-            }
-        });
-    }
-
-    // 初始检查
-    setTimeout(checkInView, 100);
-
-    // 滚动时检查
-    window.addEventListener('scroll', checkInView);
 }
 
 // 平滑滚动初始化
@@ -918,12 +893,18 @@ function init3DCards() {
 function initScrollProgress() {
     const progressBar = document.getElementById('scrollProgress');
     if (!progressBar) return;
+    // common.js 也实现了同一个进度条，两者只生效一个，避免重复 scroll 监听
+    if (window.__duckScrollProgressBound) return;
+    window.__duckScrollProgressBound = true;
+
+    let ticking = false;
 
     // 更新进度条
     function updateProgress() {
+        ticking = false;
         const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
         const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-        const scrollPercentage = (scrollTop / scrollHeight) * 100;
+        const scrollPercentage = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
 
         progressBar.style.width = `${scrollPercentage}%`;
 
@@ -932,14 +913,18 @@ function initScrollProgress() {
         progressBar.style.background = `linear-gradient(to right, hsl(${hue}, 80%, 60%), hsl(${hue + 20}, 80%, 50%))`;
     }
 
+    // rAF 节流：每帧最多算一次，避免滚动时连续读 scrollHeight 触发重排
+    function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(updateProgress);
+    }
+
     // 初始更新
     updateProgress();
 
-    // 滚动时更新
-    window.addEventListener('scroll', updateProgress);
-
-    // 窗口大小改变时更新
-    window.addEventListener('resize', updateProgress);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
 }
 
 // 返回顶部按钮初始化

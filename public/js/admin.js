@@ -771,10 +771,15 @@ function initSettingButtons() {
     }
     const userSearchInput = document.getElementById('userSearch');
     if (userSearchInput) {
+        let searchTimer = null;
         userSearchInput.addEventListener('input', () => {
-            userSearch = userSearchInput.value.trim().toLowerCase();
-            userPage = 1;
-            renderUserTable();
+            // 防抖：连打时不逐字符重渲染整张用户表
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                userSearch = userSearchInput.value.trim().toLowerCase();
+                userPage = 1;
+                renderUserTable();
+            }, 200);
         });
     }
 
