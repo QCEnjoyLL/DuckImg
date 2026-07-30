@@ -41,15 +41,7 @@ function initScrollAnimations() {
 // 获取认证头
 function getAuthHeader() {
     const token = localStorage.getItem('token');
-    const isLoggedIn = !!token;
-    console.log('认证状态:', isLoggedIn ? '已登录' : '未登录');
-    if (isLoggedIn) {
-        console.log('添加认证头');
-        return { 'Authorization': `Bearer ${token}` };
-    } else {
-        console.log('无认证头');
-        return {};
-    }
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -341,6 +333,9 @@ function initUpload() {
     const mdCode = document.getElementById('mdCode');
     const uploadAgainBtn = document.getElementById('uploadAgainBtn');
 
+    // 非首页（如 dashboard）没有上传区，直接跳过，避免中断后续初始化
+    if (!dropArea || !fileInput) return;
+
     // 点击上传区域触发文件选择
     dropArea.addEventListener('click', (e) => {
         // 防止点击到上传状态区域时触发文件选择
@@ -447,7 +442,6 @@ function initUpload() {
 
         // 获取认证头
         const headers = getAuthHeader();
-        console.log('上传请求 - 认证头:', headers);
 
         // 创建 XMLHttpRequest 以便跟踪上传进度
         const xhr = new XMLHttpRequest();

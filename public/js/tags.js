@@ -795,19 +795,6 @@ function updateStats() {
 }
 
 /**
- * 显示通知
- */
-function showNotification(message, type = 'info') {
-    // 使用common.js中的函数
-    if (window.showNotification) {
-        window.showNotification(message, type);
-    } else {
-        // 降级方案
-        console.log(`[${type.toUpperCase()}] ${message}`);
-    }
-}
-
-/**
  * 显示加载状态
  */
 function showLoading() {
