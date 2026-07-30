@@ -411,29 +411,41 @@ function renderTags() {
 function createTagCard(tag) {
     const isSelected = selectedTags.has(tag.id);
     const createdDate = formatDate(tag.createdAt);
-    
+    const esc = (typeof escapeHtml === 'function')
+        ? escapeHtml
+        : (window.commonUtils && window.commonUtils.escapeHtml) || ((s) => String(s ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;'));
+    const safeName = esc(tag.name);
+    const safeId = esc(tag.id);
+    // 颜色仅允许 #hex，避免 style 注入
+    const rawColor = String(tag.color || '#6366f1');
+    const safeColor = /^#[0-9a-fA-F]{3,8}$/.test(rawColor) ? rawColor : '#6366f1';
+
     return `
-        <div class="tag-card" data-id="${tag.id}" data-name="${tag.name}" style="cursor:pointer;" title="在「我的图片」中查看该标签">
+        <div class="tag-card" data-id="${safeId}" data-name="${safeName}" style="cursor:pointer;" title="在「我的图片」中查看该标签">
             <div class="tag-header">
                 <h3 class="tag-name">
-                    <div class="tag-color" style="background-color: ${tag.color}"></div>
-                    <span>${tag.name}</span>
+                    <div class="tag-color" style="background-color: ${safeColor}"></div>
+                    <span>${safeName}</span>
                 </h3>
             </div>
 
             <div class="tag-stats">
                 <div class="tag-stat">
                     <i class="ri-image-line"></i>
-                    <span>${tag.imageCount} 张图片</span>
+                    <span>${Number(tag.imageCount) || 0} 张图片</span>
                 </div>
             </div>
 
             <div class="tag-images-preview">
-                ${tag.images.slice(0, 4).map(img => `
-                    <img src="${img.thumbnailUrl}" alt="${img.name}" class="tag-image-thumb" title="${img.name}">
-                `).join('')}
+                ${(tag.images || []).slice(0, 4).map(img => {
+                    const n = esc(img.name);
+                    const u = esc(img.thumbnailUrl);
+                    return `<img src="${u}" alt="${n}" class="tag-image-thumb" title="${n}">`;
+                }).join('')}
                 ${tag.imageCount > 4 ? `
-                    <div class="tag-more-count">+${tag.imageCount - 4}</div>
+                    <div class="tag-more-count">+${Number(tag.imageCount) - 4}</div>
                 ` : ''}
             </div>
         </div>

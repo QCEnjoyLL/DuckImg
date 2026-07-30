@@ -25,6 +25,16 @@ export async function moderateImage(imageUrl, settings) {
     return { flagged: false, score: null };
   }
 
+  // 仅允许 http(s) 鉴黄端点，防止管理员配置被污染后 SSRF 到内网
+  try {
+    const u = new URL(nsfw.apiUrl);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      return { flagged: false, score: null, error: '鉴黄接口仅支持 http(s)' };
+    }
+  } catch {
+    return { flagged: false, score: null, error: '鉴黄接口 URL 无效' };
+  }
+
   const method = (nsfw.method || 'POST').toUpperCase();
   const imageParam = nsfw.imageParam || 'url';
   const scorePath = nsfw.scorePath || 'score';

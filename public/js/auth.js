@@ -222,15 +222,25 @@ function initLoginForm() {
 
                 // 需要邮箱验证：弹出验证码界面
                 if (response.status === 403 && data.needVerify) {
-                    if (data.devCode) {
-                        showError(loginError, `邮件服务未配置，验证码为：${data.devCode}`);
-                    }
+                    const tips = [];
+                    if (data.warning) tips.push(data.warning);
+                    if (data.devCode) tips.push(`开发验证码：${data.devCode}`);
+                    if (data.error) tips.push(data.error);
+                    if (tips.length) showError(loginError, tips.join('；'));
                     showVerifyModal(data.email, data.username || username, data.devCode);
                     return;
                 }
 
+                if (response.status === 429) {
+                    throw new Error(data.error || '尝试过多，请稍后再试');
+                }
+
                 if (!response.ok) {
-                    throw new Error(data.error || '登录失败');
+                    throw new Error(data.error || data.message || `登录失败(${response.status})`);
+                }
+
+                if (!data.token) {
+                    throw new Error('登录响应异常：未返回令牌');
                 }
 
                 // 保存令牌和用户信息

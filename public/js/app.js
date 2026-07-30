@@ -479,25 +479,46 @@ function initUpload() {
                 if (data && data.error) {
                     showError(data.error);
                 } else {
-                    // 上传成功
-                    uploadStatus.innerHTML = `
+                    const list = Array.isArray(data) ? data : [];
+                    const ok = list.filter((x) => x && x.src);
+                    const bad = list.filter((x) => x && (x.error || x.blocked));
+                    const unlisted = ok.filter((x) => x.listed === false);
+                    if (!ok.length) {
+                        showError((bad[0] && bad[0].error) || '上传失败：没有成功的文件');
+                    } else {
+                        const warnText = unlisted.length
+                            ? `（${unlisted.length} 张直链可用，但图库索引写入失败，可能是今日存储写额度用尽）`
+                            : (bad.length ? `（${bad.length}张失败）` : '');
+                        uploadStatus.innerHTML = `
                         <div class="upload-success">
-                            <span class="success-icon">✓</span>
-                            <span class="success-text">上传成功！共${data.length}张图片</span>
+                            <span class="success-icon">${unlisted.length ? '!' : '✓'}</span>
+                            <span class="success-text">上传成功！共${ok.length}张图片${warnText}</span>
                         </div>
                     `;
-                    uploadStatus.className = 'upload-status success';
-
-                    // 显示结果
-                    showResults(data, processed);
+                        uploadStatus.className = unlisted.length ? 'upload-status error' : 'upload-status success';
+                        showResults(ok, processed);
+                        if (unlisted.length) {
+                            console.warn('部分图片未写入图库索引:', unlisted);
+                        }
+                    }
                 }
             } else if (xhr.status === 401) {
                 showError('请先登录后再上传');
             } else if (data && data.error) {
                 // 配额超限(403)等：显示后端真实文案
                 showError(data.error);
+            } else if (data && Array.isArray(data.results) && data.results.length) {
+                // 部分接口在 403 时仍带 results
+                const ok = data.results.filter((x) => x && x.src);
+                if (ok.length) showResults(ok, processed);
+                showError(data.error || `上传失败: 服务器返回 ${xhr.status}`);
             } else {
-                showError(`上传失败: 服务器返回 ${xhr.status}`);
+                let extra = '';
+                try {
+                    if (typeof data === 'string' && data) extra = data;
+                    else if (data) extra = JSON.stringify(data).slice(0, 200);
+                } catch (_) {}
+                showError(`上传失败: 服务器返回 ${xhr.status}${extra ? ' ' + extra : ''}`);
             }
 
             // 无论成功失败都刷新配额（计数可能已变化）

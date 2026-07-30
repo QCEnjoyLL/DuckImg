@@ -289,9 +289,18 @@ function createImageCard(image) {
     const uploadDate = formatDate(image.uploadDate);
     const fileSize = formatFileSize(image.size * 1024); // 转换为字节
     const isSelected = selectedImages.has(image.id);
-    
+    const esc = (typeof escapeHtml === 'function')
+        ? escapeHtml
+        : (window.commonUtils && window.commonUtils.escapeHtml) || ((s) => String(s ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;'));
+    const safeName = esc(image.name);
+    const safeUrl = esc(image.url);
+    const safeThumb = esc(image.thumbnailUrl);
+    const safeId = esc(image.id);
+
     return `
-        <div class="favorite-card ${isSelected ? 'selected' : ''}" data-id="${image.id}">
+        <div class="favorite-card ${isSelected ? 'selected' : ''}" data-id="${safeId}">
             <div class="image-checkbox">
                 <input type="checkbox" class="checkbox-input" ${isSelected ? 'checked' : ''}>
                 <label class="checkbox-label"></label>
@@ -301,10 +310,10 @@ function createImageCard(image) {
                 <span>收藏</span>
             </div>
             <div class="favorite-image">
-                <img src="${image.thumbnailUrl}" alt="${image.name}" loading="lazy">
+                <img src="${safeThumb}" alt="${safeName}" loading="lazy">
             </div>
             <div class="favorite-info">
-                <div class="favorite-name" title="${image.name}">${image.name}</div>
+                <div class="favorite-name" title="${safeName}">${safeName}</div>
                 <div class="favorite-meta">
                     <div class="favorite-date">
                         <i class="ri-star-line"></i>
@@ -317,19 +326,19 @@ function createImageCard(image) {
                 </div>
                 ${image.tags.length > 0 ? `
                 <div class="favorite-tags">
-                    ${image.tags.map(tag => `<span class="favorite-tag">${tag}</span>`).join('')}
+                    ${image.tags.map(tag => `<span class="favorite-tag">${esc(tag)}</span>`).join('')}
                 </div>
                 ` : ''}
                 <div class="favorite-actions">
-                    <button class="favorite-btn btn-copy" data-url="${image.url}" title="复制链接">
+                    <button class="favorite-btn btn-copy" data-url="${safeUrl}" title="复制链接">
                         <i class="ri-file-copy-line"></i>
                         <span>复制</span>
                     </button>
-                    <button class="favorite-btn btn-view" data-url="${image.url}" title="查看大图">
+                    <button class="favorite-btn btn-view" data-url="${safeUrl}" title="查看大图">
                         <i class="ri-eye-line"></i>
                         <span>查看</span>
                     </button>
-                    <button class="favorite-btn btn-unfavorite" data-id="${image.id}" title="取消收藏">
+                    <button class="favorite-btn btn-unfavorite" data-id="${safeId}" title="取消收藏">
                         <i class="ri-star-line"></i>
                         <span>取消</span>
                     </button>

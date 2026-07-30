@@ -1,0 +1,375 @@
+/**
+ * D1 访问封装（DuckImg 全业务数据）
+ * 图片二进制仍在 Telegram；此处仅索引 / 用户 / 设置。
+ */
+
+function db(env) {
+  if (!env || !env.DB) throw new Error('D1 binding DB missing');
+  return env.DB;
+}
+
+/** 读 kv_store（自动忽略过期） */
+export async function kvGet(env, key, { type } = {}) {
+  const row = await db(env)
+    .prepare('SELECT value, expires_at FROM kv_store WHERE key = ?')
+    .bind(key)
+    .first();
+  if (!row) return null;
+  if (row.expires_at && Number(row.expires_at) > 0 && Number(row.expires_at) < Date.now()) {
+    try {
+      await db(env).prepare('DELETE FROM kv_store WHERE key = ?').bind(key).run();
+    } catch { /* ignore */ }
+    return null;
+  }
+  if (type === 'json') {
+    try { return JSON.parse(row.value); } catch { return null; }
+  }
+  return row.value;
+}
+
+/** 写 kv_store；expiresAtMs 为 unix ms，或 expirationTtl 秒 */
+export async function kvPut(env, key, value, opts = {}) {
+  const raw = typeof value === 'string' ? value : JSON.stringify(value);
+  let expiresAt = null;
+  if (typeof opts.expiresAt === 'number') expiresAt = opts.expiresAt;
+  else if (typeof opts.expirationTtl === 'number' && opts.expirationTtl > 0) {
+    expiresAt = Date.now() + opts.expirationTtl * 1000;
+  }
+  await db(env)
+    .prepare(
+      `INSERT INTO kv_store (key, value, expires_at) VALUES (?, ?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value, expires_at = excluded.expires_at`
+    )
+    .bind(key, raw, expiresAt)
+    .run();
+}
+
+export async function kvDelete(env, key) {
+  await db(env).prepare('DELETE FROM kv_store WHERE key = ?').bind(key).run();
+}
+
+// —— users ——
+
+export function rowToUser(row) {
+  if (!row) return null;
+  let prefs = {};
+  try { prefs = row.prefs ? JSON.parse(row.prefs) : {}; } catch { prefs = {}; }
+  return {
+    id: row.id,
+    username: row.username,
+    email: row.email || '',
+    password: row.password,
+    avatarUrl: row.avatar_url || null,
+    status: row.status === 'banned' ? 'banned' : 'active',
+    emailVerified: !!row.email_verified,
+    uploadLimit: row.upload_limit == null ? null : Number(row.upload_limit),
+    prefs,
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null,
+    lastLoginAt: row.last_login_at || null,
+    warnCount: row.warn_count || 0,
+    lastWarnAt: row.last_warn_at || null,
+    lastWarnDeadline: row.last_warn_deadline || null,
+  };
+}
+
+export async function dbGetUserByUsername(env, username) {
+  if (!username) return null;
+  const raw = String(username);
+  const trimmed = raw.trim();
+  // 1) 精确 2) trim 后精确 3) 忽略大小写 4) trim 后忽略大小写（兼容历史尾空格用户名）
+  let row = await db(env).prepare('SELECT * FROM users WHERE username = ?').bind(raw).first();
+  if (!row && trimmed && trimmed !== raw) {
+    row = await db(env).prepare('SELECT * FROM users WHERE username = ?').bind(trimmed).first();
+  }
+  if (!row) {
+    row = await db(env)
+      .prepare('SELECT * FROM users WHERE lower(username) = lower(?)')
+      .bind(trimmed || raw)
+      .first();
+  }
+  if (!row && trimmed) {
+    row = await db(env)
+      .prepare('SELECT * FROM users WHERE lower(trim(username)) = lower(?)')
+      .bind(trimmed)
+      .first();
+  }
+  return rowToUser(row);
+}
+
+export async function dbGetUserById(env, userId) {
+  if (!userId) return null;
+  const row = await db(env).prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
+  return rowToUser(row);
+}
+
+export async function dbGetUserByEmail(env, email) {
+  if (!email) return null;
+  const row = await db(env)
+    .prepare('SELECT * FROM users WHERE lower(email) = lower(?)')
+    .bind(String(email).trim())
+    .first();
+  return rowToUser(row);
+}
+
+export async function dbSaveUser(env, user) {
+  const prefs = JSON.stringify(user.prefs || {});
+  await db(env)
+    .prepare(
+      `INSERT INTO users (
+        id, username, email, password, avatar_url, status, email_verified, upload_limit, prefs,
+        created_at, updated_at, last_login_at, warn_count, last_warn_at, last_warn_deadline
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        username = excluded.username,
+        email = excluded.email,
+        password = excluded.password,
+        avatar_url = excluded.avatar_url,
+        status = excluded.status,
+        email_verified = excluded.email_verified,
+        upload_limit = excluded.upload_limit,
+        prefs = excluded.prefs,
+        updated_at = excluded.updated_at,
+        last_login_at = excluded.last_login_at,
+        warn_count = excluded.warn_count,
+        last_warn_at = excluded.last_warn_at,
+        last_warn_deadline = excluded.last_warn_deadline`
+    )
+    .bind(
+      user.id,
+      user.username,
+      user.email || '',
+      user.password,
+      user.avatarUrl || null,
+      user.status === 'banned' ? 'banned' : 'active',
+      user.emailVerified ? 1 : 0,
+      user.uploadLimit == null ? null : user.uploadLimit,
+      prefs,
+      user.createdAt || Date.now(),
+      user.updatedAt || Date.now(),
+      user.lastLoginAt || null,
+      user.warnCount || 0,
+      user.lastWarnAt || null,
+      user.lastWarnDeadline || null,
+    )
+    .run();
+}
+
+export async function dbDeleteUser(env, user) {
+  if (!user) return;
+  if (user.id) {
+    await db(env).prepare('DELETE FROM images WHERE user_id = ?').bind(user.id).run();
+    await db(env).prepare('DELETE FROM upload_counts WHERE user_id = ?').bind(user.id).run();
+    await db(env).prepare('DELETE FROM users WHERE id = ?').bind(user.id).run();
+  } else if (user.username) {
+    await db(env).prepare('DELETE FROM users WHERE username = ?').bind(user.username).run();
+  }
+}
+
+export async function dbListUsers(env) {
+  const res = await db(env).prepare('SELECT * FROM users ORDER BY created_at DESC').all();
+  return (res.results || []).map(rowToUser);
+}
+
+export async function dbCountUsers(env) {
+  const row = await db(env).prepare('SELECT COUNT(*) AS c FROM users').first();
+  return (row && row.c) || 0;
+}
+
+// —— images ——
+
+export function rowToImage(row) {
+  if (!row) return null;
+  let tags = [];
+  try { tags = row.tags ? JSON.parse(row.tags) : []; } catch { tags = []; }
+  if (!Array.isArray(tags)) tags = [];
+  return {
+    id: row.id,
+    fileName: row.file_name || '',
+    fileSize: row.file_size || 0,
+    uploadTime: row.upload_time || 0,
+    url: row.url || `/file/${row.id}`,
+    messageId: row.message_id || undefined,
+    tags,
+    liked: !!row.liked,
+    blocked: !!row.blocked,
+    userId: row.user_id,
+    Label: row.label || 'None',
+    ListType: row.list_type || 'None',
+    TimeStamp: row.upload_time || 0,
+  };
+}
+
+export async function dbLoadUserImages(env, userId) {
+  if (!userId) return [];
+  const res = await db(env)
+    .prepare('SELECT * FROM images WHERE user_id = ? ORDER BY upload_time DESC')
+    .bind(userId)
+    .all();
+  return (res.results || []).map(rowToImage);
+}
+
+export async function dbGetImage(env, id) {
+  if (!id) return null;
+  const row = await db(env).prepare('SELECT * FROM images WHERE id = ?').bind(id).first();
+  return rowToImage(row);
+}
+
+export async function dbUpsertImage(env, img) {
+  if (!img || !img.id) return false;
+  const tags = JSON.stringify(Array.isArray(img.tags) ? img.tags : []);
+  const uploadTime = img.uploadTime || img.TimeStamp || Date.now();
+  await db(env)
+    .prepare(
+      `INSERT INTO images (
+        id, user_id, file_name, file_size, upload_time, url, message_id, tags, liked, blocked, label, list_type, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        user_id = COALESCE(excluded.user_id, images.user_id),
+        file_name = COALESCE(excluded.file_name, images.file_name),
+        file_size = COALESCE(excluded.file_size, images.file_size),
+        upload_time = COALESCE(excluded.upload_time, images.upload_time),
+        url = COALESCE(excluded.url, images.url),
+        message_id = COALESCE(excluded.message_id, images.message_id),
+        tags = excluded.tags,
+        liked = excluded.liked,
+        blocked = excluded.blocked,
+        label = excluded.label,
+        list_type = excluded.list_type`
+    )
+    .bind(
+      img.id,
+      img.userId || img.user_id,
+      img.fileName || img.file_name || '',
+      img.fileSize || img.file_size || 0,
+      uploadTime,
+      img.url || `/file/${img.id}`,
+      img.messageId || img.message_id || null,
+      tags,
+      img.liked ? 1 : 0,
+      img.blocked ? 1 : 0,
+      img.Label || img.label || 'None',
+      img.ListType || img.list_type || 'None',
+      img.createdAt || Date.now(),
+    )
+    .run();
+  return true;
+}
+
+export async function dbDeleteImage(env, id) {
+  if (!id) return;
+  await db(env).prepare('DELETE FROM images WHERE id = ?').bind(id).run();
+}
+
+export async function dbCountUserImages(env, userId) {
+  if (!userId) return 0;
+  const row = await db(env)
+    .prepare('SELECT COUNT(*) AS c FROM images WHERE user_id = ?')
+    .bind(userId)
+    .first();
+  return (row && row.c) || 0;
+}
+
+export async function dbSetUserImagesBlocked(env, userId, blocked) {
+  if (!userId) return;
+  await db(env)
+    .prepare('UPDATE images SET blocked = ? WHERE user_id = ?')
+    .bind(blocked ? 1 : 0, userId)
+    .run();
+}
+
+export async function dbRecentImages(env, limit = 100) {
+  const res = await db(env)
+    .prepare(
+      `SELECT i.*, u.username AS username
+       FROM images i
+       LEFT JOIN users u ON u.id = i.user_id
+       ORDER BY i.upload_time DESC
+       LIMIT ?`
+    )
+    .bind(Math.min(500, Math.max(1, limit)))
+    .all();
+  return (res.results || []).map((row) => ({
+    fileKey: row.id,
+    fileName: row.file_name || '',
+    fileSize: row.file_size || 0,
+    userId: row.user_id,
+    username: row.username || '',
+    time: row.upload_time || 0,
+    url: row.url || `/file/${row.id}`,
+    messageId: row.message_id || undefined,
+  }));
+}
+
+// —— upload counts ——
+
+export async function dbGetUploadCount(env, userId, day) {
+  const row = await db(env)
+    .prepare('SELECT cnt FROM upload_counts WHERE user_id = ? AND day = ?')
+    .bind(userId, day)
+    .first();
+  return row ? Number(row.cnt) || 0 : 0;
+}
+
+export async function dbSetUploadCount(env, userId, day, cnt) {
+  await db(env)
+    .prepare(
+      `INSERT INTO upload_counts (user_id, day, cnt) VALUES (?, ?, ?)
+       ON CONFLICT(user_id, day) DO UPDATE SET cnt = excluded.cnt`
+    )
+    .bind(userId, day, cnt)
+    .run();
+}
+
+export async function dbIncrUploadCount(env, userId, day, by = 1) {
+  await db(env)
+    .prepare(
+      `INSERT INTO upload_counts (user_id, day, cnt) VALUES (?, ?, ?)
+       ON CONFLICT(user_id, day) DO UPDATE SET cnt = cnt + excluded.cnt`
+    )
+    .bind(userId, day, by)
+    .run();
+}
+
+// —— admin stats ——
+
+export async function dbAdminStats(env) {
+  const totalUsers = (await db(env).prepare('SELECT COUNT(*) AS c FROM users').first())?.c || 0;
+  const bannedUsers = (await db(env).prepare(`SELECT COUNT(*) AS c FROM users WHERE status = 'banned'`).first())?.c || 0;
+  const verifiedUsers = (await db(env).prepare('SELECT COUNT(*) AS c FROM users WHERE email_verified = 1').first())?.c || 0;
+  const totalImages = (await db(env).prepare('SELECT COUNT(*) AS c FROM images').first())?.c || 0;
+  return {
+    totalUsers: Number(totalUsers),
+    bannedUsers: Number(bannedUsers),
+    verifiedUsers: Number(verifiedUsers),
+    totalImages: Number(totalImages),
+  };
+}
+
+export async function dbListUserSummaries(env, isAdminFn) {
+  const res = await db(env)
+    .prepare(
+      `SELECT u.*,
+        (SELECT COUNT(*) FROM images i WHERE i.user_id = u.id) AS image_count
+       FROM users u
+       ORDER BY u.created_at DESC`
+    )
+    .all();
+  return (res.results || []).map((row) => {
+    const u = rowToUser(row);
+    return {
+      username: u.username,
+      id: u.id,
+      email: u.email,
+      status: u.status,
+      emailVerified: u.emailVerified,
+      createdAt: u.createdAt,
+      uploadLimit: u.uploadLimit,
+      role: isAdminFn(u.username) ? 'admin' : 'user',
+      imageCount: Number(row.image_count) || 0,
+      lastWarnAt: u.lastWarnAt,
+      lastWarnDeadline: u.lastWarnDeadline,
+      warnCount: u.warnCount,
+    };
+  });
+}

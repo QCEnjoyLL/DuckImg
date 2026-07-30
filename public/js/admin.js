@@ -64,6 +64,7 @@ async function loadStats() {
 
 // 渲染单页用户行
 function renderUserRows(users) {
+    const now = Date.now();
     return users.map(u => {
         const regTime = u.createdAt ? new Date(u.createdAt).toLocaleDateString('zh-CN') : '-';
         const statusBadge = u.role === 'admin'
@@ -76,10 +77,25 @@ function renderUserRows(users) {
             ? '<td></td>'
             : `<td><input type="checkbox" class="user-check" data-user="${u.username}" ${selectedUsers.has(u.username) ? 'checked' : ''}></td>`;
 
+        // 违规提醒摘要：上次时间 / 截止 / 次数 / 是否已过期可封
+        let warnHtml = '';
+        if (u.lastWarnAt) {
+            const at = new Date(u.lastWarnAt).toLocaleString('zh-CN');
+            const dl = u.lastWarnDeadline ? new Date(u.lastWarnDeadline) : null;
+            const dlText = dl ? dl.toLocaleDateString('zh-CN') : '';
+            const expired = u.lastWarnDeadline && u.lastWarnDeadline < now;
+            const count = u.warnCount || 1;
+            const cls = expired ? 'warn-meta expired' : 'warn-meta';
+            const tip = expired
+                ? `已提醒 ${count} 次 · 截止 ${dlText} 已过期，可考虑封禁`
+                : `已提醒 ${count} 次 · ${at} · 截止 ${dlText}`;
+            warnHtml = `<div class="${cls}" title="${escAttr(tip)}">${expired ? '⚠️ 提醒已过期' : '📩 已提醒'} · ${count}次</div>`;
+        }
+
         const actions = u.role === 'admin' ? '<span style="color:var(--text-light)">—</span>' : `
             <div class="row-actions">
                 <button class="admin-btn btn-images" data-act="images" data-user="${u.username}">查看图片</button>
-                <button class="admin-btn btn-warn" data-act="warn" data-user="${u.username}">提醒</button>
+                <button class="admin-btn btn-warn" data-act="warn" data-user="${u.username}" title="${u.lastWarnAt ? '再次发送提醒（会刷新截止时间）' : '发送 3 天清理提醒'}">提醒${u.warnCount ? `(${u.warnCount})` : ''}</button>
                 ${u.status === 'banned'
                     ? `<button class="admin-btn btn-unban" data-act="unban" data-user="${u.username}">解封</button>`
                     : `<button class="admin-btn btn-ban" data-act="ban" data-user="${u.username}">封禁</button>`}
@@ -90,7 +106,7 @@ function renderUserRows(users) {
 
         return `<tr>
             ${checkCell}
-            <td class="col-name" title="${escAttr(u.username || '')}">${u.username || '-'}</td>
+            <td class="col-name" title="${escAttr(u.username || '')}">${u.username || '-'}${warnHtml}</td>
             <td class="col-email" title="${escAttr(u.email || '')}">${u.email || '-'}</td>
             <td class="col-date">${regTime}</td>
             <td class="col-status">${statusBadge}</td>
@@ -140,10 +156,73 @@ function sortUsers(arr, mode) {
 let allUsers = [];          // 后端一次返回的全部用户摘要
 let userPage = 1;           // 当前页（1 起）
 let userSearch = '';        // 用户名/邮箱搜索关键词（小写）
-let userStatusFilter = 'all'; // 'all' | 'verified' | 'banned'（点统计卡片筛选）
+let userStatusFilter = 'all'; // 'all' | 'verified' | 'banned' | 'unverified_empty'
 let currentSortMode = 'created_desc'; // 当前排序（下拉与表头点击共同驱动）
 let selectedUsers = new Set(); // 批量选中的用户名（跨页保留）
 
+// 未验证邮箱 且 图片数为 0（排除管理员）
+function isUnverifiedEmpty(u) {
+    if (!u || u.role === 'admin') return false;
+    if (u.emailVerified) return false;
+    return !(Number(u.imageCount) > 0);
+}
+
+// 按命中数量选合适每页条数（不无脑写死 50）
+function pickPageSizeForCount(n) {
+    if (n <= 0) return null;
+    if (n <= 10) return '10';
+    if (n <= 20) return '20';
+    if (n <= 50) return '50';
+    if (n <= 100) return '100';
+    return 'all';
+}
+
+// 切换：未验证空户筛选+全选 ↔ 取消筛选/取消选中，回到全部
+function selectUnverifiedEmptyUsers() {
+    const btn = document.getElementById('selectUnverifiedEmptyBtn');
+    const pageSizeSel = document.getElementById('userPageSize');
+
+    // 再点一次：退出筛选 + 恢复原先每页数量
+    if (userStatusFilter === 'unverified_empty') {
+        selectedUsers.clear();
+        userStatusFilter = 'all';
+        userPage = 1;
+        if (pageSizeSel && selectUnverifiedEmptyUsers._prevPageSize != null) {
+            pageSizeSel.value = selectUnverifiedEmptyUsers._prevPageSize;
+            selectUnverifiedEmptyUsers._prevPageSize = null;
+        }
+        if (btn) btn.classList.remove('is-active');
+        renderUserTable();
+        updateBatchBar();
+        notify('已取消筛选与选中', 'info');
+        return;
+    }
+
+    selectedUsers.clear();
+    const matches = allUsers.filter((u) => isUnverifiedEmpty(u) && u.username);
+    matches.forEach((u) => selectedUsers.add(u.username));
+    const n = matches.length;
+
+    userStatusFilter = 'unverified_empty';
+    userPage = 1;
+
+    if (pageSizeSel) {
+        selectUnverifiedEmptyUsers._prevPageSize = pageSizeSel.value;
+        // 仅有命中时才按数量调整每页；0 条保持原设置
+        const next = pickPageSizeForCount(n);
+        if (next) pageSizeSel.value = next;
+    }
+
+    if (btn) btn.classList.add('is-active');
+    renderUserTable(); // n===0 时表格走「没有符合条件的用户（筛选：未验证空户）」
+    updateBatchBar();
+
+    if (n === 0) {
+        notify('没有「未验证且图片数为 0」的用户', 'info');
+    } else {
+        notify(`已选中 ${n} 个未验证空户，可批量封禁或删除（再点按钮可取消）`, 'success');
+    }
+}
 // 表头列 → [升序模式, 降序模式]
 const sortMap = {
     name: ['name_asc', 'name_desc'],
@@ -218,6 +297,9 @@ function highlightFilterCard() {
     document.querySelectorAll('.admin-stat-card[data-userfilter]').forEach(c => {
         c.classList.toggle('active', c.dataset.userfilter === userStatusFilter && userStatusFilter !== 'all');
     });
+    // 同步「选未验证空户」按钮激活态
+    const emptyBtn = document.getElementById('selectUnverifiedEmptyBtn');
+    if (emptyBtn) emptyBtn.classList.toggle('is-active', userStatusFilter === 'unverified_empty');
 }
 
 // 渲染用户表（按当前排序 + 客户端分页）
@@ -237,6 +319,9 @@ function renderUserTable() {
     let base = allUsers;
     if (userStatusFilter === 'verified') base = base.filter(u => u.emailVerified);
     else if (userStatusFilter === 'banned') base = base.filter(u => u.status === 'banned');
+    else if (userStatusFilter === 'unverified_empty') {
+        base = base.filter(u => isUnverifiedEmpty(u));
+    }
     const filtered = userSearch
         ? base.filter(u =>
             (u.username || '').toLowerCase().includes(userSearch) ||
@@ -245,7 +330,9 @@ function renderUserTable() {
     const sorted = sortUsers(filtered, currentSortMode);
 
     if (!filtered.length) {
-        const label = userStatusFilter === 'verified' ? '已验证' : (userStatusFilter === 'banned' ? '被封禁' : '');
+        const label = userStatusFilter === 'verified' ? '已验证'
+            : (userStatusFilter === 'banned' ? '被封禁'
+            : (userStatusFilter === 'unverified_empty' ? '未验证空户' : ''));
         tbody.innerHTML = `<tr><td colspan="8">没有符合条件的用户${label ? `（筛选：${label}）` : ''}${userSearch ? `（搜索：${escAttr(userSearch)}）` : ''}</td></tr>`;
         if (pager) pager.innerHTML = '';
         return;
@@ -330,9 +417,10 @@ async function handleUserAction(btn) {
             return;
         }
         if (act === 'warn') {
-            if (!confirm(`向用户 ${username} 发送提醒邮件？\n内容：发现违规图片，请于 3 天内清理，逾期将封禁账户。`)) return;
+            if (!confirm(`向用户 ${username} 发送提醒邮件？\n内容：发现违规图片，请于 3 天内清理，逾期将封禁账户。\n发送后会写入提醒历史。`)) return;
             const res = await adminFetch(`/api/admin/users/${encodeURIComponent(username)}/warn`, { method: 'POST', headers: authHeaders() });
             notify((res && res.message) || '提醒邮件已发送', 'success');
+            await Promise.all([loadUsers(), loadWarnHistory()]);
             return;
         }
         if (act === 'ban') {
@@ -363,7 +451,7 @@ async function handleUserAction(btn) {
     }
 }
 
-// 批量操作选中用户
+// 批量操作选中用户（自动分批，突破单次 100 限制）
 async function runBatch(action) {
     if (action === 'cancel') {
         selectedUsers.clear();
@@ -375,7 +463,6 @@ async function runBatch(action) {
 
     const usernames = Array.from(selectedUsers);
     if (usernames.length === 0) { notify('请先选择用户', 'error'); return; }
-    if (usernames.length > 100) { notify('单次最多 100 个，请减少选择', 'error'); return; }
 
     let uploadLimit;
     if (action === 'delete') {
@@ -388,24 +475,45 @@ async function runBatch(action) {
         uploadLimit = input.trim() === '' ? null : input.trim();
     }
 
+    // 后端单批上限 500；前端按 100 切块顺序请求，避免卡死 Worker
+    const CHUNK = 100;
+    let okTotal = 0;
+    let failedTotal = 0;
+    const chunks = [];
+    for (let i = 0; i < usernames.length; i += CHUNK) {
+        chunks.push(usernames.slice(i, i + CHUNK));
+    }
+
     try {
-        const body = { action, usernames };
-        if (action === 'limit') body.uploadLimit = uploadLimit;
-        const res = await adminFetch('/api/admin/users/batch', {
-            method: 'POST', headers: authHeaders(true), body: JSON.stringify(body)
-        });
-        const failedCount = (res.failed || []).length;
-        notify(`批量完成：成功 ${res.ok} 个${failedCount ? `，失败 ${failedCount} 个` : ''}`, failedCount ? 'warning' : 'success');
+        for (let i = 0; i < chunks.length; i++) {
+            if (chunks.length > 1) {
+                notify(`批量处理中… ${i + 1}/${chunks.length}（共 ${usernames.length} 人）`, 'info');
+            }
+            const body = { action, usernames: chunks[i] };
+            if (action === 'limit') body.uploadLimit = uploadLimit;
+            const res = await adminFetch('/api/admin/users/batch', {
+                method: 'POST', headers: authHeaders(true), body: JSON.stringify(body)
+            });
+            okTotal += res.ok || 0;
+            failedTotal += (res.failed || []).length;
+        }
+        notify(
+            `批量完成：成功 ${okTotal} 个${failedTotal ? `，失败 ${failedTotal} 个` : ''}`,
+            failedTotal ? 'warning' : 'success'
+        );
         selectedUsers.clear();
         await Promise.all([loadUsers(), loadStats()]);
     } catch (e) {
         if (e.message === '需要重新登录') return;
         notify(e.message, 'error');
+        // 部分成功时也刷新
+        await Promise.all([loadUsers(), loadStats()]);
     }
 }
 
 // 查看某用户上传的图片（弹层）
 async function showUserImages(username) {
+    await ensurePreviewTicket().catch(function(){});
     let data;
     try {
         data = await adminFetch(`/api/admin/users/${encodeURIComponent(username)}/images`, { headers: authHeaders() });
@@ -683,6 +791,15 @@ function initSettingButtons() {
         });
     }
 
+    // 一键选中：未验证 + 图片数 0
+    const selectEmptyBtn = document.getElementById('selectUnverifiedEmptyBtn');
+    if (selectEmptyBtn) {
+        selectEmptyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            selectUnverifiedEmptyUsers();
+        });
+    }
+
     // 批量操作按钮
     document.querySelectorAll('#batchBar button[data-batch]').forEach(btn => {
         btn.addEventListener('click', () => runBatch(btn.dataset.batch));
@@ -728,12 +845,29 @@ function auditFmtSize(bytes) {
 
 function escAttr(s) { return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
-// 后台看图用带管理员 token 的 URL：被封禁用户图片对公网屏蔽，管理员凭 ?t= 仍可查看
-function adminFileUrl(u) {
+// 后台看图：短时预览票（非登录 JWT），降低 token 进 URL/日志的风险
+let _previewTicket = '';
+let _previewTicketExp = 0;
+async function ensurePreviewTicket() {
+    const now = Date.now();
+    if (_previewTicket && _previewTicketExp > now + 30000) return _previewTicket;
+    try {
+        const data = await adminFetch('/api/admin/preview-ticket', { headers: authHeaders() });
+        if (data && data.ticket) {
+            _previewTicket = data.ticket;
+            _previewTicketExp = now + ((data.expiresIn || 600) * 1000);
+            return _previewTicket;
+        }
+    } catch (e) {
+        console.warn('获取预览票失败，回退登录 token:', e);
+    }
+    return localStorage.getItem('token') || '';
+}
+function adminFileUrl(u, ticket) {
     if (!u) return u;
-    const t = localStorage.getItem('token') || '';
-    if (!t) return escAttr(u);
-    return escAttr(u + (u.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(t));
+    const tk = ticket || _previewTicket || '';
+    if (!tk) return escAttr(u);
+    return escAttr(u + (u.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(tk));
 }
 
 // 页面内大图预览灯箱：用 <img> 渲染（不受 Content-Type 影响，不会触发下载）
@@ -861,6 +995,7 @@ async function searchImagesByName(q) {
 }
 
 function initAuditSection() {
+    ensurePreviewTicket().catch(function(){});
     const btn = document.getElementById('imgSearchBtn');
     const input = document.getElementById('imgSearchInput');
     const refresh = document.getElementById('recentRefreshBtn');
@@ -872,11 +1007,83 @@ function initAuditSection() {
     loadRecentUploads();
 }
 
+// ===== 违规提醒历史 =====
+function fmtDateTime(ms) {
+    if (!ms) return '-';
+    try { return new Date(ms).toLocaleString('zh-CN'); } catch { return '-'; }
+}
+function fmtDate(ms) {
+    if (!ms) return '-';
+    try { return new Date(ms).toLocaleDateString('zh-CN'); } catch { return '-'; }
+}
+
+async function loadWarnHistory() {
+    const tbody = document.getElementById('warnHistoryBody');
+    if (!tbody) return;
+    try {
+        const data = await adminFetch('/api/admin/warns?limit=200', { headers: authHeaders() });
+        const items = data.items || [];
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-light);">暂无提醒记录（功能上线后发送的才会出现）</td></tr>';
+            return;
+        }
+        const now = Date.now();
+        tbody.innerHTML = items.map((it) => {
+            const expired = it.deadline && it.deadline < now;
+            const status = expired
+                ? '<span class="expired">已过期</span>'
+                : '<span class="ok">等待清理中</span>';
+            const uname = escAttr(it.username || '');
+            return `<tr>
+                <td>${fmtDateTime(it.at)}</td>
+                <td title="${uname}">${uname || '-'}</td>
+                <td title="${escAttr(it.email || '')}">${escAttr(it.email || '-')}</td>
+                <td>${fmtDate(it.deadline)}</td>
+                <td>${status}</td>
+                <td>${escAttr(it.by || '-')}</td>
+                <td>
+                    <button type="button" class="admin-btn btn-images" data-warn-act="images" data-user="${uname}" style="height:28px;min-width:auto;padding:0 8px;">图片</button>
+                    <button type="button" class="admin-btn btn-ban" data-warn-act="ban" data-user="${uname}" style="height:28px;min-width:auto;padding:0 8px;">封禁</button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        tbody.querySelectorAll('button[data-warn-act]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const act = btn.dataset.warnAct;
+                const username = btn.dataset.user;
+                if (!username) return;
+                try {
+                    if (act === 'images') {
+                        await showUserImages(username);
+                        return;
+                    }
+                    if (act === 'ban') {
+                        if (!confirm(`确定封禁用户 ${username}？`)) return;
+                        await adminFetch(`/api/admin/users/${encodeURIComponent(username)}/ban`, { method: 'POST', headers: authHeaders() });
+                        notify('已封禁', 'success');
+                        await Promise.all([loadUsers(), loadStats(), loadWarnHistory()]);
+                    }
+                } catch (e) {
+                    if (e.message === '需要重新登录') return;
+                    notify(e.message, 'error');
+                }
+            });
+        });
+    } catch (e) {
+        if (e.message === '需要重新登录') return;
+        tbody.innerHTML = `<tr><td colspan="7">加载失败：${escAttr(e.message)}</td></tr>`;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!guardAdmin()) return;
     loadStats();
     loadUsers();
     loadSettings();
+    loadWarnHistory();
     initSettingButtons();
     initAuditSection();
+    const refreshWarn = document.getElementById('refreshWarnHistoryBtn');
+    if (refreshWarn) refreshWarn.addEventListener('click', () => loadWarnHistory());
 });

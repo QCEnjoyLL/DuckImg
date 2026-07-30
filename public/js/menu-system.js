@@ -243,7 +243,12 @@ function initMenuSystem() {
 
     if (uploadBtn) {
         uploadBtn.addEventListener('click', () => {
-            scrollToUploadArea();
+            // 本页有上传区则滚动；管理/设置等页没有上传区 → 回首页上传
+            if (document.querySelector('.upload-container')) {
+                scrollToUploadArea();
+            } else {
+                window.location.href = '/';
+            }
         });
     }
 
@@ -391,7 +396,10 @@ function scrollToUploadArea() {
                 document.body.style.overflow = '';
             }
         }
+        return;
     }
+    // 非首页（无上传区）统一回首页
+    window.location.href = '/';
 }
 
 /**

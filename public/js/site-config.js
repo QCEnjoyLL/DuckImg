@@ -3,6 +3,62 @@
  * 找不到元素就跳过（各页结构不同，容错）。
  */
 (function () {
+    /**
+     * 安全富文本：只保留文本 + <br> + <a href="http(s)://...|/...">。
+     * 后台 pageFooter 历史配置含链接/换行；用 textContent 会把标签当字显示，
+     * 用 innerHTML 又有 XSS 风险——折中为白名单重建 DOM。
+     */
+    function applySafeRichText(el, html) {
+        if (!el) return;
+        el.textContent = '';
+        const tpl = document.createElement('template');
+        // 兼容历史错误写法 </br>
+        tpl.innerHTML = String(html || '').replace(/<\/br>/gi, '<br>');
+
+        function isSafeHref(href) {
+            const h = String(href || '').trim();
+            if (!h) return false;
+            if (h.startsWith('/')) return true;
+            if (/^https?:\/\//i.test(h)) return true;
+            if (/^mailto:/i.test(h)) return true;
+            return false;
+        }
+
+        function walk(src, dest) {
+            src.childNodes.forEach((child) => {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    dest.appendChild(document.createTextNode(child.textContent || ''));
+                    return;
+                }
+                if (child.nodeType !== Node.ELEMENT_NODE) return;
+                const tag = child.tagName.toLowerCase();
+                if (tag === 'br') {
+                    dest.appendChild(document.createElement('br'));
+                    return;
+                }
+                if (tag === 'a') {
+                    const href = child.getAttribute('href') || '';
+                    if (isSafeHref(href)) {
+                        const a = document.createElement('a');
+                        a.setAttribute('href', href);
+                        a.setAttribute('target', '_blank');
+                        a.setAttribute('rel', 'noopener noreferrer');
+                        walk(child, a);
+                        dest.appendChild(a);
+                    } else {
+                        // 危险/未知协议：只保留可见文本
+                        walk(child, dest);
+                    }
+                    return;
+                }
+                // 其它标签（div/span/b/script…）一律展开，丢标签保文本
+                walk(child, dest);
+            });
+        }
+
+        walk(tpl.content, el);
+    }
+
     async function applySiteConfig() {
         let site;
         try {
@@ -66,10 +122,10 @@
             });
         }
 
-        // 页面底部文字（支持 HTML 标签，仅管理员可在后台设置）
+        // 页面底部：安全富文本（允许链接与换行，禁止任意 HTML）
         if (site.pageFooter) {
             document.querySelectorAll('footer.footer p').forEach(el => {
-                el.innerHTML = site.pageFooter;
+                applySafeRichText(el, site.pageFooter);
             });
         }
     }

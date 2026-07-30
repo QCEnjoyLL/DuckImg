@@ -1,0 +1,7 @@
+# 复制本文件为 .dev.vars 后填入真实值（.dev.vars 已 gitignore）
+# 仅影响本地 wrangler dev
+
+TG_Bot_Token = "你的_Telegram_Bot_Token"
+TG_Chat_ID = "你的频道ID_如_-100xxxxxxxxxx"
+JWT_SECRET = "足够长的随机字符串_须与旧站一致以便用户无缝登录"
+# RESEND_API_KEY = "re_xxx"

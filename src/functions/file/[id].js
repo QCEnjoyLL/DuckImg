@@ -1,14 +1,19 @@
-import { verifyToken } from '../utils/auth';
-import { isAdmin } from '../utils/users';
+import { verifyPreviewTicket } from '../utils/auth';
 import { getBannedSet } from '../utils/bans';
+import { dbGetImage, kvGet, kvPut } from '../utils/db';
+
+// Telegram getFile 返回的 file_path 约 1 小时失效；缓存 50 分钟
+const TG_PATH_TTL_SEC = 50 * 60;
+// isolate 内内存缓存，避免同 isolate 重复 KV/API
+const _tgPathMem = new Map(); // fileId -> { path, exp }
 
 // 是否为携带有效管理员令牌的查看者（后台看图用 ?t=<jwt> 放行被屏蔽图片）
 async function isAdminViewer(c, env) {
     try {
         const t = new URL(c.req.url).searchParams.get('t');
         if (!t) return false;
-        const { valid, payload } = await verifyToken(t, env);
-        return !!(valid && payload && isAdmin(payload.username, env));
+        const { valid } = await verifyPreviewTicket(t, env);
+        return !!valid;
     } catch { return false; }
 }
 
@@ -46,124 +51,88 @@ export async function fileHandler(c) {
     const env = c.env;
     const id = c.req.param('id');
     const url = new URL(c.req.url);
-    
+
     // 检查是否为下载请求
     const isDownload = url.searchParams.get('download') === 'true';
-    
+
     // 检查是否为预览请求
     const isPreview = url.searchParams.get('preview') === 'true';
-    
-    // 检查是否为浏览器直接访问（而非嵌入、API调用等）
-    const userAgent = c.req.header('User-Agent') || '';
-    const accept = c.req.header('Accept') || '';
-    const referer = c.req.header('Referer') || '';
-    
-    // 判断是否为浏览器直接访问：
-    // 1. Accept头包含text/html
-    // 2. 没有referer或referer不是图片嵌入
-    // 3. 不是下载请求
-    const isBrowserDirectAccess = !isDownload && 
-                                  accept.includes('text/html') && 
-                                  !accept.includes('image/') &&
-                                  (!referer || !referer.includes('image'));
 
     try {
         // 封禁屏蔽：图片归属用户被封禁时，对公网屏蔽（管理员凭 ?t= 放行）。无人被封时零额外开销。
+        // 必须在边缘缓存命中前检查，避免封禁后仍吐出缓存图。
         const banned = await getBannedSet(env);
         if (banned.size > 0 && !(await isAdminViewer(c, env))) {
             try {
-                const rec = await env.img_url.getWithMetadata(id);
-                const meta = (rec && rec.metadata) || {};
-                const ownerId = meta.userId;
-                if (meta.blocked === true || (ownerId && banned.has(String(ownerId)))) {
+                const img = await dbGetImage(env, id);
+                const ownerId = img && img.userId;
+                if ((img && img.blocked) || (ownerId && banned.has(String(ownerId)))) {
                     return blockedImagePage(c);
                 }
             } catch { /* 元数据读取失败则放行，不误伤 */ }
         }
 
-        let fileUrl = null;
-        
-        // 尝试处理通过Telegram Bot API上传的文件
-        if (id.length > 30 || id.includes('.')) { // 长ID通常代表通过Bot上传的文件，或包含扩展名的文件
-            const fileId = id.split('.')[0]; // 分离文件ID和扩展名
-            const filePath = await getFilePath(env, fileId);
+        // 预览页不需要拉 Telegram，直接出 HTML
+        if (isPreview) {
+            return createPreviewPage(c, id);
+        }
 
+        // 边缘 Cache API：命中则零 Telegram / 零 getFile（仍经过上方封禁检查）
+        // 仅缓存「纯展示」路径；?download=true / ?t= 管理员令牌不走缓存
+        const canUseEdgeCache = !isDownload && !url.searchParams.has('t');
+        // cache key 带版本：避免沿用旧的 application/octet-stream 缓存
+        const cacheKey = new Request(new URL(url.pathname + '?_ct=2', url.origin), { method: 'GET' });
+        if (canUseEdgeCache) {
+            try {
+                const hit = await caches.default.match(cacheKey);
+                if (hit) return hit;
+            } catch { /* Cache API 不可用时降级 */ }
+        }
+
+        let fileUrl = null;
+
+        // 通过 Telegram Bot API 上传的文件（长 file_id 或带扩展名）
+        if (id.length > 30 || id.includes('.')) {
+            const fileId = id.split('.')[0];
+            const filePath = await getFilePath(env, fileId);
             if (filePath) {
                 fileUrl = `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${filePath}`;
             }
         } else {
-            // 处理Telegraph链接
+            // 兼容旧 Telegraph 链接
             fileUrl = `https://telegra.ph/file/${id}`;
         }
 
-        // 如果找到文件URL
-        if (fileUrl) {
-            // 如果是预览请求，返回预览页面
-            if (isPreview) {
-                return createPreviewPage(c, id, fileUrl);
-            }
-            
-            // 否则返回原图文件（包括下载和直接访问）
-            return await proxyFile(c, fileUrl);
+        if (!fileUrl) {
+            return c.text('文件不存在', 404);
         }
 
-        // 处理KV元数据
-        if (env.img_url) {
-            let record = await env.img_url.getWithMetadata(id);
-
-            if (!record || !record.metadata) {
-                // 初始化元数据（如不存在）
-                record = {
-                    metadata: {
-                        ListType: "None",
-                        Label: "None",
-                        TimeStamp: Date.now(),
-                        liked: false,
-                        fileName: id,
-                        fileSize: 0,
-                    }
-                };
-                await env.img_url.put(id, "", { metadata: record.metadata });
-            }
-
-            const metadata = {
-                ListType: record.metadata.ListType || "None",
-                Label: record.metadata.Label || "None",
-                TimeStamp: record.metadata.TimeStamp || Date.now(),
-                liked: record.metadata.liked !== undefined ? record.metadata.liked : false,
-                fileName: record.metadata.fileName || id,
-                fileSize: record.metadata.fileSize || 0,
-            };
-
-            // 根据ListType和Label处理
-            if (metadata.ListType === "Block" || metadata.Label === "adult") {
-                if (referer) {
-                    return c.redirect('/images/blocked.png');
-                } else {
-                    return c.redirect('/block-img.html');
-                }
-            }
-
-            // 保存元数据
-            await env.img_url.put(id, "", { metadata });
-        }
-
-        // 如果所有尝试都失败，返回404
-        return c.text('文件不存在', 404);
+        return await proxyFile(c, fileUrl, { cacheKey: canUseEdgeCache ? cacheKey : null, isDownload });
     } catch (error) {
         console.error('文件访问错误:', error);
         return c.text('服务器错误', 500);
     }
 }
 
+/** HTML 文本/属性转义（预览页内嵌 id 防 XSS） */
+function escapeHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 /**
  * 创建图片预览页面
+ * 只使用同源 /file/:id 代理地址，避免 Bot Token 泄露到页面源码
  */
-function createPreviewPage(c, id, imageUrl) {
-    const currentUrl = new URL(c.req.url);
-    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
-    const downloadUrl = `${baseUrl}/file/${id}?download=true`;
-    
+function createPreviewPage(c, id) {
+    const safeIdHtml = escapeHtml(id);
+    // JSON.stringify 保证安全嵌入 <script>
+    const idJs = JSON.stringify(String(id ?? ''));
+
     const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -171,7 +140,7 @@ function createPreviewPage(c, id, imageUrl) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图片预览 - 鸭鸭图床</title>
     <meta name="description" content="高质量图片在线预览">
-    <link rel="icon" href="${baseUrl}/images/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         * {
@@ -655,7 +624,7 @@ function createPreviewPage(c, id, imageUrl) {
         </div>
         <div class="info-item">
             <span class="info-label">文件名</span>
-            <span class="info-value" id="fileName">${id}</span>
+            <span class="info-value" id="fileName">${safeIdHtml}</span>
         </div>
         <div class="info-item">
             <span class="info-label">尺寸</span>
@@ -693,8 +662,10 @@ function createPreviewPage(c, id, imageUrl) {
     <div class="toast" id="toast"></div>
 
     <script>
-        const imageUrl = '${imageUrl}';
-        const downloadUrl = '${downloadUrl}';
+        // 同源代理，绝不内嵌 Telegram 直链 / Bot Token
+        const fileId = ${idJs};
+        const imageUrl = '/file/' + fileId;
+        const downloadUrl = imageUrl + '?download=true';
         const previewImage = document.getElementById('previewImage');
         const previewContainer = document.getElementById('previewContainer');
         const loading = document.getElementById('loading');
@@ -703,10 +674,10 @@ function createPreviewPage(c, id, imageUrl) {
         const hotkeys = document.getElementById('hotkeys');
         const toast = document.getElementById('toast');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
-        
+
         let isFullscreen = false;
         let infoVisible = false;
-        
+
         // 显示提示消息
         function showToast(message) {
             toast.textContent = message;
@@ -715,20 +686,20 @@ function createPreviewPage(c, id, imageUrl) {
                 toast.classList.remove('show');
             }, 2000);
         }
-        
+
         // 加载图片
         previewImage.onload = function() {
             loading.style.display = 'none';
             previewImage.style.display = 'block';
-            
+
             // 添加加载完成动画
             setTimeout(() => {
                 previewImage.classList.add('loaded');
             }, 100);
-            
+
             // 更新图片信息
             updateImageInfo();
-            
+
             // 显示快捷键提示
             setTimeout(() => {
                 hotkeys.classList.add('show');
@@ -737,37 +708,37 @@ function createPreviewPage(c, id, imageUrl) {
                 }, 4000);
             }, 1500);
         };
-        
+
         previewImage.onerror = function() {
             loading.style.display = 'none';
             error.style.display = 'block';
         };
-        
+
         previewImage.src = imageUrl;
-        
+
         // 更新图片信息
         function updateImageInfo() {
-            document.getElementById('dimensions').textContent = 
+            document.getElementById('dimensions').textContent =
                 previewImage.naturalWidth + ' × ' + previewImage.naturalHeight + ' px';
-            
-            // 从URL推断文件类型
-            const extension = imageUrl.split('.').pop().toLowerCase();
+
+            // 从文件名推断类型
+            const extension = String(fileId).split('.').pop().toLowerCase();
             const typeMap = {
                 'jpg': 'JPEG',
-                'jpeg': 'JPEG', 
+                'jpeg': 'JPEG',
                 'png': 'PNG',
                 'gif': 'GIF',
                 'webp': 'WebP',
                 'svg': 'SVG'
             };
             document.getElementById('fileType').textContent = typeMap[extension] || '未知';
-            
+
             // 计算文件大小（估算）
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = previewImage.naturalWidth;
             canvas.height = previewImage.naturalHeight;
-            
+
             try {
                 ctx.drawImage(previewImage, 0, 0);
                 const dataUrl = canvas.toDataURL();
@@ -777,7 +748,7 @@ function createPreviewPage(c, id, imageUrl) {
                 document.getElementById('fileSize').textContent = '未知';
             }
         }
-        
+
         // 格式化文件大小
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 B';
@@ -786,7 +757,7 @@ function createPreviewPage(c, id, imageUrl) {
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
-        
+
         // 切换信息面板
         function toggleInfo() {
             infoVisible = !infoVisible;
@@ -796,7 +767,7 @@ function createPreviewPage(c, id, imageUrl) {
                 infoPanel.classList.remove('show');
             }
         }
-        
+
         // 切换全屏
         function toggleFullscreen() {
             isFullscreen = !isFullscreen;
@@ -812,16 +783,16 @@ function createPreviewPage(c, id, imageUrl) {
                 fullscreenBtn.title = '全屏查看 (F)';
             }
         }
-        
+
         // 下载图片
         function downloadImage() {
             const link = document.createElement('a');
             link.href = downloadUrl;
-            link.download = '${id}';
+            link.download = fileId;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
+
             showToast('开始下载图片...');
         }
         
@@ -876,29 +847,46 @@ function createPreviewPage(c, id, imageUrl) {
 }
 
 /**
- * 获取Telegram文件路径
+ * 获取 Telegram 文件路径。
+ * 三级缓存：isolate 内存 → KV(50min TTL) → Telegram getFile API。
+ * file_path 约 1h 失效，故 KV TTL 取 50min。
  */
 async function getFilePath(env, fileId) {
+    if (!fileId) return null;
+    const now = Date.now();
+
+    const mem = _tgPathMem.get(fileId);
+    if (mem && mem.exp > now) return mem.path;
+
+    const kvKey = `tgpath:${fileId}`;
     try {
-        const url = `https://api.telegram.org/bot${env.TG_Bot_Token}/getFile?file_id=${fileId}`;
-        const res = await fetch(url, {
-            method: 'GET',
-        });
+        const cached = await kvGet(env, kvKey);
+        if (cached) {
+            _tgPathMem.set(fileId, { path: cached, exp: now + TG_PATH_TTL_SEC * 1000 });
+            return cached;
+        }
+    } catch { /* ignore */ }
+
+    try {
+        const url = `https://api.telegram.org/bot${env.TG_Bot_Token}/getFile?file_id=${encodeURIComponent(fileId)}`;
+        const res = await fetch(url, { method: 'GET' });
 
         if (!res.ok) {
-            console.error(`HTTP错误! 状态: ${res.status}`);
+            console.error(`getFile HTTP错误! 状态: ${res.status}`);
             return null;
         }
 
         const responseData = await res.json();
-        const { ok, result } = responseData;
-
-        if (ok && result) {
-            return result.file_path;
-        } else {
-            console.error('响应数据错误:', responseData);
-            return null;
+        if (responseData.ok && responseData.result && responseData.result.file_path) {
+            const path = responseData.result.file_path;
+            _tgPathMem.set(fileId, { path, exp: now + TG_PATH_TTL_SEC * 1000 });
+            try {
+                await kvPut(env, kvKey, path, { expirationTtl: TG_PATH_TTL_SEC });
+            } catch { /* ignore */ }
+            return path;
         }
+        console.error('getFile 响应数据错误:', responseData);
+        return null;
     } catch (error) {
         console.error('获取文件路径错误:', error.message);
         return null;
@@ -906,62 +894,73 @@ async function getFilePath(env, fileId) {
 }
 
 /**
- * 代理文件请求
- * 直接传递原始文件内容，不进行压缩，确保原图质量
+ * 代理文件请求：透传原图，写入边缘缓存（可选）。
+ * @param {{ cacheKey: Request|null, isDownload: boolean }} opts
  */
-async function proxyFile(c, fileUrl) {
-    const response = await fetch(fileUrl, {
-        method: c.req.method,
-        headers: c.req.headers
-    });
+async function proxyFile(c, fileUrl, opts = {}) {
+    const { cacheKey = null, isDownload = false } = opts;
+
+    // 干净 GET，不转发浏览器头（避免 Host/Accept-Encoding 干扰 Telegram）
+    const response = await fetch(fileUrl, { method: 'GET' });
 
     if (!response.ok) {
         return c.text('文件获取失败', response.status);
     }
 
     const headers = new Headers();
+    // 只透传安全/有用的响应头，避免把 Telegram 的 set-cookie 等带出去
+    const pass = ['content-type', 'content-length', 'etag', 'last-modified'];
     response.headers.forEach((value, key) => {
-        headers.set(key, value);
+        if (pass.includes(key.toLowerCase())) headers.set(key, value);
     });
 
-    // 添加缓存控制
-    headers.set('Cache-Control', 'public, max-age=31536000');
+    // 浏览器缓存 1 年（内容按 file_id 寻址，视为不可变）
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
 
-    // 确保设置正确的Content-Type，以便浏览器能够预览图片
-    const contentType = response.headers.get('Content-Type');
-    if (contentType) {
-        headers.set('Content-Type', contentType);
-    } else {
-        // 根据URL推断内容类型
-        const fileExtension = fileUrl.split('.').pop().toLowerCase();
-        if (['jpg', 'jpeg'].includes(fileExtension)) {
-            headers.set('Content-Type', 'image/jpeg');
-        } else if (fileExtension === 'png') {
-            headers.set('Content-Type', 'image/png');
-        } else if (fileExtension === 'gif') {
-            headers.set('Content-Type', 'image/gif');
-        } else if (fileExtension === 'webp') {
-            headers.set('Content-Type', 'image/webp');
-        } else if (fileExtension === 'svg') {
-            headers.set('Content-Type', 'image/svg+xml');
-        }
+    // Content-Type：Telegram 常返回 application/octet-stream，优先用我们 URL 里的扩展名
+    const reqId = (c.req.param('id') || '').toLowerCase();
+    const extFromId = (reqId.split('.').pop() || '').toLowerCase();
+    const extFromUrl = (fileUrl.split('.').pop() || '').toLowerCase().split('?')[0];
+    const mimeMap = {
+        jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+        gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+        bmp: 'image/bmp', avif: 'image/avif', ico: 'image/x-icon',
+        heic: 'image/heic', heif: 'image/heif',
+    };
+    const mimeFromExt = mimeMap[extFromId] || mimeMap[extFromUrl];
+    const upstreamType = (headers.get('Content-Type') || '').toLowerCase();
+    const upstreamIsGeneric = !upstreamType || upstreamType.includes('octet-stream') || upstreamType === 'application/download';
+    if (mimeFromExt && (upstreamIsGeneric || !upstreamType.startsWith('image/'))) {
+        headers.set('Content-Type', mimeFromExt);
+    } else if (!headers.get('Content-Type') && mimeFromExt) {
+        headers.set('Content-Type', mimeFromExt);
     }
 
-    // SVG 安全处理：强制以附件下载 + 禁止 MIME 嗅探，防止直接打开链接时执行内嵌脚本（XSS）。
-    // 仍保留 image/svg+xml，<img> 嵌入照常渲染（图片上下文不会执行脚本），只有“直接打开链接”会下载。
-    const reqId = (c.req.param('id') || '').toLowerCase();
+    // SVG 安全：附件下载 + nosniff；其它图片内联
     const isSvg = reqId.endsWith('.svg') || (headers.get('Content-Type') || '').includes('svg');
     if (isSvg) {
         headers.set('Content-Type', 'image/svg+xml');
         headers.set('X-Content-Type-Options', 'nosniff');
         headers.set('Content-Disposition', 'attachment');
+    } else if (isDownload) {
+        headers.set('Content-Disposition', 'attachment');
     } else {
-        // 其它图片：内联预览，不下载
         headers.set('Content-Disposition', 'inline');
     }
 
-    return new Response(response.body, {
+    const out = new Response(response.body, {
         status: response.status,
-        headers
+        headers,
     });
+
+    // 边缘缓存：异步写入，不挡响应
+    if (cacheKey && response.ok && !isSvg) {
+        try {
+            const toCache = out.clone();
+            // Cache API 要求 Response 可缓存：确保 Cache-Control 允许
+            c.executionCtx.waitUntil(caches.default.put(cacheKey, toCache));
+        } catch { /* ignore */ }
+    }
+
+    return out;
 }

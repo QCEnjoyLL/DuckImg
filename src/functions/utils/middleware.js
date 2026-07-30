@@ -8,14 +8,8 @@ export async function errorHandling(c) {
 }
 
 /**
- * 遥测数据中间件
+ * 遥测数据中间件（热路径保持安静，避免无用 CPU/日志成本）
  */
-export function telemetryData(c) {
-    // 可以在这里添加统计或分析代码
-    const timestamp = Date.now();
-    const url = new URL(c.req.url);
-    const userAgent = c.req.headers.get('User-Agent') || 'unknown';
-    
-    console.log(`[${timestamp}] 请求: ${url.pathname} - UA: ${userAgent}`);
+export function telemetryData(_c) {
     return;
 } 

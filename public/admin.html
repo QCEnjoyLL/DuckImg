@@ -84,6 +84,62 @@
         .btn-del { background:#6b7280; } .btn-limit { background:#4361ee; }
         .btn-images { background:#0ea5e9; }
         .btn-warn { background:#f59e0b; }
+        .warn-meta {
+            margin-top: 3px;
+            font-size: 0.72rem;
+            color: var(--text-light);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        .warn-meta.expired { color: #ef4444; font-weight: 600; }
+        .warn-history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .warn-history-table th, .warn-history-table td {
+            padding: 0.55rem 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+            white-space: nowrap;
+        }
+        .warn-history-table th { color: var(--text-light); font-weight: 600; }
+        .warn-history-table .expired { color: #ef4444; font-weight: 600; }
+        .warn-history-table .ok { color: #10b981; }
+        /* 工具栏次要操作：跟随亮/暗主题，不走实色 admin-btn */
+        #selectUnverifiedEmptyBtn.admin-btn {
+            min-width: auto;
+            height: 34px;
+            padding: 0 12px;
+            gap: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color, var(--card-bg));
+            color: var(--text-color) !important;
+            font-size: 0.85rem;
+            font-weight: 500;
+            box-shadow: none;
+            white-space: nowrap;
+        }
+        body.dark-mode #selectUnverifiedEmptyBtn.admin-btn {
+            background: var(--dark-bg, #121214);
+            border-color: var(--dark-border, rgba(255,255,255,0.12));
+            color: var(--dark-text, #f5f5f7) !important;
+        }
+        #selectUnverifiedEmptyBtn.admin-btn:hover {
+            opacity: 1;
+            border-color: var(--primary-color);
+            color: var(--primary-color) !important;
+            background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+        }
+        #selectUnverifiedEmptyBtn.admin-btn.is-active {
+            border-color: var(--primary-color);
+            color: var(--primary-color) !important;
+            background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary-color) 35%, transparent);
+        }
         /* 查看用户图片弹层 */
         .admin-img-modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; display:flex; align-items:center; justify-content:center; padding:1rem; }
         .admin-img-box { background:var(--card-bg); color:var(--text-color); width:min(900px,96vw); max-height:86vh; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.4); }
@@ -153,7 +209,20 @@
             background:rgba(67,97,238,0.08); border:1px solid var(--border-color); }
         .batch-bar .batch-count { font-size:0.9rem; color:var(--text-color); }
         .batch-actions { display:flex; gap:6px; flex-wrap:wrap; }
-        .admin-table .user-check { width:16px; height:16px; cursor:pointer; }
+        /* 表头全选与行内勾选同一尺寸 */
+        .admin-table #selectAllUsers,
+        .admin-table .user-check {
+            width: 16px;
+            height: 16px;
+            min-width: 16px;
+            min-height: 16px;
+            margin: 0;
+            padding: 0;
+            vertical-align: middle;
+            cursor: pointer;
+            accent-color: var(--primary-color, #4361ee);
+            box-sizing: border-box;
+        }
         .user-pagination { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px; margin-top:1rem; }
         .user-pagination button { min-width:34px; height:34px; padding:0 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--card-bg); color:var(--text-color); cursor:pointer; font-size:0.85rem; }
         body.dark-mode .user-pagination button { background:var(--dark-card-bg); border-color:var(--dark-border); color:var(--dark-text); }
@@ -443,6 +512,9 @@
                                 <option value="100">100</option>
                                 <option value="all">全部</option>
                             </select>
+                            <button type="button" class="admin-btn" id="selectUnverifiedEmptyBtn" title="选中全部：未验证邮箱 且 上传图片数为 0（跨页）">
+                                <i class="ri-checkbox-multiple-line"></i> 选未验证空户
+                            </button>
                         </div>
                     </div>
                     <!-- 批量操作工具条（选中用户后显示） -->
@@ -463,7 +535,7 @@
                                 <col class="c-status"><col class="c-images"><col class="c-limit"><col class="c-actions">
                             </colgroup>
                             <thead><tr>
-                                <th><input type="checkbox" id="selectAllUsers" title="全选本页"></th>
+                                <th><input type="checkbox" id="selectAllUsers" class="user-check" title="全选本页"></th>
                                 <th class="sortable" data-sortkey="name"><span data-i18n="admin.col.user">用户名</span> <span class="sort-ind"></span></th>
                                 <th class="sortable" data-sortkey="email"><span data-i18n="admin.col.email">邮箱</span> <span class="sort-ind"></span></th>
                                 <th class="sortable" data-sortkey="created"><span data-i18n="admin.col.created">注册时间</span> <span class="sort-ind"></span></th>
@@ -476,6 +548,36 @@
                         </table>
                     </div>
                     <div id="userPagination" class="user-pagination"></div>
+                </div>
+
+                <!-- 违规提醒历史 -->
+                <div class="admin-section">
+                    <div class="section-head" style="margin-bottom:0.8rem;">
+                        <h3 style="margin:0;"><i class="ri-mail-warning-line"></i> 违规提醒历史</h3>
+                        <button type="button" class="admin-btn btn-limit" id="refreshWarnHistoryBtn" style="height:32px;">刷新</button>
+                    </div>
+                    <p style="font-size:0.85rem;color:var(--text-light);margin:-0.2rem 0 0.9rem;">
+                        每次点「提醒」都会写入记录。截止日过后可优先处理「已过期」用户。
+                        <b>注意：</b>此功能上线前发送的提醒没有历史。
+                    </p>
+                    <div class="admin-table-wrap">
+                        <table class="warn-history-table">
+                            <thead>
+                                <tr>
+                                    <th>提醒时间</th>
+                                    <th>用户</th>
+                                    <th>邮箱</th>
+                                    <th>截止</th>
+                                    <th>状态</th>
+                                    <th>操作人</th>
+                                    <th>快捷</th>
+                                </tr>
+                            </thead>
+                            <tbody id="warnHistoryBody">
+                                <tr><td colspan="7" style="color:var(--text-light);">加载中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- 图片审核 / 最近上传 -->

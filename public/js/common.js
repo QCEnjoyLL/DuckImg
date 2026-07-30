@@ -160,6 +160,18 @@ function initNotifications() {
 }
 
 /**
+ * HTML 文本/属性转义（防 XSS）
+ */
+function escapeHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
  * 显示通知
  */
 function showNotification(message, type = 'info', duration = 3000) {
@@ -169,16 +181,18 @@ function showNotification(message, type = 'info', duration = 3000) {
     notification.innerHTML = `
         <div class="notification-content">
             <i class="ri-${getNotificationIcon(type)}-line"></i>
-            <span>${message}</span>
+            <span></span>
             <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
                 <i class="ri-close-line"></i>
             </button>
         </div>
     `;
-    
+    const msgEl = notification.querySelector('span');
+    if (msgEl) msgEl.textContent = message == null ? '' : String(message);
+
     // 添加到页面
     document.body.appendChild(notification);
-    
+
     // 自动删除
     if (duration > 0) {
         setTimeout(() => {
@@ -192,7 +206,7 @@ function showNotification(message, type = 'info', duration = 3000) {
             }
         }, duration);
     }
-    
+
     return notification;
 }
 
@@ -377,6 +391,7 @@ function deepClone(obj) {
 // 导出函数供其他模块使用
 window.commonUtils = {
     showNotification,
+    escapeHtml,
     formatFileSize,
     formatDate,
     debounce,
@@ -386,4 +401,7 @@ window.commonUtils = {
     isElementInViewport,
     generateId,
     deepClone
-}; 
+};
+
+// 全局兜底：页面脚本可直接用 escapeHtml
+window.escapeHtml = escapeHtml; 

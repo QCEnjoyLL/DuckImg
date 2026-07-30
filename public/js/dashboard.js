@@ -388,21 +388,32 @@ function createImageCard(image) {
     const uploadTime = new Date(image.uploadTime).toLocaleTimeString();
 
     // 创建标签HTML
+    const esc = (typeof escapeHtml === 'function')
+        ? escapeHtml
+        : (window.commonUtils && window.commonUtils.escapeHtml) || ((s) => String(s ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;'));
+    const safeName = esc(image.fileName);
+    const safeUrl = esc(image.url);
+    const safeId = esc(image.id);
     const tagsHtml = image.tags && image.tags.length > 0
         ? `<div class="image-tags">
-            ${image.tags.map(tag => `<span class="image-tag" data-tag="${tag}">${tag}</span>`).join('')}
+            ${image.tags.map(tag => {
+                const t = esc(tag);
+                return `<span class="image-tag" data-tag="${t}">${t}</span>`;
+            }).join('')}
            </div>`
         : '';
 
     card.innerHTML = `
         ${isSelectionMode ? `
         <div class="image-select">
-            <input type="checkbox" class="image-checkbox" id="check-${image.id}" ${selectedImages.has(image.id) ? 'checked' : ''}>
-            <label for="check-${image.id}" class="image-checkbox-label"></label>
+            <input type="checkbox" class="image-checkbox" id="check-${safeId}" ${selectedImages.has(image.id) ? 'checked' : ''}>
+            <label for="check-${safeId}" class="image-checkbox-label"></label>
         </div>
         ` : ''}
-        <div class="image-preview-enhanced" data-id="${image.id}" data-url="${image.url}">
-            <img src="${image.url}" alt="${image.fileName}" loading="lazy">
+        <div class="image-preview-enhanced" data-id="${safeId}" data-url="${safeUrl}">
+            <img src="${safeUrl}" alt="${safeName}" loading="lazy">
             <div class="image-overlay"></div>
             <div class="image-zoom-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -412,7 +423,7 @@ function createImageCard(image) {
                     <line x1="8" y1="11" x2="14" y2="11"></line>
                 </svg>
             </div>
-            <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${image.id}" title="${isFavorite ? tt('gallery.fav.remove','取消收藏') : tt('gallery.fav.add','收藏图片')}">
+            <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${safeId}" title="${isFavorite ? tt('gallery.fav.remove','取消收藏') : tt('gallery.fav.add','收藏图片')}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
@@ -429,7 +440,7 @@ function createImageCard(image) {
             </div>
         </div>
         <div class="image-info">
-            <div class="image-name" title="${image.fileName}">${image.fileName}</div>
+            <div class="image-name" title="${safeName}">${safeName}</div>
             <div class="image-meta">
                 <span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -451,21 +462,21 @@ function createImageCard(image) {
             ${tagsHtml}
         </div>
         <div class="image-actions">
-            <button class="image-btn copy-btn" data-clipboard-text="${window.location.origin}${image.url}" title="${tt('gallery.copyTitle', '复制图片链接')}">
+            <button class="image-btn copy-btn" data-clipboard-text="${esc(window.location.origin + image.url)}" title="${tt('gallery.copyTitle', '复制图片链接')}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
                 ${tt('common.copy', '复制')}
             </button>
-            <button class="image-btn edit-btn" data-id="${image.id}" title="${tt('gallery.editTitle', '编辑图片信息')}">
+            <button class="image-btn edit-btn" data-id="${safeId}" title="${tt('gallery.editTitle', '编辑图片信息')}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
                 ${tt('common.edit', '编辑')}
             </button>
-            <button class="image-btn delete-btn" data-id="${image.id}" title="${tt('gallery.deleteTitle', '删除图片')}">
+            <button class="image-btn delete-btn" data-id="${safeId}" title="${tt('gallery.deleteTitle', '删除图片')}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
