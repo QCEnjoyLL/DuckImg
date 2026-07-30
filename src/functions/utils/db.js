@@ -209,6 +209,85 @@ export async function dbLoadUserImages(env, userId) {
   return (res.results || []).map(rowToImage);
 }
 
+function likeEscape(s) {
+  return String(s).replace(/[\\%_]/g, (m) => '\\' + m);
+}
+
+function imageFilterSql({ q, tag, liked }) {
+  let sql = '';
+  const binds = [];
+  if (q) {
+    sql += " AND lower(file_name) LIKE ? ESCAPE '\\'";
+    binds.push('%' + likeEscape(String(q).toLowerCase()) + '%');
+  }
+  if (tag) {
+    // tags 列是 JSON.stringify 的数组，元素在文本中恰好是 JSON.stringify(tag)
+    sql += " AND tags LIKE ? ESCAPE '\\'";
+    binds.push('%' + likeEscape(JSON.stringify(String(tag))) + '%');
+  }
+  if (liked) sql += ' AND liked = 1';
+  return { sql, binds };
+}
+
+/**
+ * 图库分页查询：页数据 + 过滤后总数（可选全量统计/30 天趋势/类型分布），单次 batch 往返。
+ * 走 idx_images_user_time 索引，不再全量拉表。
+ */
+export async function dbUserImagesPage(env, userId, { q, tag, liked, limit = 20, offset = 0, withStats = false } = {}) {
+  const f = imageFilterSql({ q, tag, liked });
+  const where = 'user_id = ?' + f.sql;
+  const stmts = [
+    db(env)
+      .prepare(`SELECT * FROM images WHERE ${where} ORDER BY upload_time DESC LIMIT ? OFFSET ?`)
+      .bind(userId, ...f.binds, limit, offset),
+    db(env).prepare(`SELECT COUNT(*) AS c FROM images WHERE ${where}`).bind(userId, ...f.binds),
+  ];
+  if (withStats) {
+    const now = Date.now();
+    const since7d = now - 7 * 24 * 60 * 60 * 1000;
+    const since30d = now - 30 * 24 * 60 * 60 * 1000;
+    stmts.push(
+      db(env)
+        .prepare(
+          'SELECT COUNT(*) AS c, COALESCE(SUM(file_size),0) AS s, COALESCE(SUM(CASE WHEN upload_time >= ? THEN 1 ELSE 0 END),0) AS recent FROM images WHERE user_id = ?'
+        )
+        .bind(since7d, userId),
+      db(env)
+        .prepare(
+          `SELECT strftime('%Y-%m-%d', upload_time/1000, 'unixepoch') AS day, COUNT(*) AS c
+           FROM images WHERE user_id = ? AND upload_time >= ? GROUP BY day ORDER BY day`
+        )
+        .bind(userId, since30d),
+      db(env)
+        .prepare(
+          `SELECT CASE WHEN instr(id, '.') > 0 THEN lower(substr(id, instr(id, '.') + 1)) ELSE 'other' END AS ext,
+                  COUNT(*) AS c
+           FROM images WHERE user_id = ? GROUP BY ext ORDER BY c DESC`
+        )
+        .bind(userId),
+    );
+  }
+  const res = await db(env).batch(stmts);
+  const out = {
+    files: (res[0].results || []).map(rowToImage),
+    total: Number(res[1].results?.[0]?.c) || 0,
+  };
+  if (withStats) {
+    const st = (res[2].results && res[2].results[0]) || {};
+    const cnt = Number(st.c) || 0;
+    const size = Number(st.s) || 0;
+    out.stats = {
+      totalImages: cnt,
+      totalSize: size,
+      recentUploads: Number(st.recent) || 0,
+      averageFileSize: cnt > 0 ? Math.round(size / cnt) : 0,
+    };
+    out.trend = (res[3].results || []).map((r) => ({ day: r.day, count: Number(r.c) || 0 }));
+    out.types = (res[4].results || []).map((r) => ({ ext: r.ext || 'other', count: Number(r.c) || 0 }));
+  }
+  return out;
+}
+
 export async function dbGetImage(env, id) {
   if (!id) return null;
   const row = await db(env).prepare('SELECT * FROM images WHERE id = ?').bind(id).first();

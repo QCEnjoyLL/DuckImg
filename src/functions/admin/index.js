@@ -1,7 +1,6 @@
 /**
  * 管理后台 API（D1）
  */
-import { errorHandling, telemetryData } from '../utils/middleware';
 import {
   listUserSummaries, getAdminStats, getUserByName, saveUser, isAdmin, loadUserFiles, deleteUserRecord,
 } from '../utils/users';
@@ -32,8 +31,6 @@ export async function adminUserImages(c) {
 
 export async function adminDeleteUserImage(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const username = c.req.param('username');
     const fileId = c.req.param('id');
@@ -57,8 +54,6 @@ export async function adminDeleteUserImage(c) {
 
 export async function adminWarnUser(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const username = c.req.param('username');
     const admin = c.get('user');
@@ -120,8 +115,6 @@ export async function adminWarnUser(c) {
 
 export async function adminListWarns(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const url = new URL(c.req.url);
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '100', 10) || 100, 500);
     const username = (url.searchParams.get('username') || '').trim();
@@ -201,8 +194,6 @@ export async function adminListUsers(c) {
 
 export async function adminSetUserStatus(c, status) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const username = c.req.param('username');
     const admin = c.get('user');
@@ -224,8 +215,6 @@ export async function adminSetUserStatus(c, status) {
 
 export async function adminDeleteUser(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const username = c.req.param('username');
     const admin = c.get('user');
@@ -261,8 +250,6 @@ export async function adminDeleteUser(c) {
 
 export async function adminSetUserLimit(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const username = c.req.param('username');
     const { uploadLimit } = await c.req.json();
@@ -286,8 +273,6 @@ export async function adminSetUserLimit(c) {
 
 export async function adminBatchUsers(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const admin = c.get('user');
     const { action, usernames, uploadLimit } = await c.req.json();
@@ -394,8 +379,6 @@ export async function adminGetSettings(c) {
 
 export async function adminSaveSettings(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const patch = await c.req.json();
     await saveSettings(c.env, patch);
     return c.json({ message: '配置已保存' });
@@ -427,8 +410,6 @@ export async function getSiteConfig(c) {
 
 export async function adminTestEmail(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const { to } = await c.req.json();
     if (!to) return c.json({ error: '请填写收件邮箱' }, 400);
     const result = await sendTestEmail(c.env, to);

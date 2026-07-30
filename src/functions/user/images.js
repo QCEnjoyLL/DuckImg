@@ -1,69 +1,45 @@
 /**
  * 用户图片管理 API（D1）
  */
-import { errorHandling, telemetryData } from '../utils/middleware';
-import { loadUserFiles, updateUserFiles, getUserImageCount } from '../utils/users';
 import { deleteTelegramMessage } from '../upload';
-import { dbGetImage, dbUpsertImage, dbDeleteImage } from '../utils/db';
+import { dbGetImage, dbUpsertImage, dbDeleteImage, dbUserImagesPage } from '../utils/db';
 
 function clampPage(url) {
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10) || 20));
+  // ponytail: 上限 5000 支撑收藏/标签/清空等全量场景；超大图库需改前端分页循环
+  const limit = Math.min(5000, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10) || 20));
   return { page, limit, offset: (page - 1) * limit };
 }
 
-function filterFiles(files, { q, tag }) {
-  let out = Array.isArray(files) ? files : [];
-  if (q) {
-    const qq = String(q).toLowerCase();
-    out = out.filter((f) => String(f.fileName || f.id || '').toLowerCase().includes(qq));
-  }
-  if (tag) out = out.filter((f) => f.tags && f.tags.includes(tag));
-  return out;
-}
-
-function sortByUploadDesc(files) {
-  return files.slice().sort((a, b) => (b.uploadTime || 0) - (a.uploadTime || 0));
-}
-
-function statsFromFullList(files) {
-  const totalFiles = files.length;
-  const totalSize = files.reduce((sum, file) => sum + (file.fileSize || 0), 0);
-  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const recentUploads = files.filter((file) => (file.uploadTime || 0) >= sevenDaysAgo).length;
-  const averageFileSize = totalFiles > 0 ? Math.round(totalSize / totalFiles) : 0;
-  return { totalImages: totalFiles, totalSize, recentUploads, averageFileSize };
+function parseFilters(url) {
+  return {
+    q: (url.searchParams.get('q') || '').trim(),
+    tag: (url.searchParams.get('tag') || '').trim(),
+    liked: url.searchParams.get('liked') === '1',
+  };
 }
 
 export async function getUserImages(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
-
     const user = c.get('user');
-    const userId = user.id;
     const url = new URL(c.req.url);
     const { page, limit, offset } = clampPage(url);
-    const q = (url.searchParams.get('q') || '').trim();
-    const tag = (url.searchParams.get('tag') || '').trim();
+    const { q, tag, liked } = parseFilters(url);
 
-    let userFiles = await loadUserFiles(c.env, userId);
-    const fullStats = statsFromFullList(userFiles);
-    userFiles = sortByUploadDesc(filterFiles(userFiles, { q, tag }));
-
-    const totalFiltered = userFiles.length;
-    const paginatedFiles = userFiles.slice(offset, offset + limit);
+    const r = await dbUserImagesPage(c.env, user.id, { q, tag, liked, limit, offset, withStats: true });
 
     return c.json({
-      files: paginatedFiles,
-      ...fullStats,
+      files: r.files,
+      ...r.stats,
+      trend: r.trend,
+      types: r.types,
       pagination: {
-        total: totalFiltered,
+        total: r.total,
         page,
         limit,
-        totalPages: Math.max(1, Math.ceil(totalFiltered / limit) || 1),
+        totalPages: Math.max(1, Math.ceil(r.total / limit) || 1),
       },
-      listedCount: await getUserImageCount(c.env, userId).catch(() => fullStats.totalImages),
+      listedCount: r.stats.totalImages,
     });
   } catch (error) {
     console.error('获取用户图片错误:', error);
@@ -71,11 +47,33 @@ export async function getUserImages(c) {
   }
 }
 
+export async function searchUserImages(c) {
+  try {
+    const user = c.get('user');
+    const url = new URL(c.req.url);
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
+    const limit = Math.min(5000, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10) || 50));
+    const offset = (page - 1) * limit;
+    const { q, tag, liked } = parseFilters(url);
+
+    const r = await dbUserImagesPage(c.env, user.id, { q, tag, liked, limit, offset });
+    return c.json({
+      files: r.files,
+      pagination: {
+        total: r.total,
+        page,
+        limit,
+        totalPages: Math.max(1, Math.ceil(r.total / limit)),
+      },
+    });
+  } catch (error) {
+    console.error('搜索用户图片错误:', error);
+    return c.json({ error: '搜索用户图片失败' }, 500);
+  }
+}
+
 export async function deleteUserImage(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
-
     const user = c.get('user');
     const userId = user.id;
     const fileId = c.req.param('id');
@@ -99,13 +97,10 @@ export async function deleteUserImage(c) {
 
 export async function updateImageInfo(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
-
     const user = c.get('user');
     const userId = user.id;
     const fileId = c.req.param('id');
-    const { fileName, tags } = await c.req.json();
+    const { fileName, tags, liked } = await c.req.json();
     if (!fileId) return c.json({ error: '文件ID不能为空' }, 400);
 
     const existing = await dbGetImage(c.env, fileId);
@@ -118,6 +113,7 @@ export async function updateImageInfo(c) {
       userId,
       fileName: fileName || existing.fileName,
       tags: tags || existing.tags || [],
+      liked: typeof liked === 'boolean' ? liked : existing.liked,
     };
     await dbUpsertImage(c.env, next);
 
@@ -133,9 +129,6 @@ export async function updateImageInfo(c) {
 
 export async function claimUserImage(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
-
     const user = c.get('user');
     const userId = user.id;
     const body = await c.req.json().catch(() => ({}));
@@ -181,37 +174,5 @@ export async function claimUserImage(c) {
   } catch (error) {
     console.error('认领图片错误:', error);
     return c.json({ error: '认领失败' }, 500);
-  }
-}
-
-export async function searchUserImages(c) {
-  try {
-    await errorHandling(c);
-    telemetryData(c);
-
-    const user = c.get('user');
-    const userId = user.id;
-    const url = new URL(c.req.url);
-    const query = url.searchParams.get('q') || '';
-    const tag = url.searchParams.get('tag') || '';
-    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10) || 50));
-    const offset = (page - 1) * limit;
-
-    let userFiles = await loadUserFiles(c.env, userId);
-    userFiles = sortByUploadDesc(filterFiles(userFiles, { q: query.trim(), tag: tag.trim() }));
-    const total = userFiles.length;
-    return c.json({
-      files: userFiles.slice(offset, offset + limit),
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.max(1, Math.ceil(total / limit)),
-      },
-    });
-  } catch (error) {
-    console.error('搜索用户图片错误:', error);
-    return c.json({ error: '搜索用户图片失败' }, 500);
   }
 }

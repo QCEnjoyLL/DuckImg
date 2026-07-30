@@ -1,9 +1,8 @@
-import { errorHandling, telemetryData } from "./utils/middleware";
 import { authMiddleware } from "./utils/auth";
-import { isAdmin, getUserByName, appendUserFiles } from "./utils/users";
+import { isAdmin, getUserById, getUserByName } from "./utils/users";
 import { getSettings } from "./utils/settings";
 import { moderateImage } from "./utils/nsfw";
-import { dbGetUploadCount, dbSetUploadCount, dbSetUserImagesBlocked, dbDeleteImage } from "./utils/db";
+import { dbGetUploadCount, dbSetUploadCount, dbSetUserImagesBlocked, dbDeleteImage, dbUpsertImage } from "./utils/db";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'avif', 'heic', 'heif']);
@@ -34,7 +33,8 @@ export async function upload(c) {
   }
 
   try {
-    const user = await getUserByName(env, tokenUser.username);
+    // token 里有 id 就按 id 查（1 次查询）；旧 token 回退用户名兼容链
+    const user = (await getUserById(env, userId)) || (await getUserByName(env, tokenUser.username));
     if (!user) return c.json({ error: '用户不存在' }, 404);
     if (user.status === 'banned') return c.json({ error: '该账户已被封禁，无法上传' }, 403);
 
@@ -50,8 +50,6 @@ export async function upload(c) {
     let todayCount = await dbGetUploadCount(env, userId, dateKey);
 
     const formData = await c.req.formData();
-    await errorHandling(c);
-    telemetryData(c);
 
     const files = formData.getAll('file');
     if (!files || files.length === 0) throw new Error('未上传文件');
@@ -148,9 +146,7 @@ export async function upload(c) {
 
       let listed = false;
       try {
-        const r = await appendUserFiles(env, userId, [listItem]);
-        listed = !!(r && r.ok);
-        if (!listed) console.error('D1 写入图库失败:', fileKey, r && r.error);
+        listed = await dbUpsertImage(env, listItem);
       } catch (e) {
         console.error('D1 写入图库异常:', fileKey, e);
       }

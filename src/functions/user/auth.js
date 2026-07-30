@@ -2,7 +2,6 @@
  * 用户认证 API（D1）
  */
 import { generateToken, hashPassword, verifyPassword, needsPasswordRehash, deriveVerifyCode, verifyCodeMatches } from '../utils/auth';
-import { errorHandling, telemetryData } from '../utils/middleware';
 import { normalizeUser, getUserByName, getUserByEmail, saveUser, publicUser, isAdmin, getUserImageCount } from '../utils/users';
 import { getSettings } from '../utils/settings';
 import { generateCode, sendVerificationCode, sendLoginNotify } from '../utils/email';
@@ -45,8 +44,6 @@ export async function issueEmailCode(env, email, purpose = 'verify') {
 
 export async function register(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const rl = await checkRateLimit(c.env, `reg:${clientKey(c)}`, { limit: 10, windowSec: 3600 });
     if (!rl.allowed) {
@@ -124,8 +121,6 @@ export async function register(c) {
 
 export async function login(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const rl = await checkRateLimit(c.env, `login:${clientKey(c)}`, { limit: 20, windowSec: 900 });
     if (!rl.allowed) {
@@ -241,8 +236,6 @@ export async function getCurrentUser(c) {
 
 export async function updateUserAvatar(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const tokenUser = c.get('user');
     const { avatarUrl } = await c.req.json();
     const urlCheck = validateHttpUrl(avatarUrl);
@@ -320,8 +313,6 @@ export async function getQuota(c) {
 
 export async function changePassword(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const tokenUser = c.get('user');
     const { currentPassword, newPassword } = await c.req.json();
     if (!currentPassword || !newPassword) return c.json({ error: '请填写当前密码和新密码' }, 400);
@@ -344,8 +335,6 @@ export async function changePassword(c) {
 
 export async function changeEmail(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const tokenUser = c.get('user');
     const { password, newEmail } = await c.req.json();
     if (!password || !newEmail) return c.json({ error: '请填写密码和新邮箱' }, 400);
@@ -381,8 +370,6 @@ export async function changeEmail(c) {
 
 export async function confirmEmail(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const tokenUser = c.get('user');
     const { code } = await c.req.json();
     if (!code) return c.json({ error: '请输入验证码' }, 400);
@@ -418,8 +405,6 @@ export async function confirmEmail(c) {
 
 export async function forgotPassword(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const rl = await checkRateLimit(c.env, `forgot:${clientKey(c)}`, { limit: 5, windowSec: 900 });
     if (!rl.allowed) return c.json({ error: `请求过于频繁，请 ${rl.retryAfterSec} 秒后再试` }, 429);
 
@@ -441,8 +426,6 @@ export async function forgotPassword(c) {
 
 export async function resetPassword(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const rl = await checkRateLimit(c.env, `reset:${clientKey(c)}`, { limit: 10, windowSec: 900 });
     if (!rl.allowed) return c.json({ error: `尝试过多，请 ${rl.retryAfterSec} 秒后再试` }, 429);
 
@@ -469,8 +452,6 @@ export async function resetPassword(c) {
 
 export async function updateUserPrefs(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
     const tokenUser = c.get('user');
     const body = await c.req.json().catch(() => ({}));
     const user = await getUserByName(c.env, tokenUser.username);

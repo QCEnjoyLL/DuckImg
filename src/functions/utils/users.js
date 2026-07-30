@@ -8,8 +8,6 @@ import {
   dbSaveUser,
   dbDeleteUser,
   dbLoadUserImages,
-  dbUpsertImage,
-  dbDeleteImage,
   dbCountUserImages,
   dbListUserSummaries,
   dbAdminStats,
@@ -67,21 +65,6 @@ export async function getUserByEmail(env, email) {
   return normalizeUser(raw, env);
 }
 
-/** 兼容旧调用：KV 元数据已不需要，保留空对象形状 */
-export function userMeta(user) {
-  return {
-    id: user.id || null,
-    email: user.email || '',
-    status: user.status === 'banned' ? 'banned' : 'active',
-    emailVerified: user.emailVerified === true,
-    createdAt: user.createdAt || null,
-    uploadLimit: (typeof user.uploadLimit === 'number' && user.uploadLimit >= 0) ? user.uploadLimit : null,
-    lastWarnAt: user.lastWarnAt || null,
-    lastWarnDeadline: user.lastWarnDeadline || null,
-    warnCount: (typeof user.warnCount === 'number' && user.warnCount > 0) ? user.warnCount : 0,
-  };
-}
-
 export async function saveUser(env, user) {
   const { role, ...persisted } = user;
   persisted.updatedAt = Date.now();
@@ -93,76 +76,8 @@ export async function deleteUserRecord(env, user) {
   await dbDeleteUser(env, user);
 }
 
-export async function saveUserFiles(env, userId, files) {
-  // 全量覆盖式写入（导入/恢复用）：逐条 upsert
-  const list = Array.isArray(files) ? files : [];
-  for (const f of list) {
-    if (!f || !f.id) continue;
-    await dbUpsertImage(env, {
-      ...f,
-      userId,
-      url: f.url || `/file/${f.id}`,
-    });
-  }
-}
-
 export async function loadUserFiles(env, userId) {
   return dbLoadUserImages(env, userId);
-}
-
-/**
- * 对用户文件列表做读-改-写。
- * transform(files) → 新数组；返回 null 表示业务拒绝。
- */
-export async function updateUserFiles(env, userId, transform) {
-  if (!userId || typeof transform !== 'function') {
-    return { ok: false, files: [], error: 'bad_args' };
-  }
-  try {
-    const prev = await loadUserFiles(env, userId);
-    const next = transform(prev.slice());
-    if (next === null || next === undefined) {
-      return { ok: false, files: prev, error: 'rejected' };
-    }
-    if (!Array.isArray(next)) {
-      return { ok: false, files: prev, error: 'bad_transform' };
-    }
-
-    const prevIds = new Set(prev.map((f) => f && f.id).filter(Boolean));
-    const nextIds = new Set(next.map((f) => f && f.id).filter(Boolean));
-
-    // 删除少了的
-    for (const id of prevIds) {
-      if (!nextIds.has(id)) {
-        await dbDeleteImage(env, id);
-      }
-    }
-    // upsert 新的/变更的
-    for (const f of next) {
-      if (!f || !f.id) continue;
-      await dbUpsertImage(env, { ...f, userId });
-    }
-    return { ok: true, files: next };
-  } catch (e) {
-    console.warn('updateUserFiles failed:', e && e.message);
-    return { ok: false, files: [], error: (e && e.message) || 'write_failed', soft: true };
-  }
-}
-
-export async function appendUserFiles(env, userId, newFiles) {
-  const add = Array.isArray(newFiles) ? newFiles.filter((f) => f && f.id) : [];
-  if (!add.length) {
-    return { ok: true, files: await loadUserFiles(env, userId) };
-  }
-  try {
-    for (const f of add) {
-      await dbUpsertImage(env, { ...f, userId });
-    }
-    return { ok: true, files: await loadUserFiles(env, userId) };
-  } catch (e) {
-    console.warn('appendUserFiles failed:', e && e.message);
-    return { ok: false, files: [], error: (e && e.message) || 'write_failed', soft: true };
-  }
 }
 
 export function publicUser(user) {

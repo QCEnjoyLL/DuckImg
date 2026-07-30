@@ -1,7 +1,6 @@
 /**
  * 邮箱验证 API（D1）
  */
-import { errorHandling, telemetryData } from '../utils/middleware';
 import { generateToken, verifyCodeMatches } from '../utils/auth';
 import { normalizeUser, getUserByName, getUserByEmail, saveUser, publicUser, isAdmin } from '../utils/users';
 import { issueEmailCode } from './auth';
@@ -10,8 +9,6 @@ import { kvGet, kvDelete } from '../utils/db';
 
 export async function sendCode(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const rl = await checkRateLimit(c.env, `sendcode:${clientKey(c)}`, { limit: 8, windowSec: 900 });
     if (!rl.allowed) {
@@ -42,8 +39,6 @@ export async function sendCode(c) {
 
 export async function verifyCode(c) {
   try {
-    await errorHandling(c);
-    telemetryData(c);
 
     const rl = await checkRateLimit(c.env, `verifycode:${clientKey(c)}`, { limit: 20, windowSec: 900 });
     if (!rl.allowed) {
