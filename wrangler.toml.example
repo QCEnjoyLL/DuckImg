@@ -26,3 +26,7 @@ directory = "./public"
 binding = "ASSETS"
 run_worker_first = true
 html_handling = "none"
+
+# 每日清理过期限流桶与 kv_store 过期行
+[triggers]
+crons = ["17 3 * * *"]

@@ -2,17 +2,6 @@
  * 轻量限流（D1 rate_limits 表）。失败 fail-open。
  */
 
-async function rlGet(env, bucket) {
-  return env.DB.prepare('SELECT count, reset_at FROM rate_limits WHERE bucket = ?').bind(bucket).first();
-}
-
-async function rlPut(env, bucket, count, resetAt) {
-  await env.DB.prepare(
-    `INSERT INTO rate_limits (bucket, count, reset_at) VALUES (?, ?, ?)
-     ON CONFLICT(bucket) DO UPDATE SET count = excluded.count, reset_at = excluded.reset_at`
-  ).bind(bucket, count, resetAt).run();
-}
-
 export async function checkRateLimit(env, key, opts = {}) {
   const limit = Math.max(1, opts.limit || 10);
   const windowSec = Math.max(1, opts.windowSec || 60);
@@ -21,24 +10,23 @@ export async function checkRateLimit(env, key, opts = {}) {
   }
 
   const bucket = `rl:${key}`;
+  const now = Date.now();
+  const newReset = now + windowSec * 1000;
   try {
-    const raw = await rlGet(env, bucket);
-    const now = Date.now();
-    let count = 0;
-    let resetAt = now + windowSec * 1000;
+    // 单条 UPSERT：窗口过期则重置计数，否则 +1；RETURNING 取回当前状态（原来是 1 读 + 1 写）
+    const row = await env.DB.prepare(
+      `INSERT INTO rate_limits (bucket, count, reset_at) VALUES (?1, 1, ?2)
+       ON CONFLICT(bucket) DO UPDATE SET
+         count = CASE WHEN rate_limits.reset_at <= ?3 THEN 1 ELSE rate_limits.count + 1 END,
+         reset_at = CASE WHEN rate_limits.reset_at <= ?3 THEN ?2 ELSE rate_limits.reset_at END
+       RETURNING count, reset_at`
+    ).bind(bucket, newReset, now).first();
 
-    if (raw && typeof raw.count === 'number' && raw.reset_at > now) {
-      count = raw.count;
-      resetAt = raw.reset_at;
+    const count = Number(row && row.count) || 1;
+    const resetAt = Number(row && row.reset_at) || newReset;
+    if (count > limit) {
+      return { allowed: false, remaining: 0, retryAfterSec: Math.max(1, Math.ceil((resetAt - now) / 1000)) };
     }
-
-    if (count >= limit) {
-      const retryAfterSec = Math.max(1, Math.ceil((resetAt - now) / 1000));
-      return { allowed: false, remaining: 0, retryAfterSec };
-    }
-
-    count += 1;
-    await rlPut(env, bucket, count, resetAt);
     return { allowed: true, remaining: Math.max(0, limit - count), retryAfterSec: 0 };
   } catch (e) {
     console.warn('限流检查失败（放行）:', e && e.message);

@@ -7,6 +7,21 @@ const TG_PATH_TTL_SEC = 50 * 60;
 // isolate 内内存缓存，避免同 isolate 重复 KV/API
 const _tgPathMem = new Map(); // fileId -> { path, exp }
 
+// 存在封禁用户期间，避免每次看图都查 D1 拿归属：id → { userId, blocked } 短 TTL 缓存
+const IMG_META_TTL_MS = 30 * 1000;
+const _imgMetaMem = new Map(); // id -> { userId, blocked, exp }
+
+async function getImageMetaCached(env, id) {
+    const now = Date.now();
+    const hit = _imgMetaMem.get(id);
+    if (hit && hit.exp > now) return hit;
+    const img = await dbGetImage(env, id);
+    const meta = { userId: img && img.userId, blocked: !!(img && img.blocked), exp: now + IMG_META_TTL_MS };
+    if (_imgMetaMem.size > 5000) _imgMetaMem.clear(); // ponytail: 粗暴防膨胀，isolate 生命周期内够用
+    _imgMetaMem.set(id, meta);
+    return meta;
+}
+
 // 是否为携带有效管理员令牌的查看者（后台看图用 ?t=<jwt> 放行被屏蔽图片）
 async function isAdminViewer(c, env) {
     try {
@@ -64,9 +79,8 @@ export async function fileHandler(c) {
         const banned = await getBannedSet(env);
         if (banned.size > 0 && !(await isAdminViewer(c, env))) {
             try {
-                const img = await dbGetImage(env, id);
-                const ownerId = img && img.userId;
-                if ((img && img.blocked) || (ownerId && banned.has(String(ownerId)))) {
+                const meta = await getImageMetaCached(env, id);
+                if (meta.blocked || (meta.userId && banned.has(String(meta.userId)))) {
                     return blockedImagePage(c);
                 }
             } catch { /* 元数据读取失败则放行，不误伤 */ }

@@ -76,24 +76,22 @@ export function rowToUser(row) {
 export async function dbGetUserByUsername(env, username) {
   if (!username) return null;
   const raw = String(username);
-  const trimmed = raw.trim();
-  // 1) 精确 2) trim 后精确 3) 忽略大小写 4) trim 后忽略大小写（兼容历史尾空格用户名）
-  let row = await db(env).prepare('SELECT * FROM users WHERE username = ?').bind(raw).first();
-  if (!row && trimmed && trimmed !== raw) {
-    row = await db(env).prepare('SELECT * FROM users WHERE username = ?').bind(trimmed).first();
-  }
-  if (!row) {
-    row = await db(env)
-      .prepare('SELECT * FROM users WHERE lower(username) = lower(?)')
-      .bind(trimmed || raw)
-      .first();
-  }
-  if (!row && trimmed) {
-    row = await db(env)
-      .prepare('SELECT * FROM users WHERE lower(trim(username)) = lower(?)')
-      .bind(trimmed)
-      .first();
-  }
+  const trimmed = raw.trim() || raw;
+  // 兼容历史尾空格/大小写用户名：单条查询按精确度排序取最佳匹配（users 表很小，scan 无所谓）
+  const row = await db(env)
+    .prepare(
+      `SELECT * FROM users
+       WHERE username = ?1 OR username = ?2
+          OR lower(username) = lower(?2) OR lower(trim(username)) = lower(?2)
+       ORDER BY CASE
+         WHEN username = ?1 THEN 0
+         WHEN username = ?2 THEN 1
+         WHEN lower(username) = lower(?2) THEN 2
+         ELSE 3 END
+       LIMIT 1`
+    )
+    .bind(raw, trimmed)
+    .first();
   return rowToUser(row);
 }
 

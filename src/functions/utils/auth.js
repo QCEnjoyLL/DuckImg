@@ -1,7 +1,8 @@
 /**
  * 用户认证相关工具函数
  */
-import { isAdmin } from './users';
+import { isAdmin, getUserByName } from './users';
+import { getBannedSet } from './bans.js';
 
 // UTF-8 安全的 base64url 编解码（btoa/atob 无法处理非 ASCII，如中文用户名）
 function b64urlEncode(obj) {
@@ -264,9 +265,8 @@ export async function authMiddleware(c, next) {
   // 将用户信息添加到请求上下文
   c.set('user', payload);
 
-  // 热路径封禁检查：优先 banned 集合（带边缘 cacheTtl + 内存），避免每次 getWithMetadata
+  // 热路径封禁检查：优先 banned 集合（带内存缓存），避免每次查用户表
   try {
-    const { getBannedSet } = await import('./bans.js');
     const banned = await getBannedSet(c.env);
     if (banned && banned.size > 0) {
       const uid = payload && payload.id != null ? String(payload.id) : '';
@@ -276,7 +276,6 @@ export async function authMiddleware(c, next) {
       // 无 id 的旧 token：回退查用户状态
       if (!uid && payload && payload.username) {
         try {
-          const { getUserByName } = await import('./users.js');
           const u = await getUserByName(c.env, payload.username);
           if (u && u.status === 'banned') return c.json({ error: '该账户已被封禁' }, 403);
         } catch { /* ignore */ }

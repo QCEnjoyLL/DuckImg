@@ -126,4 +126,15 @@ app.all('*', async (c) => {
   }
 });
 
-export default app;
+// —— 定时清理（Cron Trigger）：过期限流桶 + 过期 kv_store 行（tgpath 缓存等）——
+async function scheduled(_event, env, _ctx) {
+  const now = Date.now();
+  try {
+    await env.DB.prepare('DELETE FROM rate_limits WHERE reset_at < ?').bind(now).run();
+  } catch (e) { console.warn('清理 rate_limits 失败:', e && e.message); }
+  try {
+    await env.DB.prepare('DELETE FROM kv_store WHERE expires_at IS NOT NULL AND expires_at < ?').bind(now).run();
+  } catch (e) { console.warn('清理 kv_store 失败:', e && e.message); }
+}
+
+export default { fetch: app.fetch, scheduled };
