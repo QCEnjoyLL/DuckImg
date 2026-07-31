@@ -523,14 +523,14 @@ async function showUserImages(username) {
         return;
     }
     const files = data.files || [];
-    const sizeMB = ((data.totalSize || 0) / (1024 * 1024)).toFixed(2);
+    const sizeText = formatFileSize(data.totalSize || 0);
 
     const overlay = document.createElement('div');
     overlay.className = 'admin-img-modal';
     overlay.innerHTML = `
       <div class="admin-img-box">
         <div class="admin-img-head">
-          <span><b>${username}</b> 的图片 · 共 <span class="aimg-count">${data.totalImages || 0}</span> 张 · ${sizeMB} MB</span>
+          <span><b>${username}</b> 的图片 · 共 <span class="aimg-count">${data.totalImages || 0}</span> 张 · ${sizeText}</span>
           <button class="admin-img-close" title="关闭">&times;</button>
         </div>
         <div class="admin-img-grid">
@@ -594,6 +594,10 @@ async function loadSettings() {
         document.getElementById('annEnabled').checked = !!settings.announcement.enabled;
         document.getElementById('annTitle').value = settings.announcement.title || '';
         document.getElementById('annContent').value = settings.announcement.content || '';
+
+        // 顶栏公告
+        document.getElementById('topBarEnabled').checked = !!(settings.topBar && settings.topBar.enabled);
+        document.getElementById('topBarText').value = (settings.topBar && settings.topBar.text) || '';
 
         // 上传与验证
         document.getElementById('dailyLimit').value = settings.dailyUploadLimit || 0;
@@ -671,6 +675,10 @@ function initSettingButtons() {
                 enabled: document.getElementById('annEnabled').checked,
                 title: document.getElementById('annTitle').value.trim(),
                 content: document.getElementById('annContent').value.trim(),
+            },
+            topBar: {
+                enabled: document.getElementById('topBarEnabled').checked,
+                text: document.getElementById('topBarText').value.trim(),
             }
         }, '公告已保存');
     });
@@ -844,8 +852,7 @@ function auditFmtTime(ms) {
 
 function auditFmtSize(bytes) {
     if (!bytes) return '';
-    const mb = bytes / (1024 * 1024);
-    return mb >= 1 ? mb.toFixed(2) + ' MB' : Math.max(1, Math.round(bytes / 1024)) + ' KB';
+    return formatFileSize(bytes); // common.js：自动 B/KB/MB/GB
 }
 
 function escAttr(s) { return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
