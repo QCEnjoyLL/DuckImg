@@ -1206,7 +1206,7 @@ function toggleImageSelection(imageId, card, forceState) {
     }
 }
 
-// 渲染分页
+// 渲染分页：首尾页常驻 + 省略号 + 跳页输入框（1 … 100 101 102 103 104 … 108 [跳转]）
 function renderPagination() {
     const pagination = document.getElementById('pagination');
     pagination.innerHTML = '';
@@ -1218,50 +1218,74 @@ function renderPagination() {
 
     pagination.style.display = 'flex';
 
-    // 上一页按钮
-    const prevBtn = document.createElement('button');
-    prevBtn.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
-    prevBtn.textContent = tt('common.prev','上一页');
-    prevBtn.disabled = currentPage === 1;
-    prevBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-            loadUserImages(currentPage - 1);
-        }
-    });
-    pagination.appendChild(prevBtn);
+    const goTo = (p) => { if (p >= 1 && p <= totalPages && p !== currentPage) loadUserImages(p); };
 
-    // 页码按钮
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const makeBtn = (label, { page, disabled, active } = {}) => {
+        const btn = document.createElement('button');
+        btn.className = `page-btn ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`;
+        btn.textContent = label;
+        btn.disabled = !!disabled;
+        if (page && !disabled && !active) btn.addEventListener('click', () => goTo(page));
+        return btn;
+    };
 
-    if (endPage - startPage + 1 < maxVisiblePages) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    // 上一页
+    pagination.appendChild(makeBtn(tt('common.prev', '上一页'), {
+        page: currentPage - 1, disabled: currentPage === 1,
+    }));
+
+    // 页码：当前页 ±2 的窗口，首尾页常驻，缺口补省略号
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + 4);
+    if (end - start < 4) start = Math.max(1, end - 4);
+
+    const addEllipsis = () => {
+        const span = document.createElement('span');
+        span.className = 'page-ellipsis';
+        span.textContent = '…';
+        pagination.appendChild(span);
+    };
+
+    if (start > 1) {
+        pagination.appendChild(makeBtn('1', { page: 1 }));
+        if (start > 2) addEllipsis();
+    }
+    for (let i = start; i <= end; i++) {
+        pagination.appendChild(makeBtn(String(i), { page: i, active: i === currentPage }));
+    }
+    if (end < totalPages) {
+        if (end < totalPages - 1) addEllipsis();
+        pagination.appendChild(makeBtn(String(totalPages), { page: totalPages }));
     }
 
-    for (let i = startPage; i <= endPage; i++) {
-        const pageBtn = document.createElement('button');
-        pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-        pageBtn.textContent = i;
-        pageBtn.addEventListener('click', () => {
-            if (i !== currentPage) {
-                loadUserImages(i);
-            }
-        });
-        pagination.appendChild(pageBtn);
-    }
+    // 下一页
+    pagination.appendChild(makeBtn(tt('common.next', '下一页'), {
+        page: currentPage + 1, disabled: currentPage === totalPages,
+    }));
 
-    // 下一页按钮
-    const nextBtn = document.createElement('button');
-    nextBtn.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
-    nextBtn.textContent = tt('common.next','下一页');
-    nextBtn.disabled = currentPage === totalPages;
-    nextBtn.addEventListener('click', () => {
-        if (currentPage < totalPages) {
-            loadUserImages(currentPage + 1);
-        }
-    });
-    pagination.appendChild(nextBtn);
+    // 跳页输入框
+    const jump = document.createElement('div');
+    jump.className = 'page-jump';
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.max = String(totalPages);
+    input.placeholder = `1-${totalPages}`;
+    input.setAttribute('aria-label', tt('common.jump', '跳转'));
+    const doJump = () => {
+        const p = parseInt(input.value, 10);
+        if (!p || p < 1 || p > totalPages) { input.value = ''; return; }
+        input.value = '';
+        goTo(p);
+    };
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doJump(); });
+    const goBtn = document.createElement('button');
+    goBtn.className = 'page-btn';
+    goBtn.textContent = tt('common.jump', '跳转');
+    goBtn.addEventListener('click', doJump);
+    jump.appendChild(input);
+    jump.appendChild(goBtn);
+    pagination.appendChild(jump);
 }
 
 // 初始化搜索功能
