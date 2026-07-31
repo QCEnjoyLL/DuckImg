@@ -1,0 +1,33 @@
+name = "duckimg"
+compatibility_date = "2024-09-23"
+main = "src/index.js"
+
+# 元数据存 D1，图片本体走 Telegram；本文件不含密钥，可安全入库
+# Secrets（全部存 Cloudflare 服务端）：
+#   npx wrangler secret put TG_Bot_Token
+#   npx wrangler secret put TG_Chat_ID
+#   npx wrangler secret put JWT_SECRET
+#   npx wrangler secret put RESEND_API_KEY
+#   npx wrangler secret put ADMIN_USERNAME
+#   npx wrangler secret put RESEND_FROM
+
+# [vars] 留空：ADMIN_USERNAME / RESEND_FROM 已迁至 Secrets
+# SITE_URL 如需固定站点地址可在此设置
+# [vars]
+# SITE_URL = "https://piv.cc.cd"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "duckimg"
+database_id = "5d5af46e-f93a-47f7-9999-e64dfcbd6bf5"
+migrations_dir = "migrations"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+html_handling = "none"
+
+# 每日清理过期限流桶与 kv_store 过期行
+[triggers]
+crons = ["17 3 * * *"]

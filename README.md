@@ -89,14 +89,13 @@ npm install
 # 登录 Cloudflare
 npx wrangler login
 
-# 本地配置（勿提交仓库）
-# 复制 wrangler.toml.example 为 wrangler.toml，填入 D1 database_id
+# 自部署：把 wrangler.toml 里的 database_id 换成你自己的（下一步创建时输出）
 
 # 首次：创建 D1 数据库（把输出的 database_id 填进 wrangler.toml），建表
 npx wrangler d1 create duckimg
 npm run migrate
 
-# 配置密钥（TG_Chat_ID / JWT_SECRET / RESEND_API_KEY 同理）
+# 配置密钥（TG_Chat_ID / JWT_SECRET / RESEND_API_KEY / ADMIN_USERNAME / RESEND_FROM 同理）
 npx wrangler secret put TG_Bot_Token
 
 # 部署
@@ -112,17 +111,18 @@ npm run dev
 
 ### 配置说明
 
-`wrangler.toml` **仅本地使用**，已在 `.gitignore` 中，请勿提交密钥。
+`wrangler.toml` 已随仓库提供（内含 D1 绑定与 cron，无任何密钥）；自部署只需替换 `database_id`。
 
-常见变量：
+所有敏感配置一律走 Cloudflare Secrets（服务端持久保存，换机器无需重配）：
 
-```toml
-[vars]
-ADMIN_USERNAME = "你的管理员用户名"
-RESEND_FROM = "鸭鸭图床 <noreply@yourdomain.com>"
+```bash
+npx wrangler secret put TG_Bot_Token      # Telegram Bot Token
+npx wrangler secret put TG_Chat_ID        # 存储频道 ID
+npx wrangler secret put JWT_SECRET        # 登录签名密钥
+npx wrangler secret put ADMIN_USERNAME    # 管理员用户名
+npx wrangler secret put RESEND_API_KEY    # 邮件服务（可选）
+npx wrangler secret put RESEND_FROM       # 邮件发件人（可选）
 ```
-
-密钥（TG_Bot_Token / TG_Chat_ID / JWT_SECRET / RESEND_API_KEY）请用 `npx wrangler secret put` 写入，勿放进 `[vars]`。
 
 部署成功后由 Cloudflare Workers 提供 HTTPS 访问地址（本项目示例：Workers 路由，非 Pages）。
 

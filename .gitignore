@@ -3,7 +3,7 @@ node_modules/
 .wrangler/
 
 # 本地真实配置（含密钥，切勿提交）
-wrangler.toml
+# wrangler.toml 已入库：密钥全部走 Cloudflare Secrets，文件内无敏感信息
 .dev.vars
 .env
 .env.*
