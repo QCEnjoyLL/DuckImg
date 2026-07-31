@@ -1,13 +1,13 @@
 {
   "name": "duckimg",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "鸭鸭图床 — 基于 Telegram + Cloudflare 的免费图床服务",
   "main": "index.js",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "create-kv": "node create-kv.js",
-    "setup": "npm run create-kv && npm run deploy"
+    "migrate": "wrangler d1 migrations apply duckimg --remote",
+    "setup": "npm run migrate && npm run deploy"
   },
   "keywords": [
     "图床",

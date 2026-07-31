@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.0.0"><img src="https://img.shields.io/badge/release-v2.0.0-blue?style=flat-square" alt="v2.0.0"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.1.0"><img src="https://img.shields.io/badge/release-v2.1.0-blue?style=flat-square" alt="v2.1.0"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0%20%2B%20Commons%20Clause-purple?style=flat-square" alt="License"></a>
@@ -61,7 +61,7 @@
 | 前端 | 多页静态 HTML / CSS / JS（无构建器） |
 | 后端 | [Hono](https://hono.dev/) on Cloudflare Workers |
 | 图片 | Telegram Bot API |
-| 元数据 | Cloudflare KV |
+| 元数据 | Cloudflare D1（SQLite） |
 | 部署 | Wrangler CLI |
 
 ---
@@ -90,11 +90,16 @@ npm install
 npx wrangler login
 
 # 本地配置（勿提交仓库）
-# 复制并编辑 wrangler.toml：填入 TG_Bot_Token、TG_Chat_ID、JWT_SECRET、KV 绑定等
+# 复制 wrangler.toml.example 为 wrangler.toml，填入 D1 database_id
 
-# 创建 KV（若尚未创建）并部署
-npm run setup
-# 或仅部署：
+# 首次：创建 D1 数据库（把输出的 database_id 填进 wrangler.toml），建表
+npx wrangler d1 create duckimg
+npm run migrate
+
+# 配置密钥（TG_Chat_ID / JWT_SECRET / RESEND_API_KEY 同理）
+npx wrangler secret put TG_Bot_Token
+
+# 部署
 npm run deploy
 ```
 
@@ -113,11 +118,11 @@ npm run dev
 
 ```toml
 [vars]
-TG_Bot_Token = "YOUR_BOT_TOKEN"
-TG_Chat_ID = "YOUR_CHAT_ID"
-JWT_SECRET = "your-secure-jwt-secret"
-# 可选：邮件、管理员用户名等按部署说明填写
+ADMIN_USERNAME = "你的管理员用户名"
+RESEND_FROM = "鸭鸭图床 <noreply@yourdomain.com>"
 ```
+
+密钥（TG_Bot_Token / TG_Chat_ID / JWT_SECRET / RESEND_API_KEY）请用 `npx wrangler secret put` 写入，勿放进 `[vars]`。
 
 部署成功后由 Cloudflare Workers 提供 HTTPS 访问地址（本项目示例：Workers 路由，非 Pages）。
 
@@ -136,6 +141,17 @@ JWT_SECRET = "your-secure-jwt-secret"
 ---
 
 ## 📈 更新日志
+
+### 🗄️ [v2.1.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.1.0)（2026-07）
+
+- 🗄️ 元数据存储从 Cloudflare KV 迁移到 D1（SQLite），附一次性迁移脚本
+- ⚡ 图库改 SQL 分页 + 单次 batch 聚合统计（总量 / 趋势 / 类型分布），上传去掉全量重读
+- ⚡ 热路径优化：用户单查、限流单语句 UPSERT、封禁检查内存缓存、每日 cron 清理过期行
+- ✨ 批量图片 API：删除 / 打标签一次 40 张，仪表盘与「清空全部」接入
+- ✨ 顶栏公告：后台可发布，头部中间显示，长文自动滚动
+- ⚡ 前端：Chart.js 懒加载、站点配置 / 公告 sessionStorage 缓存、滚动节流
+- 🐛 修复收藏 / 标签页弹提示栈溢出、仪表盘初始化中断、JWT 认证头打进控制台、
+  个人资料统计被截断、后台存储数值写死 MB
 
 ### 🎉 [v2.0.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.0.0)（2026-07）
 
@@ -179,7 +195,7 @@ JWT_SECRET = "your-secure-jwt-secret"
 ## 🙏 致谢
 
 - [Telegram Bot API](https://core.telegram.org/bots/api)
-- [Cloudflare Workers](https://workers.cloudflare.com/) / KV
+- [Cloudflare Workers](https://workers.cloudflare.com/) / D1
 - [Hono](https://hono.dev/)
 - [Remix Icon](https://remixicon.com/)
 - 上游参考：[xiyewuqiu/new-lmage](https://github.com/xiyewuqiu/new-lmage)
@@ -190,7 +206,7 @@ JWT_SECRET = "your-secure-jwt-secret"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.0.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.0.0)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.1.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.1.0)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 
