@@ -3,15 +3,16 @@ compatibility_date = "2024-09-23"
 main = "src/index.js"
 
 # 复制本文件为 wrangler.toml，填 database_id
-# Secrets（勿写入本文件）:
+# Secrets（勿写入本文件，存 Cloudflare 服务端，跨部署持久）:
 #   npx wrangler secret put TG_Bot_Token
 #   npx wrangler secret put TG_Chat_ID
 #   npx wrangler secret put JWT_SECRET
 #   npx wrangler secret put RESEND_API_KEY
+#   npx wrangler secret put ADMIN_USERNAME    # 管理员用户名
+#   npx wrangler secret put RESEND_FROM       # 邮件发件人，如 "图床 <noreply@yourdomain.com>"
 
-[vars]
-ADMIN_USERNAME = "你的管理员用户名"
-RESEND_FROM = "鸭鸭图床 <noreply@yourdomain.com>"
+# 可选固定站点地址
+# [vars]
 # SITE_URL = "https://your-domain.com"
 
 [[d1_databases]]
