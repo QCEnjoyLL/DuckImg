@@ -26,3 +26,6 @@ migration/qxc_*
 # 系统/编辑器
 .DS_Store
 Thumbs.db
+
+# 一次性迁移脚本与手册（含账号/用户隐私，永不入库）
+migration/
