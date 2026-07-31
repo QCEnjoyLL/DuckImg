@@ -2,14 +2,14 @@
  * 用户认证 API（D1）
  */
 import { generateToken, hashPassword, verifyPassword, needsPasswordRehash, deriveVerifyCode, verifyCodeMatches } from '../utils/auth';
-import { normalizeUser, getUserByName, getUserByEmail, saveUser, publicUser, isAdmin, getUserImageCount } from '../utils/users';
+import { normalizeUser, getUserByName, getUserById, getUserByEmail, saveUser, publicUser, isAdmin, getUserImageCount } from '../utils/users';
 import { getSettings } from '../utils/settings';
 import { generateCode, sendVerificationCode, sendLoginNotify } from '../utils/email';
 import {
   checkRateLimit, clientKey,
   validateUsername, validatePassword, validateEmail, validateHttpUrl,
 } from '../utils/ratelimit';
-import { kvGet, kvPut, kvDelete, dbGetUploadCount, dbLoadUserImages } from '../utils/db';
+import { kvGet, kvPut, kvDelete, dbGetUploadCount, dbUserImageTotals } from '../utils/db';
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 
@@ -256,12 +256,10 @@ export async function updateUserAvatar(c) {
 export async function getUserProfile(c) {
   try {
     const tokenUser = c.get('user');
-    const user = await getUserByName(c.env, tokenUser.username);
+    const user = (tokenUser.id && await getUserById(c.env, tokenUser.id)) || await getUserByName(c.env, tokenUser.username);
     if (!user) return c.json({ error: '用户不存在' }, 404);
 
-    const userFiles = await dbLoadUserImages(c.env, user.id);
-    const totalImages = userFiles.length;
-    const totalSize = userFiles.reduce((sum, file) => sum + (file.fileSize || 0), 0);
+    const { totalImages, totalSize } = await dbUserImageTotals(c.env, user.id);
     const dateKey = new Date().toISOString().slice(0, 10);
     const todayUsed = await dbGetUploadCount(c.env, user.id, dateKey);
     const settings = await getSettings(c.env);

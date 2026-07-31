@@ -205,8 +205,8 @@ function updateUserProfileDisplay(user) {
 
         const storageUsedElement = document.getElementById('profileStorageUsed');
         if (storageUsedElement) {
-            const sizeInMB = ((user.stats.totalSize || 0) / (1024 * 1024)).toFixed(2);
-            storageUsedElement.textContent = `${sizeInMB} MB`;
+            // common.js 的 formatFileSize：自动选 B/KB/MB/GB，避免 "12345.67 MB" 撑爆卡片
+            storageUsedElement.textContent = formatFileSize(user.stats.totalSize || 0);
         }
     }
 

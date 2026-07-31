@@ -379,6 +379,16 @@ export async function dbCountUserImages(env, userId) {
   return (row && row.c) || 0;
 }
 
+/** 张数 + 总字节，单条聚合（个人资料页用） */
+export async function dbUserImageTotals(env, userId) {
+  if (!userId) return { totalImages: 0, totalSize: 0 };
+  const row = await db(env)
+    .prepare('SELECT COUNT(*) AS c, COALESCE(SUM(file_size), 0) AS s FROM images WHERE user_id = ?')
+    .bind(userId)
+    .first();
+  return { totalImages: Number(row && row.c) || 0, totalSize: Number(row && row.s) || 0 };
+}
+
 export async function dbSetUserImagesBlocked(env, userId, blocked) {
   if (!userId) return;
   await db(env)
