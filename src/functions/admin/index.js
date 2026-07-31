@@ -391,10 +391,10 @@ export async function adminSaveSettings(c) {
 export async function getAnnouncement(c) {
   try {
     const settings = await getSettings(c.env);
-    return c.json({ announcement: settings.announcement });
+    return c.json({ announcement: settings.announcement, topBar: settings.topBar });
   } catch (error) {
     console.error('获取公告错误:', error);
-    return c.json({ announcement: { enabled: false } });
+    return c.json({ announcement: { enabled: false }, topBar: { enabled: false } });
   }
 }
 

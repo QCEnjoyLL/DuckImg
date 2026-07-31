@@ -607,6 +607,10 @@
                     </div>
                     <div class="form-row"><label>公告标题</label><input type="text" id="annTitle" placeholder="公告标题"></div>
                     <div class="form-row"><label>公告内容</label><textarea id="annContent" placeholder="支持换行的公告正文"></textarea></div>
+                    <div class="switch-row" style="margin-top:14px;">
+                        <input type="checkbox" id="topBarEnabled"><label for="topBarEnabled">启用顶部公告栏（显示在顶栏中间，文字过长自动滚动）</label>
+                    </div>
+                    <div class="form-row"><label>顶栏公告文字</label><input type="text" id="topBarText" maxlength="300" placeholder="一句话公告，留空则不显示"></div>
                     <button class="save-btn" id="saveAnnouncement" data-i18n="admin.ann.save">保存公告</button>
                 </div>
 

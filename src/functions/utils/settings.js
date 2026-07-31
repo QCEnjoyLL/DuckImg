@@ -10,6 +10,11 @@ export const DEFAULT_SETTINGS = {
     content: '',
     version: 0,
   },
+  // 顶栏中间的一行公告：有文字才显示，过长前端滚动
+  topBar: {
+    enabled: false,
+    text: '',
+  },
   nsfw: {
     enabled: false,
     apiUrl: '',
@@ -56,6 +61,7 @@ function mergeSettings(stored) {
   const e = s.email && typeof s.email === 'object' ? s.email : {};
   return {
     announcement: { ...DEFAULT_SETTINGS.announcement, ...(s.announcement || {}) },
+    topBar: { ...DEFAULT_SETTINGS.topBar, ...(s.topBar || {}) },
     nsfw: { ...DEFAULT_SETTINGS.nsfw, ...(s.nsfw || {}) },
     dailyUploadLimit: typeof s.dailyUploadLimit === 'number' ? s.dailyUploadLimit : DEFAULT_SETTINGS.dailyUploadLimit,
     requireEmailVerify: typeof s.requireEmailVerify === 'boolean' ? s.requireEmailVerify : DEFAULT_SETTINGS.requireEmailVerify,
@@ -93,6 +99,9 @@ export async function saveSettings(env, patch) {
 
   const next = {
     announcement: { ...current.announcement, ...(patch.announcement || {}) },
+    topBar: patch.topBar
+      ? { enabled: !!patch.topBar.enabled, text: String(patch.topBar.text || '').trim().slice(0, 300) }
+      : current.topBar,
     nsfw: { ...current.nsfw, ...(patch.nsfw || {}) },
     dailyUploadLimit: typeof patch.dailyUploadLimit === 'number' ? patch.dailyUploadLimit : current.dailyUploadLimit,
     requireEmailVerify: typeof patch.requireEmailVerify === 'boolean' ? patch.requireEmailVerify : current.requireEmailVerify,

@@ -5,6 +5,7 @@
  */
 (function () {
     let cachedAnnouncement = null;
+    let cachedTopBar = null;
 
     function todayStr() {
         const d = new Date();
@@ -32,6 +33,7 @@
                     const c = JSON.parse(raw);
                     if (c && c.at && (Date.now() - c.at) < ANN_CACHE_TTL) {
                         cachedAnnouncement = c.announcement || null;
+                        cachedTopBar = c.topBar || null;
                         return cachedAnnouncement;
                     }
                 }
@@ -42,22 +44,15 @@
             if (!res.ok) return null;
             const data = await res.json();
             cachedAnnouncement = data.announcement || null;
+            cachedTopBar = data.topBar || null;
             try {
-                sessionStorage.setItem(ANN_CACHE_KEY, JSON.stringify({ at: Date.now(), announcement: cachedAnnouncement }));
+                sessionStorage.setItem(ANN_CACHE_KEY, JSON.stringify({ at: Date.now(), announcement: cachedAnnouncement, topBar: cachedTopBar }));
             } catch { /* 忽略 */ }
             return cachedAnnouncement;
         } catch (e) {
             console.warn('加载公告失败:', e);
             return null;
         }
-    }
-
-    // 自动弹出（受关闭状态控制）
-    async function initAnnouncement() {
-        const a = await fetchAnnouncement();
-        if (!a || !a.enabled || !a.content) return;
-        if (isSuppressed(a)) return;
-        showAnnouncementModal(a);
     }
 
     // 强制查看（顶部按钮）：无视关闭状态
@@ -143,9 +138,57 @@
         else actions.prepend(btn);
     }
 
-    function start() {
+    // 顶栏中间公告：短文静止居中，放不下自动滚动
+    function renderTopBar(tb) {
+        if (!tb || !tb.enabled || !tb.text) return;
+        const host = document.querySelector('.header-center');
+        if (!host || document.getElementById('topAnnounce')) return;
+
+        if (!document.getElementById('topAnnounceStyle')) {
+            const st = document.createElement('style');
+            st.id = 'topAnnounceStyle';
+            st.textContent = `
+#topAnnounce{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
+#topAnnounce .ta-text{display:inline-block;white-space:nowrap;font-size:0.88rem;color:var(--text-light,#8b93a7);}
+#topAnnounce.scrolling{justify-content:flex-start;}
+#topAnnounce.scrolling .ta-text{padding-left:100%;animation:taScroll var(--ta-dur,16s) linear infinite;will-change:transform;}
+@keyframes taScroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion: reduce){#topAnnounce.scrolling .ta-text{animation:none;padding-left:0;}}`;
+            document.head.appendChild(st);
+        }
+
+        // header-center 在部分页面是空的零宽 flex 项，补上占位属性
+        host.style.flex = host.style.flex || '1 1 auto';
+        host.style.minWidth = '0';
+
+        const wrap = document.createElement('div');
+        wrap.id = 'topAnnounce';
+        const span = document.createElement('span');
+        span.className = 'ta-text';
+        span.textContent = tb.text; // textContent 防注入
+        wrap.appendChild(span);
+        host.appendChild(wrap);
+
+        const evalScroll = () => {
+            wrap.classList.remove('scrolling'); // 先去掉 padding 再测量真实文字宽
+            if (span.scrollWidth > wrap.clientWidth + 4) {
+                // 约 50px/s，时长 8–40s 封顶
+                const dur = Math.min(40, Math.max(8, Math.round((span.scrollWidth + wrap.clientWidth) / 50)));
+                wrap.style.setProperty('--ta-dur', dur + 's');
+                wrap.classList.add('scrolling');
+            }
+        };
+        evalScroll();
+        window.addEventListener('resize', evalScroll);
+    }
+
+    async function start() {
         injectHeaderButton();
-        initAnnouncement();
+        const a = await fetchAnnouncement();
+        renderTopBar(cachedTopBar);
+        if (a && a.enabled && a.content && !isSuppressed(a)) showAnnouncementModal(a);
     }
 
     if (document.readyState === 'loading') {
