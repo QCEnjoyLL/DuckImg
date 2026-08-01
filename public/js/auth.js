@@ -417,12 +417,15 @@ function initRegisterForm() {
                     throw new Error(data.error || '注册失败');
                 }
 
-                // 注册需要邮箱验证：弹出验证码界面
+                // 注册需要邮箱验证：弹出验证码界面（此时账号尚未创建，验证通过才算注册成功）
                 if (data.needVerify) {
                     if (data.devCode) {
                         showError(loginError, `邮件服务未配置，验证码为：${data.devCode}`);
+                    } else if (data.warning) {
+                        // 验证码邮件没发出去（配额/配置问题），如实提示，弹窗里可等待重试
+                        showError(loginError, `验证码邮件发送失败：${data.warning}`);
                     } else {
-                        showSuccessMessage('注册成功，请查收邮箱验证码');
+                        showSuccessMessage('验证码已发送，请查收邮箱完成注册');
                     }
                     showVerifyModal(data.email, data.username || username, data.devCode);
                     return;
