@@ -10,6 +10,7 @@ import {
   validateUsername, validatePassword, validateEmail, validateHttpUrl,
 } from '../utils/ratelimit';
 import { kvGet, kvPut, kvDelete, dbGetUploadCount, dbUserImageTotals } from '../utils/db';
+import { checkEmailDeliverable } from '../utils/emailcheck';
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 
@@ -28,6 +29,9 @@ function allowDevCode(env) {
 
 export async function issueEmailCode(env, email, purpose = 'verify') {
   if (!email) return { ok: false, error: '邮箱不能为空' };
+  // 发信前预检：一次性域名 / 无法收信的域名直接拦下，不浪费发信额度也不产生退信
+  const deliver = await checkEmailDeliverable(env, email);
+  if (!deliver.ok) return { ok: false, error: deliver.error };
   const code = await deriveVerifyCode(env, email, purpose);
   const sendResult = await sendVerificationCode(email, code, env);
   if (!sendResult.success) {
@@ -68,6 +72,10 @@ export async function register(c) {
     if (await getUserByEmail(c.env, email)) {
       return c.json({ error: '邮箱已被注册' }, 409);
     }
+
+    // 邮箱可达性预检：域名收不了信当场报错，让用户改拼写，而不是傻等一封永远不来的邮件
+    const deliver = await checkEmailDeliverable(c.env, email);
+    if (!deliver.ok) return c.json({ error: deliver.error }, 400);
 
     const hashedPassword = await hashPassword(password);
 
@@ -350,6 +358,9 @@ export async function changeEmail(c) {
     if (await getUserByEmail(c.env, normalizedNewEmail)) {
       return c.json({ error: '该邮箱已被注册' }, 409);
     }
+
+    const deliver = await checkEmailDeliverable(c.env, normalizedNewEmail);
+    if (!deliver.ok) return c.json({ error: deliver.error }, 400);
 
     const code = generateCode();
     const record = { newEmail: normalizedNewEmail, code, expiresAt: Date.now() + 10 * 60 * 1000 };
