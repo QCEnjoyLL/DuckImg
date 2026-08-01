@@ -12,6 +12,7 @@ import { createPreviewTicket } from '../utils/auth';
 import {
   kvGet, kvPut, dbDeleteImage, dbGetImage, dbRecentImages, dbGetUserById,
 } from '../utils/db';
+import { runDbBackup, buildBackupSql, getBackupHistory } from '../utils/backup';
 
 export async function adminUserImages(c) {
   try {
@@ -125,6 +126,35 @@ export async function adminListWarns(c) {
   } catch (error) {
     console.error('读取提醒历史错误:', error);
     return c.json({ error: '获取提醒历史失败' }, 500);
+  }
+}
+
+/** 移除一条提醒记录（用户已清理完毕等场景）；若是该用户最新提醒，同步清除用户上的提醒标记 */
+export async function adminDismissWarn(c) {
+  try {
+    const id = c.req.param('id');
+    if (!id) return c.json({ error: '缺少记录 ID' }, 400);
+    const KEY = 'admin:violation_warns';
+    let log = (await kvGet(c.env, KEY, { type: 'json' })) || [];
+    if (!Array.isArray(log)) log = [];
+    const entry = log.find((x) => x && x.id === id);
+    if (!entry) return c.json({ error: '记录不存在或已移除' }, 404);
+    await kvPut(c.env, KEY, log.filter((x) => x && x.id !== id));
+
+    try {
+      const user = await getUserByName(c.env, entry.username);
+      if (user && user.lastWarnAt === entry.at) {
+        user.lastWarnAt = null;
+        user.lastWarnDeadline = null;
+        await saveUser(c.env, user);
+      }
+    } catch (e) {
+      console.warn('清除用户提醒标记失败（记录已移除）:', e);
+    }
+    return c.json({ message: '提醒记录已移除' });
+  } catch (error) {
+    console.error('移除提醒记录错误:', error);
+    return c.json({ error: '移除失败' }, 500);
   }
 }
 
@@ -431,5 +461,94 @@ export async function adminPreviewTicket(c) {
   } catch (error) {
     console.error('签发预览票错误:', error);
     return c.json({ error: '签发预览票失败' }, 500);
+  }
+}
+
+// ===== 数据库备份管理 =====
+
+/** 立即执行一次备份（发到 TG 频道并记入历史） */
+export async function adminRunBackup(c) {
+  try {
+    const entry = await runDbBackup(c.env, { trigger: 'manual' });
+    if (!entry.ok) {
+      return c.json({ error: `备份失败：${entry.error || '未知错误'}`, entry }, 500);
+    }
+    return c.json({ message: `备份完成：${entry.fileName}`, entry });
+  } catch (error) {
+    console.error('手动备份错误:', error);
+    return c.json({ error: '备份执行失败' }, 500);
+  }
+}
+
+/** 备份历史（含失败记录，最多 60 条） */
+export async function adminBackupHistory(c) {
+  try {
+    const items = await getBackupHistory(c.env);
+    return c.json({ items, total: items.length });
+  } catch (error) {
+    console.error('读取备份历史错误:', error);
+    return c.json({ error: '获取备份历史失败' }, 500);
+  }
+}
+
+/**
+ * 下载历史备份：经 Bot 从 Telegram 取回并透传。
+ * fid 必须存在于备份历史中，防止用该接口代理 Bot 可见的任意文件。
+ * 注意 Bot 下载上限 20MB，超限时提示到频道手动下载。
+ */
+export async function adminBackupDownload(c) {
+  try {
+    const env = c.env;
+    const fid = (c.req.query('fid') || '').trim();
+    if (!fid) return c.json({ error: '缺少文件标识' }, 400);
+
+    const history = await getBackupHistory(env);
+    const entry = history.find((it) => it && it.ok && it.tgFileId === fid);
+    if (!entry) return c.json({ error: '备份记录不存在' }, 404);
+
+    const gf = await fetch(
+      `https://api.telegram.org/bot${env.TG_Bot_Token}/getFile?file_id=${encodeURIComponent(fid)}`
+    );
+    const gd = await gf.json().catch(() => null);
+    if (!gd || !gd.ok || !gd.result || !gd.result.file_path) {
+      const desc = (gd && gd.description) || `HTTP ${gf.status}`;
+      if (/too big/i.test(desc)) {
+        return c.json({
+          error: '该备份超过 Bot 下载上限（20MB），请到 Telegram 频道手动下载',
+          tgLink: entry.tgLink || null,
+        }, 413);
+      }
+      return c.json({ error: `获取备份文件失败：${desc}` }, 502);
+    }
+
+    const fres = await fetch(`https://api.telegram.org/file/bot${env.TG_Bot_Token}/${gd.result.file_path}`);
+    if (!fres.ok) return c.json({ error: `下载备份文件失败（HTTP ${fres.status}）` }, 502);
+
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/octet-stream');
+    headers.set('Content-Disposition', `attachment; filename="${entry.fileName || 'backup.sql'}"`);
+    headers.set('Cache-Control', 'no-store');
+    const len = fres.headers.get('Content-Length');
+    if (len) headers.set('Content-Length', len);
+    return new Response(fres.body, { status: 200, headers });
+  } catch (error) {
+    console.error('下载备份错误:', error);
+    return c.json({ error: '下载备份失败' }, 500);
+  }
+}
+
+/** 即时导出：现场生成最新 dump 直接下载，不经过 TG、不记历史 */
+export async function adminBackupExport(c) {
+  try {
+    const { sql } = await buildBackupSql(c.env);
+    const dateTag = new Date().toISOString().slice(0, 10);
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/sql; charset=utf-8');
+    headers.set('Content-Disposition', `attachment; filename="duckimg-export-${dateTag}.sql"`);
+    headers.set('Cache-Control', 'no-store');
+    return new Response(sql, { status: 200, headers });
+  } catch (error) {
+    console.error('即时导出错误:', error);
+    return c.json({ error: '导出失败：' + (error && error.message) }, 500);
   }
 }

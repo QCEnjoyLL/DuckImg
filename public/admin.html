@@ -32,6 +32,47 @@
         .admin-section { background: var(--card-bg); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
         body.dark-mode .admin-section { background: var(--dark-card-bg); }
         .admin-section h3 { margin: 0 0 1rem; font-size: 1.15rem; color: var(--primary-color); display:flex; align-items:center; gap:8px; }
+        /* 子菜单页签：功能分组，减少单页长度 */
+        .admin-tabs {
+            display: flex;
+            gap: 6px;
+            padding: 5px;
+            margin-bottom: 1.3rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .admin-tabs::-webkit-scrollbar { display: none; }
+        body.dark-mode .admin-tabs { background: var(--dark-card-bg); }
+        .admin-tab-btn {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 38px;
+            padding: 0 16px;
+            border: none;
+            border-radius: 9px;
+            background: transparent;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .15s, color .15s;
+        }
+        .admin-tab-btn i { font-size: 1.05em; }
+        .admin-tab-btn:hover { color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 10%, transparent); }
+        .admin-tab-btn.active { background: var(--primary-color, #4361ee); color: #fff; }
+        .admin-tab-btn.active:hover { color: #fff; }
+        .tab-hidden { display: none !important; }
+        @media (max-width: 576px) {
+            .admin-tab-btn { padding: 0 12px; font-size: 0.85rem; }
+        }
         /* fixed columns so sort changes don't reflow widths */
         .admin-table-wrap { overflow-x: auto; width: 100%; }
         table.admin-table {
@@ -430,9 +471,9 @@
         </div>
         <div class="menu-content">
             <div class="menu-category">主要功能</div>
-            <a href="/" class="menu-item"><div class="menu-item-icon"><i class="ri-home-5-line"></i></div><div class="menu-item-text">首页</div></a>
+            <a href="/" class="menu-item"><div class="menu-item-icon"><i class="ri-home-5-line"></i></div><div class="menu-item-text">网站首页</div></a>
             <a href="/dashboard.html" class="menu-item"><div class="menu-item-icon"><i class="ri-image-2-line"></i></div><div class="menu-item-text">我的图片</div></a>
-            <div class="menu-category">账户</div>
+            <div class="menu-category">账户中心</div>
             <a href="/profile.html" class="menu-item"><div class="menu-item-icon"><i class="ri-user-settings-line"></i></div><div class="menu-item-text">用户资料</div></a>
             <a href="/admin.html" class="menu-item active" id="adminMenuItem"><div class="menu-item-icon"><i class="ri-shield-star-line"></i></div><div class="menu-item-text">管理后台</div></a>
             <a href="#" class="menu-item" id="logoutMenuItem"><div class="menu-item-icon"><i class="ri-logout-box-line"></i></div><div class="menu-item-text">退出登录</div></a>
@@ -480,8 +521,17 @@
                     </div>
                 </div>
 
+                <!-- 子菜单页签 -->
+                <div class="admin-tabs" id="adminTabs" role="tablist">
+                    <button type="button" class="admin-tab-btn" data-tab-target="users"><i class="ri-team-line"></i> 用户管理</button>
+                    <button type="button" class="admin-tab-btn" data-tab-target="audit"><i class="ri-shield-flash-line"></i> 图片审核</button>
+                    <button type="button" class="admin-tab-btn" data-tab-target="backup"><i class="ri-database-2-line"></i> 数据备份</button>
+                    <button type="button" class="admin-tab-btn" data-tab-target="site"><i class="ri-notification-3-line"></i> 站点配置</button>
+                    <button type="button" class="admin-tab-btn" data-tab-target="system"><i class="ri-settings-3-line"></i> 功能设置</button>
+                </div>
+
                 <!-- 概览 -->
-                <div class="admin-stats" id="adminStats">
+                <div class="admin-stats" id="adminStats" data-admin-tab="users">
                     <div class="admin-stat-card" data-userfilter="all" style="cursor:pointer" title="点击查看全部用户"><div class="admin-stat-value" id="statTotalUsers">-</div><div class="admin-stat-label" data-i18n="admin.users">注册用户</div></div>
                     <div class="admin-stat-card"><div class="admin-stat-value" id="statTotalImages">-</div><div class="admin-stat-label" data-i18n="admin.images">图片总数</div></div>
                     <div class="admin-stat-card" data-userfilter="verified" style="cursor:pointer" title="点击筛选已验证用户"><div class="admin-stat-value" id="statVerified">-</div><div class="admin-stat-label" data-i18n="admin.verified">已验证用户</div></div>
@@ -489,7 +539,7 @@
                 </div>
 
                 <!-- 用户管理 -->
-                <div class="admin-section">
+                <div class="admin-section" data-admin-tab="users">
                     <div class="section-head">
                         <h3><i class="ri-team-line"></i> <span data-i18n="admin.userMgmt">用户管理</span></h3>
                         <div class="sort-control">
@@ -551,9 +601,9 @@
                 </div>
 
                 <!-- 违规提醒历史 -->
-                <div class="admin-section">
+                <div class="admin-section" data-admin-tab="users">
                     <div class="section-head" style="margin-bottom:0.8rem;">
-                        <h3 style="margin:0;"><i class="ri-mail-warning-line"></i> 违规提醒历史</h3>
+                        <h3 style="margin:0;"><i class="ri-mail-warning-line"></i> 违规提醒</h3>
                         <button type="button" class="admin-btn btn-limit" id="refreshWarnHistoryBtn" style="height:32px;">刷新</button>
                     </div>
                     <p style="font-size:0.85rem;color:var(--text-light);margin:-0.2rem 0 0.9rem;">
@@ -581,8 +631,8 @@
                 </div>
 
                 <!-- 图片审核 / 最近上传 -->
-                <div class="admin-section">
-                    <h3><i class="ri-shield-flash-line"></i> <span data-i18n="admin.audit">图片审核 / 最近上传</span></h3>
+                <div class="admin-section" data-admin-tab="audit">
+                    <h3><i class="ri-shield-flash-line"></i> <span data-i18n="admin.audit">图片审核</span></h3>
                     <p style="font-size:0.85rem;color:var(--text-light);margin:-0.4rem 0 0.9rem;">
                         在 TG 频道发现违规图片后，把它的<b>文件名</b>填到下面即可查出上传者；下方「最近上传」可一览近期各用户上传。新上传的图片，频道帖子标题会标注上传者。
                     </p>
@@ -599,8 +649,46 @@
                     <div id="recentUploads" class="audit-grid"><p style="color:var(--text-light);">加载中...</p></div>
                 </div>
 
+                <!-- 数据库备份 -->
+                <div class="admin-section" data-admin-tab="backup">
+                    <div class="section-head" style="margin-bottom:0.8rem;">
+                        <h3 style="margin:0;"><i class="ri-database-2-line"></i> 数据备份</h3>
+                        <button type="button" class="admin-btn btn-limit" id="refreshBackupBtn" style="height:32px;">刷新</button>
+                    </div>
+                    <p style="font-size:0.85rem;color:var(--text-light);margin:-0.2rem 0 0.9rem;">
+                        图片本体存于 Telegram，这里备份的是 D1 元数据（用户 / 图库索引 / 站点设置）。
+                        自动与「立即备份」都会把 <code>.sql</code> 发到存储频道并记录历史；「导出下载」则直接生成最新备份到本地，不经过频道。
+                        恢复：<code>npx wrangler d1 execute duckimg --remote --file=&lt;备份文件&gt;</code>
+                    </p>
+                    <div class="form-inline" style="align-items:flex-end;">
+                        <div class="form-row" style="flex:0 1 260px;">
+                            <label>自动备份频率（每天检查一次，保存后即时生效）</label>
+                            <select id="backupFrequency">
+                                <option value="off">关闭自动备份</option>
+                                <option value="daily">每天</option>
+                                <option value="weekly">每周</option>
+                                <option value="monthly">每月</option>
+                            </select>
+                        </div>
+                        <button class="save-btn" id="saveBackupSettings">保存频率</button>
+                        <button class="save-btn" id="runBackupBtn" style="background:#10b981;">立即备份</button>
+                        <button class="save-btn" id="exportBackupBtn" style="background:#0ea5e9;">导出下载</button>
+                    </div>
+                    <div class="admin-table-wrap" style="margin-top:1rem;">
+                        <table class="warn-history-table">
+                            <thead><tr>
+                                <th>时间</th><th>文件</th><th>大小</th><th>数据行</th><th>方式</th><th>状态</th><th>操作</th>
+                            </tr></thead>
+                            <tbody id="backupHistoryBody"><tr><td colspan="7" style="color:var(--text-light);">加载中...</td></tr></tbody>
+                        </table>
+                    </div>
+                    <p style="font-size:0.78rem;color:var(--text-light);margin:8px 0 0;">
+                        提示：历史下载经 Bot 中转，上限 20MB；更大的备份请点「频道」到 Telegram 手动下载。手动备份成功后会顺延下一次自动备份。
+                    </p>
+                </div>
+
                 <!-- 公告设置 -->
-                <div class="admin-section">
+                <div class="admin-section" data-admin-tab="site">
                     <h3><i class="ri-notification-3-line"></i> <span data-i18n="admin.ann">网站公告</span></h3>
                     <div class="switch-row">
                         <input type="checkbox" id="annEnabled"><label for="annEnabled">启用公告弹窗</label>
@@ -615,7 +703,7 @@
                 </div>
 
                 <!-- 上传与验证设置 -->
-                <div class="admin-section">
+                <div class="admin-section" data-admin-tab="system">
                     <h3><i class="ri-settings-3-line"></i> <span data-i18n="admin.upload">上传与验证</span></h3>
                     <div class="form-inline">
                         <div class="form-row"><label>每日上传上限（0 = 不限制）</label><input type="number" id="dailyLimit" min="0" placeholder="0"></div>
@@ -630,7 +718,7 @@
                 </div>
 
                 <!-- 鉴黄设置 -->
-                <div class="admin-section">
+                <div class="admin-section" data-admin-tab="system">
                     <h3><i class="ri-eye-off-line"></i> 图片鉴黄</h3>
                     <div class="switch-row">
                         <input type="checkbox" id="nsfwEnabled"><label for="nsfwEnabled">启用图片鉴黄</label>
@@ -656,8 +744,8 @@
                 </div>
 
                 <!-- 邮件发送设置 -->
-                <div class="admin-section">
-                    <h3><i class="ri-mail-send-line"></i> 邮件发送设置</h3>
+                <div class="admin-section" data-admin-tab="system">
+                    <h3><i class="ri-mail-send-line"></i> 邮件设置</h3>
                     <div class="form-row">
                         <label>发信方式</label>
                         <select id="emailProvider">
@@ -712,7 +800,7 @@
                 </div>
 
                 <!-- 站点设置 -->
-                <div class="admin-section">
+                <div class="admin-section" data-admin-tab="site">
                     <h3><i class="ri-palette-line"></i> 站点设置</h3>
                     <div class="form-row"><label>网站名称 / 标题</label><input type="text" id="siteName" placeholder="鸭鸭图床"></div>
                     <div class="form-row"><label>Logo 图标链接（留空使用默认）</label><input type="text" id="siteLogoUrl" placeholder="https://your-domain/logo.png"></div>

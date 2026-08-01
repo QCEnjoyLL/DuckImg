@@ -8,8 +8,10 @@ import { authMiddleware, adminMiddleware } from './functions/utils/auth';
 import {
   adminStats, adminListUsers, adminSetUserStatus, adminDeleteUser,
   adminSetUserLimit, adminBatchUsers, adminUserImages, adminDeleteUserImage, adminGetSettings, adminSaveSettings, getAnnouncement, adminTestEmail, getSiteConfig,
-  adminRecentUploads, adminSearchImage, adminWarnUser, adminListWarns, adminPreviewTicket
+  adminRecentUploads, adminSearchImage, adminWarnUser, adminListWarns, adminDismissWarn, adminPreviewTicket,
+  adminRunBackup, adminBackupHistory, adminBackupDownload, adminBackupExport
 } from './functions/admin/index';
+import { maybeRunScheduledBackup } from './functions/utils/backup';
 
 const app = new Hono();
 
@@ -98,11 +100,18 @@ app.post('/api/admin/users/:username/unban', adminMiddleware, (c) => adminSetUse
 app.post('/api/admin/users/:username/limit', adminMiddleware, adminSetUserLimit);
 app.post('/api/admin/users/:username/warn', adminMiddleware, adminWarnUser);
 app.get('/api/admin/warns', adminMiddleware, adminListWarns);
+app.delete('/api/admin/warns/:id', adminMiddleware, adminDismissWarn);
 app.get('/api/admin/preview-ticket', adminMiddleware, adminPreviewTicket);
 app.delete('/api/admin/users/:username', adminMiddleware, adminDeleteUser);
 app.get('/api/admin/settings', adminMiddleware, adminGetSettings);
 app.put('/api/admin/settings', adminMiddleware, adminSaveSettings);
 app.post('/api/admin/test-email', adminMiddleware, adminTestEmail);
+
+// 数据库备份管理
+app.post('/api/admin/backup/run', adminMiddleware, adminRunBackup);
+app.get('/api/admin/backup/history', adminMiddleware, adminBackupHistory);
+app.get('/api/admin/backup/download', adminMiddleware, adminBackupDownload);
+app.get('/api/admin/backup/export', adminMiddleware, adminBackupExport);
 
 // —— 静态回退：Workers Static Assets（不再使用 Sites / __STATIC_CONTENT）——
 // html_handling=none 时不会把「/」自动映射到 index.html，这里手动补上。
@@ -127,8 +136,20 @@ app.all('*', async (c) => {
   }
 });
 
-// —— 定时清理（Cron Trigger）：过期限流桶 + 过期 kv_store 行（tgpath 缓存等）——
-async function scheduled(_event, env, _ctx) {
+// —— 定时任务（Cron Triggers）：按触发的 cron 表达式分流 ——
+// ⚠️ 表达式必须与 wrangler.toml [triggers].crons 完全一致，改任一侧都要同步另一侧，
+//    否则备份分支永远不会命中（该时段只会跑一次无害的清理）。
+// '17 3 * * *'   每日清理：过期限流桶 + 过期 kv_store 行（tgpath 缓存等）
+// '37 19 * * *'  每日备份检查（UTC 19:37 = 北京 03:37）：是否真正执行由后台
+//                「自动备份频率」设置（off/daily/weekly/monthly）+ 上次备份时间决定，
+//                改频率无需重新部署。
+const BACKUP_CRON = '37 19 * * *';
+
+async function scheduled(event, env, _ctx) {
+  if (event && event.cron === BACKUP_CRON) {
+    await maybeRunScheduledBackup(env);
+    return;
+  }
   const now = Date.now();
   try {
     await env.DB.prepare('DELETE FROM rate_limits WHERE reset_at < ?').bind(now).run();

@@ -89,7 +89,10 @@
         }
 
         .favorites-stats {
-            display: flex;
+            /* 等宽列：所有块随最宽内容取齐，宽度永远一致 */
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 1fr;
             gap: 1rem;
             z-index: 1;
             position: relative;
@@ -98,6 +101,8 @@
         .favorites-stat {
             text-align: center;
             padding: 0.75rem 1rem;
+            min-width: 92px;
+            box-sizing: border-box;
             background: rgba(245, 158, 11, 0.1);
             border-radius: var(--radius-sm);
             border: 1px solid rgba(245, 158, 11, 0.2);
@@ -791,12 +796,7 @@
             }
 
             .favorites-stats {
-                flex-direction: column;
                 width: 100%;
-            }
-
-            .favorites-stat {
-                text-align: left;
             }
         }
     </style>
@@ -838,7 +838,7 @@
             <div class="menu-category">主要功能</div>
             <a href="/" class="menu-item">
                 <div class="menu-item-icon"><i class="ri-home-5-line"></i></div>
-                <div class="menu-item-text">首页</div>
+                <div class="menu-item-text">网站首页</div>
                 <div class="menu-tooltip">首页</div>
             </a>
             <a href="/dashboard.html" class="menu-item">
@@ -869,10 +869,10 @@
                 <div class="menu-tooltip">标签管理</div>
             </a>
 
-            <div class="menu-category">账户</div>
+            <div class="menu-category">账户中心</div>
             <a href="/login.html" class="menu-item" id="loginMenuItem" style="display: none;">
                 <div class="menu-item-icon"><i class="ri-login-box-line"></i></div>
-                <div class="menu-item-text">登录</div>
+                <div class="menu-item-text">用户登录</div>
                 <div class="menu-tooltip">登录</div>
             </a>
             <a href="/profile.html" class="menu-item">
@@ -891,10 +891,10 @@
                 <div class="menu-tooltip">退出登录</div>
             </a>
 
-            <div class="menu-category">更多</div>
+            <div class="menu-category">更多功能</div>
             <a href="https://github.com/QCEnjoyLL/DuckImg" target="_blank" class="menu-item">
                 <div class="menu-item-icon"><i class="ri-github-line"></i></div>
-                <div class="menu-item-text">GitHub</div>
+                <div class="menu-item-text">开源仓库</div>
                 <div class="menu-tooltip">GitHub</div>
             </a>
             <a href="/help.html" class="menu-item">

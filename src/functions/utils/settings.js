@@ -28,6 +28,10 @@ export const DEFAULT_SETTINGS = {
   dailyUploadLimit: 0,
   requireEmailVerify: true,
   allowSvg: true,
+  // 自动备份频率：off | daily | weekly | monthly（cron 每天检查一次，改频率即时生效无需部署）
+  backup: {
+    frequency: 'weekly',
+  },
   site: {
     siteName: '鸭鸭图床',
     logoUrl: 'https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png',
@@ -56,6 +60,15 @@ export const DEFAULT_SETTINGS = {
 
 const SETTINGS_KEY = 'config:settings';
 
+const BACKUP_FREQS = ['off', 'daily', 'weekly', 'monthly'];
+
+/** 非法值回退 fallback（读取时用默认，保存时用当前值，避免垃圾输入悄悄改变行为） */
+function normalizeBackup(b, fallback) {
+  const fb = (fallback && BACKUP_FREQS.includes(fallback.frequency)) ? fallback.frequency : DEFAULT_SETTINGS.backup.frequency;
+  const freq = b && BACKUP_FREQS.includes(b.frequency) ? b.frequency : fb;
+  return { frequency: freq };
+}
+
 function mergeSettings(stored) {
   const s = stored && typeof stored === 'object' ? stored : {};
   const e = s.email && typeof s.email === 'object' ? s.email : {};
@@ -66,6 +79,7 @@ function mergeSettings(stored) {
     dailyUploadLimit: typeof s.dailyUploadLimit === 'number' ? s.dailyUploadLimit : DEFAULT_SETTINGS.dailyUploadLimit,
     requireEmailVerify: typeof s.requireEmailVerify === 'boolean' ? s.requireEmailVerify : DEFAULT_SETTINGS.requireEmailVerify,
     allowSvg: typeof s.allowSvg === 'boolean' ? s.allowSvg : DEFAULT_SETTINGS.allowSvg,
+    backup: normalizeBackup(s.backup),
     site: { ...DEFAULT_SETTINGS.site, ...(s.site || {}) },
     email: {
       provider: e.provider === 'smtp' ? 'smtp' : 'resend',
@@ -106,6 +120,7 @@ export async function saveSettings(env, patch) {
     dailyUploadLimit: typeof patch.dailyUploadLimit === 'number' ? patch.dailyUploadLimit : current.dailyUploadLimit,
     requireEmailVerify: typeof patch.requireEmailVerify === 'boolean' ? patch.requireEmailVerify : current.requireEmailVerify,
     allowSvg: typeof patch.allowSvg === 'boolean' ? patch.allowSvg : current.allowSvg,
+    backup: patch.backup ? normalizeBackup(patch.backup, current.backup) : current.backup,
     site: { ...current.site, ...(patch.site || {}) },
     email: current.email,
   };

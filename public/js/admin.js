@@ -77,13 +77,13 @@ function renderUserRows(users) {
             ? '<td></td>'
             : `<td><input type="checkbox" class="user-check" data-user="${u.username}" ${selectedUsers.has(u.username) ? 'checked' : ''}></td>`;
 
-        // 违规提醒摘要：上次时间 / 截止 / 次数 / 是否已过期可封
+        // 违规提醒摘要：上次时间 / 截止 / 次数 / 是否已过期可封（已封禁用户不再标"过期"）
         let warnHtml = '';
         if (u.lastWarnAt) {
             const at = new Date(u.lastWarnAt).toLocaleString('zh-CN');
             const dl = u.lastWarnDeadline ? new Date(u.lastWarnDeadline) : null;
             const dlText = dl ? dl.toLocaleDateString('zh-CN') : '';
-            const expired = u.lastWarnDeadline && u.lastWarnDeadline < now;
+            const expired = u.lastWarnDeadline && u.lastWarnDeadline < now && u.status !== 'banned';
             const count = u.warnCount || 1;
             const cls = expired ? 'warn-meta expired' : 'warn-meta';
             const tip = expired
@@ -95,7 +95,7 @@ function renderUserRows(users) {
         const actions = u.role === 'admin' ? '<span style="color:var(--text-light)">—</span>' : `
             <div class="row-actions">
                 <button class="admin-btn btn-images" data-act="images" data-user="${u.username}">查看图片</button>
-                <button class="admin-btn btn-warn" data-act="warn" data-user="${u.username}" title="${u.lastWarnAt ? '再次发送提醒（会刷新截止时间）' : '发送 3 天清理提醒'}">提醒${u.warnCount ? `(${u.warnCount})` : ''}</button>
+                <button class="admin-btn btn-warn" data-act="warn" data-user="${u.username}" title="${u.lastWarnAt ? '再次发送提醒（会刷新截止时间）' : '发送 3 天清理提醒'}">提醒</button>
                 ${u.status === 'banned'
                     ? `<button class="admin-btn btn-unban" data-act="unban" data-user="${u.username}">解封</button>`
                     : `<button class="admin-btn btn-ban" data-act="ban" data-user="${u.username}">封禁</button>`}
@@ -420,7 +420,8 @@ async function handleUserAction(btn) {
             if (!confirm(`向用户 ${username} 发送提醒邮件？\n内容：发现违规图片，请于 3 天内清理，逾期将封禁账户。\n发送后会写入提醒历史。`)) return;
             const res = await adminFetch(`/api/admin/users/${encodeURIComponent(username)}/warn`, { method: 'POST', headers: authHeaders() });
             notify((res && res.message) || '提醒邮件已发送', 'success');
-            await Promise.all([loadUsers(), loadWarnHistory()]);
+            await loadUsers();
+            await loadWarnHistory();
             return;
         }
         if (act === 'ban') {
@@ -445,6 +446,7 @@ async function handleUserAction(btn) {
             notify('已更新上限', 'success');
         }
         await Promise.all([loadUsers(), loadStats()]);
+        loadWarnHistory(); // 封禁/解封/删除会影响提醒历史的状态列
     } catch (e) {
         if (e.message === '需要重新登录') return;
         notify(e.message, 'error');
@@ -503,11 +505,13 @@ async function runBatch(action) {
         );
         selectedUsers.clear();
         await Promise.all([loadUsers(), loadStats()]);
+        loadWarnHistory();
     } catch (e) {
         if (e.message === '需要重新登录') return;
         notify(e.message, 'error');
         // 部分成功时也刷新
         await Promise.all([loadUsers(), loadStats()]);
+        loadWarnHistory();
     }
 }
 
@@ -640,6 +644,10 @@ async function loadSettings() {
         document.getElementById('siteHelpUrl').value = site.helpUrl || '';
         document.getElementById('siteMenuFooter').value = site.menuFooter || '';
         document.getElementById('sitePageFooter').value = site.pageFooter || '';
+
+        // 自动备份频率
+        const backupSel = document.getElementById('backupFrequency');
+        if (backupSel) backupSel.value = (settings.backup && settings.backup.frequency) || 'weekly';
 
         toggleEmailFields();
     } catch (e) {
@@ -1041,11 +1049,25 @@ async function loadWarnHistory() {
         }
         const now = Date.now();
         tbody.innerHTML = items.map((it) => {
-            const expired = it.deadline && it.deadline < now;
-            const status = expired
-                ? '<span class="expired">已过期</span>'
-                : '<span class="ok">等待清理中</span>';
             const uname = escAttr(it.username || '');
+            // 交叉引用用户当前状态：已封禁 > 用户已删除 > 已过期 > 等待清理中
+            const u = allUsers.length ? allUsers.find((x) => x.username === it.username) : null;
+            const banned = !!(u && u.status === 'banned');
+            const missing = allUsers.length > 0 && !u;
+            const expired = it.deadline && it.deadline < now;
+            let status;
+            if (banned) status = '<span class="expired">已封禁</span>';
+            else if (missing) status = '<span style="color:var(--text-light);">用户已删除</span>';
+            else if (expired) status = '<span class="expired">已过期</span>';
+            else status = '<span class="ok">等待清理中</span>';
+
+            const imgBtn = missing ? '' :
+                `<button type="button" class="admin-btn btn-images" data-warn-act="images" data-user="${uname}" style="height:28px;min-width:auto;padding:0 8px;">图片</button>`;
+            const banBtn = (banned || missing) ? '' :
+                `<button type="button" class="admin-btn btn-ban" data-warn-act="ban" data-user="${uname}" style="height:28px;min-width:auto;padding:0 8px;">封禁</button>`;
+            const dismissBtn =
+                `<button type="button" class="admin-btn btn-del" data-warn-act="dismiss" data-id="${escAttr(it.id || '')}" data-user="${uname}" style="height:28px;min-width:auto;padding:0 8px;" title="用户已清理完毕或记录不再需要时移除">移除</button>`;
+
             return `<tr>
                 <td>${fmtDateTime(it.at)}</td>
                 <td title="${uname}">${uname || '-'}</td>
@@ -1053,10 +1075,7 @@ async function loadWarnHistory() {
                 <td>${fmtDate(it.deadline)}</td>
                 <td>${status}</td>
                 <td>${escAttr(it.by || '-')}</td>
-                <td>
-                    <button type="button" class="admin-btn btn-images" data-warn-act="images" data-user="${uname}" style="height:28px;min-width:auto;padding:0 8px;">图片</button>
-                    <button type="button" class="admin-btn btn-ban" data-warn-act="ban" data-user="${uname}" style="height:28px;min-width:auto;padding:0 8px;">封禁</button>
-                </td>
+                <td>${imgBtn} ${banBtn} ${dismissBtn}</td>
             </tr>`;
         }).join('');
 
@@ -1064,17 +1083,35 @@ async function loadWarnHistory() {
             btn.addEventListener('click', async () => {
                 const act = btn.dataset.warnAct;
                 const username = btn.dataset.user;
-                if (!username) return;
                 try {
                     if (act === 'images') {
-                        await showUserImages(username);
+                        if (username) await showUserImages(username);
                         return;
                     }
                     if (act === 'ban') {
+                        if (!username) return;
                         if (!confirm(`确定封禁用户 ${username}？`)) return;
                         await adminFetch(`/api/admin/users/${encodeURIComponent(username)}/ban`, { method: 'POST', headers: authHeaders() });
                         notify('已封禁', 'success');
-                        await Promise.all([loadUsers(), loadStats(), loadWarnHistory()]);
+                        await loadUsers();
+                        await Promise.all([loadStats(), loadWarnHistory()]);
+                        return;
+                    }
+                    if (act === 'dismiss') {
+                        const id = btn.dataset.id;
+                        if (!id) return;
+                        if (!confirm(`移除对 ${username || '该用户'} 的这条提醒记录？\n适用于用户已清理完毕或记录不再需要；若是其最新提醒，用户列表中的提醒标记会一并清除。`)) return;
+                        btn.disabled = true;
+                        try {
+                            await adminFetch(`/api/admin/warns/${encodeURIComponent(id)}`, { method: 'DELETE', headers: authHeaders() });
+                            notify('提醒记录已移除', 'success');
+                            await loadUsers();
+                            await loadWarnHistory();
+                        } catch (e) {
+                            btn.disabled = false;
+                            throw e;
+                        }
+                        return;
                     }
                 } catch (e) {
                     if (e.message === '需要重新登录') return;
@@ -1088,14 +1125,185 @@ async function loadWarnHistory() {
     }
 }
 
+// ===== 数据库备份 =====
+
+// 带鉴权的文件下载：fetch → blob → 触发浏览器保存（Authorization 头没法放进 <a href>）
+async function adminDownloadFile(url, fallbackName) {
+    const res = await fetch(url, { headers: authHeaders() });
+    if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        alert('登录已失效或无管理员权限，请以管理员账户重新登录。');
+        window.location.href = '/login.html';
+        throw new Error('需要重新登录');
+    }
+    if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        let link = '';
+        try {
+            const d = await res.json();
+            if (d && d.error) msg = d.error;
+            if (d && d.tgLink) link = d.tgLink;
+        } catch { /* 非 JSON 错误体 */ }
+        if (link) window.open(link, '_blank'); // 超 20MB 时直接带管理员去频道
+        throw new Error(msg);
+    }
+    const cd = res.headers.get('Content-Disposition') || '';
+    const m = cd.match(/filename="([^"]+)"/);
+    const name = (m && m[1]) || fallbackName || 'backup.sql';
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+}
+
+async function loadBackupHistory() {
+    const tbody = document.getElementById('backupHistoryBody');
+    if (!tbody) return;
+    try {
+        const data = await adminFetch('/api/admin/backup/history', { headers: authHeaders() });
+        const items = data.items || [];
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-light);">暂无备份记录，可点「立即备份」生成第一份。</td></tr>';
+            return;
+        }
+        tbody.innerHTML = items.map((it) => {
+            const status = it.ok
+                ? '<span class="ok">成功</span>'
+                : `<span class="expired" title="${escAttr(it.error || '')}">失败</span>`;
+            const size = it.ok && it.bytes ? formatFileSize(it.bytes) : '-';
+            const rows = it.ok && it.total != null ? it.total : '-';
+            const dlBtn = it.ok && it.tgFileId
+                ? `<button type="button" class="admin-btn btn-images" data-backup-act="download" data-fid="${escAttr(it.tgFileId)}" data-name="${escAttr(it.fileName || '')}" style="height:28px;min-width:auto;padding:0 8px;">下载</button>`
+                : '';
+            const chLink = it.tgLink
+                ? `<a href="${escAttr(it.tgLink)}" target="_blank" rel="noopener" class="admin-btn btn-limit" style="height:28px;min-width:auto;padding:0 8px;text-decoration:none;">频道</a>`
+                : '';
+            return `<tr>
+                <td>${fmtDateTime(it.at)}</td>
+                <td title="${escAttr(it.fileName || '')}">${escAttr(it.fileName || '-')}</td>
+                <td>${size}</td>
+                <td>${rows}</td>
+                <td>${it.trigger === 'manual' ? '手动' : '自动'}</td>
+                <td>${status}</td>
+                <td>${dlBtn} ${chLink}</td>
+            </tr>`;
+        }).join('');
+
+        tbody.querySelectorAll('button[data-backup-act="download"]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                const orig = btn.textContent;
+                btn.textContent = '下载中...';
+                try {
+                    await adminDownloadFile(`/api/admin/backup/download?fid=${encodeURIComponent(btn.dataset.fid)}`, btn.dataset.name);
+                } catch (e) {
+                    if (e.message !== '需要重新登录') notify('下载失败：' + e.message, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = orig;
+                }
+            });
+        });
+    } catch (e) {
+        if (e.message === '需要重新登录') return;
+        tbody.innerHTML = `<tr><td colspan="7">加载失败：${escAttr(e.message)}</td></tr>`;
+    }
+}
+
+function initBackupSection() {
+    const runBtn = document.getElementById('runBackupBtn');
+    if (runBtn) {
+        runBtn.addEventListener('click', async () => {
+            runBtn.disabled = true;
+            const orig = runBtn.textContent;
+            runBtn.textContent = '备份中...';
+            try {
+                const res = await adminFetch('/api/admin/backup/run', { method: 'POST', headers: authHeaders() });
+                notify((res && res.message) || '备份完成，已发送到存储频道', 'success');
+            } catch (e) {
+                if (e.message !== '需要重新登录') notify(e.message, 'error');
+            } finally {
+                runBtn.disabled = false;
+                runBtn.textContent = orig;
+                loadBackupHistory(); // 成败都刷新，失败也会入历史
+            }
+        });
+    }
+
+    const exportBtn = document.getElementById('exportBackupBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', async () => {
+            exportBtn.disabled = true;
+            const orig = exportBtn.textContent;
+            exportBtn.textContent = '生成中...';
+            try {
+                await adminDownloadFile('/api/admin/backup/export', 'duckimg-export.sql');
+                notify('备份已生成并开始下载', 'success');
+            } catch (e) {
+                if (e.message !== '需要重新登录') notify('导出失败：' + e.message, 'error');
+            } finally {
+                exportBtn.disabled = false;
+                exportBtn.textContent = orig;
+            }
+        });
+    }
+
+    const saveBtn = document.getElementById('saveBackupSettings');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const freq = document.getElementById('backupFrequency').value;
+            saveSettings({ backup: { frequency: freq } }, freq === 'off' ? '已关闭自动备份' : '备份频率已保存');
+        });
+    }
+
+    const refreshBtn = document.getElementById('refreshBackupBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => loadBackupHistory());
+
+    loadBackupHistory();
+}
+
+// ===== 子菜单页签 =====
+const ADMIN_TABS = ['users', 'audit', 'backup', 'site', 'system'];
+
+function switchAdminTab(tab, opts = {}) {
+    if (!ADMIN_TABS.includes(tab)) tab = 'users';
+    document.querySelectorAll('.admin-container [data-admin-tab]').forEach((el) => {
+        el.classList.toggle('tab-hidden', el.dataset.adminTab !== tab);
+    });
+    document.querySelectorAll('.admin-tab-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.tabTarget === tab);
+    });
+    try { localStorage.setItem('adminTab', tab); } catch { /* 隐私模式等 */ }
+    // hash 直达（如 /admin.html#backup），replaceState 避免污染浏览历史
+    try { history.replaceState(null, '', '#' + tab); } catch { /* ignore */ }
+    if (opts.scroll) window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function initAdminTabs() {
+    const fromHash = (location.hash || '').replace('#', '');
+    let saved = '';
+    try { saved = localStorage.getItem('adminTab') || ''; } catch { /* ignore */ }
+    const initial = ADMIN_TABS.includes(fromHash) ? fromHash : saved;
+    switchAdminTab(initial, { scroll: false });
+    document.querySelectorAll('.admin-tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => switchAdminTab(btn.dataset.tabTarget, { scroll: true }));
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!guardAdmin()) return;
+    initAdminTabs();
     loadStats();
-    loadUsers();
+    loadUsers().then(() => loadWarnHistory()); // 历史表状态列依赖用户列表
     loadSettings();
-    loadWarnHistory();
     initSettingButtons();
     initAuditSection();
+    initBackupSection();
     const refreshWarn = document.getElementById('refreshWarnHistoryBtn');
     if (refreshWarn) refreshWarn.addEventListener('click', () => loadWarnHistory());
 });

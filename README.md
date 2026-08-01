@@ -128,6 +128,38 @@ npx wrangler secret put RESEND_FROM       # 邮件发件人（可选）
 
 ---
 
+## 🗄️ 备份与迁移
+
+图片本体在 Telegram，D1 里只有元数据——备份好这一个库即可完整迁移站点。
+
+- **自动备份**：Worker 每天（UTC 19:37，北京 03:37）检查一次，按管理后台设置的频率
+  （关闭 / 每天 / 每周 / 每月，默认每周，改后即时生效无需部署）把 D1 全量导出为 `.sql`，
+  由 Bot 发送到存储频道（超过 8MB 自动 gzip）。备份自带建表语句、`INSERT OR REPLACE` 幂等，
+  空库直接回灌；瞬态数据（限流桶、tgpath 缓存、过期行）不入备份
+- **后台管理**：管理后台「数据备份」页签支持立即备份、备份历史（含失败告警记录）、
+  历史下载（经 Bot 中转，上限 20MB，超限到频道手动下载）与即时导出到本地
+- **手动备份**：`npx wrangler d1 export duckimg --remote --output=./backup.sql`
+- **误操作回滚**：D1 自带 Time Travel，可恢复最近 30 天内任意一分钟：
+  `npx wrangler d1 time-travel restore duckimg --timestamp=<unix秒>`
+
+迁移到新账号 / 新库：
+
+```bash
+npx wrangler d1 create duckimg     # 把输出的 database_id 填进 wrangler.toml
+npx wrangler d1 execute duckimg --remote --file=duckimg-backup-YYYY-MM-DD.sql
+npx wrangler secret put TG_Bot_Token   # 其余密钥同理（见上方配置说明）
+npm run deploy
+```
+
+本地手动触发一次备份检查（验证链路；注意本地 dev 用的是本地 D1，密钥来自 `.dev.vars`）：
+
+```bash
+npx wrangler dev --test-scheduled
+curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
+```
+
+---
+
 ## 📚 使用说明
 
 1. **注册并登录** — 上传与图库管理通常需要登录（站点可开启强制邮箱验证）
