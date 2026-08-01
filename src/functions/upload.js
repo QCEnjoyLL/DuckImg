@@ -2,6 +2,7 @@ import { authMiddleware } from "./utils/auth";
 import { isAdmin, getUserById, getUserByName } from "./utils/users";
 import { getSettings } from "./utils/settings";
 import { moderateImage } from "./utils/nsfw";
+import { checkRateLimit } from "./utils/ratelimit";
 import { dbGetUploadCount, dbSetUploadCount, dbSetUserImagesBlocked, dbDeleteImage, dbUpsertImage } from "./utils/db";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -30,6 +31,13 @@ export async function upload(c) {
 
   if (!userId) {
     return c.json({ error: '请先登录后再上传' }, 401);
+  }
+
+  // 突发限流：每用户每分钟 20 次上传请求（前端批量多文件同属 1 次请求，正常使用无感）。
+  // 每日总量由 dailyUploadLimit 管；这里管的是速度，防止脚本瞬时打满 TG Bot 配额殃及全站。
+  const burst = await checkRateLimit(env, `up:${userId}`, { limit: 20, windowSec: 60 });
+  if (!burst.allowed) {
+    return c.json({ error: `上传过于频繁，请 ${burst.retryAfterSec} 秒后再试` }, 429);
   }
 
   try {
