@@ -11,7 +11,8 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.1.0"><img src="https://img.shields.io/badge/release-v2.1.0-blue?style=flat-square" alt="v2.1.0"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.0"><img src="https://img.shields.io/badge/release-v2.2.0-blue?style=flat-square" alt="v2.2.0"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0%20%2B%20Commons%20Clause-purple?style=flat-square" alt="License"></a>
@@ -48,9 +49,11 @@
 
 ### 账户与设置
 - 注册 / 登录 / 邮箱验证 / 改密 / 换绑邮箱
+- 一次性验证码（哈希存储、错误次数限制）与可撤销 JWT 会话
 - 头像（上传或粘贴 URL）
 - 系统设置：语言、配色、上传偏好、登录邮件提醒、清空本地缓存、删除全部图片
-- 管理后台：用户管理、公告、上传上限、鉴黄、邮件与站点配置
+- 管理后台：用户管理、公告、上传上限、鉴黄、邮件、加密备份与站点配置
+- 部署指纹：后台自动显示 Cloudflare Version ID 与部署时间，便于核对线上版本
 
 ---
 
@@ -62,7 +65,7 @@
 | 后端 | [Hono](https://hono.dev/) on Cloudflare Workers |
 | 图片 | Telegram Bot API |
 | 元数据 | Cloudflare D1（SQLite） |
-| 部署 | Wrangler CLI |
+| 部署 | Wrangler CLI · Cloudflare Version Metadata · GitHub Actions CI |
 
 ---
 
@@ -149,6 +152,8 @@ npx wrangler secret delete ADMIN_BOOTSTRAP_TOKEN
 `npm run deploy`；新代码依赖 `users.token_version` 与 `verification_codes`，顺序颠倒会导致认证接口失败。
 
 部署成功后由 Cloudflare Workers 提供 HTTPS 访问地址（本项目示例：Workers 路由，非 Pages）。
+管理员登录后台后，可在页眉查看当前 Cloudflare Version ID 与部署时间；每次 `wrangler deploy`
+都会自动生成新版本号，无需手工维护。
 
 ---
 
@@ -207,6 +212,15 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 ---
 
 ## 📈 更新日志
+
+### 🛡️ [v2.2.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.0)（2026-08）
+
+- 🔐 管理员一次性引导令牌、随机一次性验证码、错误次数限制与 JWT `token_version` 撤销
+- 🛡️ 修复旧令牌复活、管理员大小写绕过、XSS 与文件名 / 标签 / 邮箱 / 图片 ID 校验问题
+- ⚡ 原子上传配额，限制单次 20 个文件、40MB 文件总量与 50MB 请求体
+- 🗄️ D1 Secret 脱敏、Telegram 备份 AES-GCM 加密及本地解密脚本
+- ✅ Workers Vitest、GitHub Actions CI、依赖审计、部署 dry-run 与可观测性配置
+- 🔖 管理后台显示 Cloudflare Version ID 与部署时间，便于确认线上代码是否更新
 
 ### 🗄️ [v2.1.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.1.0)（2026-07）
 
@@ -272,7 +286,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.1.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.1.0)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.2.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.0)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 
