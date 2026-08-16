@@ -1,18 +1,25 @@
 /**
  * 用户认证 API（D1）
  */
-import { generateToken, hashPassword, verifyPassword, needsPasswordRehash, deriveVerifyCode, verifyCodeMatches } from '../utils/auth';
+import {
+  clearVerificationCode,
+  createVerificationCode,
+  generateToken,
+  hashPassword,
+  needsPasswordRehash,
+  timingSafeEqualSecret,
+  verifyCodeMatches,
+  verifyPassword,
+} from '../utils/auth';
 import { normalizeUser, getUserByName, getUserById, getUserByEmail, saveUser, publicUser, isAdmin, getUserImageCount } from '../utils/users';
 import { getSettings } from '../utils/settings';
-import { generateCode, sendVerificationCode, sendLoginNotify } from '../utils/email';
+import { sendVerificationCode, sendLoginNotify } from '../utils/email';
 import {
   checkRateLimit, clientKey,
   validateUsername, validatePassword, validateEmail, validateHttpUrl,
 } from '../utils/ratelimit';
 import { kvGet, kvPut, kvDelete, dbGetUploadCount, dbUserImageTotals } from '../utils/db';
 import { checkEmailDeliverable } from '../utils/emailcheck';
-
-const CODE_TTL_MS = 10 * 60 * 1000;
 
 function loginShouldWrite(rawUser) {
   if (rawUser.status === undefined || rawUser.emailVerified === undefined || rawUser.uploadLimit === undefined) {
@@ -27,20 +34,31 @@ function allowDevCode(env) {
   return String((env && env.ALLOW_DEV_CODE) || '') === '1';
 }
 
+function uploadQuotaPolicy(user, settings, admin = false) {
+  if (admin) return { limit: 0, unlimited: true };
+  if (user && user.uploadLimit !== null) {
+    return { limit: Math.max(0, Number(user.uploadLimit) || 0), unlimited: false };
+  }
+  const globalLimit = Math.max(0, Number(settings && settings.dailyUploadLimit) || 0);
+  return { limit: globalLimit, unlimited: globalLimit === 0 };
+}
+
 export async function issueEmailCode(env, email, purpose = 'verify') {
   if (!email) return { ok: false, error: '邮箱不能为空' };
   // 发信前预检：一次性域名 / 无法收信的域名直接拦下，不浪费发信额度也不产生退信
   const deliver = await checkEmailDeliverable(env, email);
   if (!deliver.ok) return { ok: false, error: deliver.error };
-  const code = await deriveVerifyCode(env, email, purpose);
+  const code = await createVerificationCode(env, email, purpose);
   const sendResult = await sendVerificationCode(email, code, env);
   if (!sendResult.success) {
+    const devFallback = !!sendResult.notConfigured && allowDevCode(env);
+    if (!devFallback) await clearVerificationCode(env, email, purpose).catch(() => {});
     const out = {
       ok: false,
       error: sendResult.error || '验证码发送失败',
       notConfigured: !!sendResult.notConfigured,
     };
-    if (sendResult.notConfigured && allowDevCode(env)) out.devCode = code;
+    if (devFallback) out.devCode = code;
     return out;
   }
   return { ok: true };
@@ -65,6 +83,14 @@ export async function register(c) {
     const username = u.value;
     const password = p.value;
     const email = e.value;
+    const adminRegistration = isAdmin(username, c.env);
+    if (adminRegistration) {
+      const configured = c.env && c.env.ADMIN_BOOTSTRAP_TOKEN;
+      const provided = c.req.header('X-Admin-Bootstrap-Token');
+      if (!configured || !(await timingSafeEqualSecret(provided, configured))) {
+        return c.json({ error: '管理员账号不能通过公共注册创建' }, 403);
+      }
+    }
 
     if (await getUserByName(c.env, username)) {
       return c.json({ error: '用户名已存在' }, 409);
@@ -79,15 +105,16 @@ export async function register(c) {
 
     const hashedPassword = await hashPassword(password);
 
-    if (isAdmin(username, c.env)) {
+    if (adminRegistration) {
       const userId = crypto.randomUUID();
       const user = {
         id: userId, username, email, password: hashedPassword,
         status: 'active', emailVerified: true, uploadLimit: null,
+        tokenVersion: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
       };
       await saveUser(c.env, user);
-      const token = await generateToken({ id: userId, username, role: 'admin' }, c.env);
+      const token = await generateToken({ id: userId, username, role: 'admin', tv: 0 }, c.env);
       return c.json({ message: '注册成功', user: publicUser(normalizeUser(user, c.env)), token });
     }
 
@@ -97,10 +124,11 @@ export async function register(c) {
       const user = {
         id: userId, username, email, password: hashedPassword,
         status: 'active', emailVerified: false, uploadLimit: null,
+        tokenVersion: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
       };
       await saveUser(c.env, user);
-      const token = await generateToken({ id: userId, username, role: 'user' }, c.env);
+      const token = await generateToken({ id: userId, username, role: 'user', tv: 0 }, c.env);
       return c.json({ message: '注册成功', user: publicUser(normalizeUser(user, c.env)), token });
     }
 
@@ -113,6 +141,14 @@ export async function register(c) {
     await kvPut(c.env, `pendingreg:${email}`, pending, { expirationTtl: 1800 });
 
     const issued = await issueEmailCode(c.env, email);
+    if (!issued.ok && !issued.devCode) {
+      return c.json({
+        error: issued.error || '验证码邮件发送失败',
+        needVerify: true,
+        mode: 'register',
+        email,
+      }, 502);
+    }
     return c.json({
       message: '请查收邮箱验证码完成注册',
       needVerify: true,
@@ -170,7 +206,12 @@ export async function login(c) {
     const adminUser = user.role === 'admin' || isAdmin(user.username, c.env);
     if (adminUser) {
       const lastLoginAt = Date.now();
-      const token = await generateToken({ id: user.id, username: user.username, role: 'admin' }, c.env);
+      const token = await generateToken({
+        id: user.id,
+        username: user.username,
+        role: 'admin',
+        tv: Number(user.tokenVersion) || 0,
+      }, c.env);
       try {
         rawUser.emailVerified = true;
         rawUser.status = rawUser.status === 'banned' ? 'banned' : 'active';
@@ -205,7 +246,12 @@ export async function login(c) {
 
     const lastLoginAt = Date.now();
     const shouldWrite = rehash || loginShouldWrite(rawUser);
-    const token = await generateToken({ id: user.id, username: user.username, role: 'user' }, c.env);
+    const token = await generateToken({
+      id: user.id,
+      username: user.username,
+      role: 'user',
+      tv: Number(user.tokenVersion) || 0,
+    }, c.env);
     try {
       if (shouldWrite) {
         const toSave = normalizeUser(rawUser, c.env);
@@ -215,11 +261,12 @@ export async function login(c) {
       }
       if (user.prefs && user.prefs.loginNotify && shouldWrite && user.email) {
         const ua = c.req.header('user-agent') || '';
-        await sendLoginNotify(c.env, user.email, {
+        const notifyTask = sendLoginNotify(c.env, user.email, {
           username: user.username,
           timeText: new Date(lastLoginAt).toLocaleString('zh-CN'),
           ua,
-        });
+        }).catch((e) => console.warn('登录通知发送失败（忽略）:', e && e.message));
+        c.executionCtx.waitUntil(notifyTask);
       }
     } catch (e) { console.warn('登录写/通知失败（忽略）:', e && e.message); }
 
@@ -271,7 +318,7 @@ export async function getUserProfile(c) {
     const dateKey = new Date().toISOString().slice(0, 10);
     const todayUsed = await dbGetUploadCount(c.env, user.id, dateKey);
     const settings = await getSettings(c.env);
-    const effectiveLimit = user.uploadLimit !== null ? user.uploadLimit : settings.dailyUploadLimit;
+    const quota = uploadQuotaPolicy(user, settings, isAdmin(user.username, c.env));
 
     return c.json({
       user: {
@@ -280,7 +327,8 @@ export async function getUserProfile(c) {
           totalImages,
           totalSize,
           todayUsed,
-          dailyLimit: effectiveLimit,
+          dailyLimit: quota.limit,
+          unlimited: quota.unlimited,
         },
       },
     });
@@ -300,15 +348,14 @@ export async function getQuota(c) {
     const settings = await getSettings(c.env);
     const dateKey = new Date().toISOString().slice(0, 10);
     const used = await dbGetUploadCount(c.env, user.id, dateKey);
-    const limit = user.uploadLimit !== null ? user.uploadLimit : settings.dailyUploadLimit;
-    const unlimited = admin || !limit || limit <= 0;
-    const remaining = unlimited ? null : Math.max(0, limit - used);
+    const quota = uploadQuotaPolicy(user, settings, admin);
+    const remaining = quota.unlimited ? null : Math.max(0, quota.limit - used);
 
     return c.json({
       used,
-      limit: unlimited ? 0 : limit,
+      limit: quota.limit,
       remaining,
-      unlimited,
+      unlimited: quota.unlimited,
       isAdmin: admin,
     });
   } catch (error) {
@@ -331,6 +378,7 @@ export async function changePassword(c) {
     if (!ok) return c.json({ error: '当前密码错误' }, 401);
 
     user.password = await hashPassword(pw.value);
+    user.tokenVersion = (Number(user.tokenVersion) || 0) + 1;
     await saveUser(c.env, user);
     return c.json({ message: '密码修改成功，请重新登录' });
   } catch (error) {
@@ -362,14 +410,22 @@ export async function changeEmail(c) {
     const deliver = await checkEmailDeliverable(c.env, normalizedNewEmail);
     if (!deliver.ok) return c.json({ error: deliver.error }, 400);
 
-    const code = generateCode();
-    const record = { newEmail: normalizedNewEmail, code, expiresAt: Date.now() + 10 * 60 * 1000 };
+    const purpose = `emailchange:${user.id}`;
+    const code = await createVerificationCode(c.env, normalizedNewEmail, purpose);
+    const record = { newEmail: normalizedNewEmail, purpose, expiresAt: Date.now() + 10 * 60 * 1000 };
     await kvPut(c.env, `emailchange:${user.id}`, record, { expirationTtl: 600 });
     const sent = await sendVerificationCode(normalizedNewEmail, code, c.env);
+    const devFallback = !sent.success && sent.notConfigured && allowDevCode(c.env);
+    if (!sent.success && !devFallback) {
+      await Promise.all([
+        clearVerificationCode(c.env, normalizedNewEmail, purpose).catch(() => {}),
+        kvDelete(c.env, `emailchange:${user.id}`).catch(() => {}),
+      ]);
+      return c.json({ error: sent.error || '验证码发送失败' }, 502);
+    }
     return c.json({
-      message: '验证码已发送至新邮箱',
-      ...(sent.success ? {} : { warning: sent.error }),
-      ...(sent.notConfigured && allowDevCode(c.env) ? { devCode: code } : {}),
+      message: devFallback ? '本地开发验证码已生成' : '验证码已发送至新邮箱',
+      ...(devFallback ? { devCode: code } : {}),
     });
   } catch (error) {
     console.error('修改邮箱错误:', error);
@@ -393,7 +449,9 @@ export async function confirmEmail(c) {
       await kvDelete(c.env, recKey);
       return c.json({ error: '验证码已过期，请重新发起' }, 400);
     }
-    if (String(code) !== String(record.code)) return c.json({ error: '验证码错误' }, 400);
+    const purpose = record.purpose || `emailchange:${user.id}`;
+    const codeOk = await verifyCodeMatches(c.env, record.newEmail, code, purpose);
+    if (!codeOk) return c.json({ error: '验证码错误或已过期' }, 400);
 
     const taken = await getUserByEmail(c.env, record.newEmail);
     if (taken && taken.username !== user.username) {
@@ -451,6 +509,7 @@ export async function resetPassword(c) {
     if (!ok) return c.json({ error: '验证码错误或已过期' }, 400);
 
     user.password = await hashPassword(pw.value);
+    user.tokenVersion = (Number(user.tokenVersion) || 0) + 1;
     await saveUser(c.env, user);
     return c.json({ message: '密码重置成功，请用新密码登录' });
   } catch (error) {

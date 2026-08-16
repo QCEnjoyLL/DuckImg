@@ -18,6 +18,30 @@
     <style>
         .admin-container { max-width: 1320px; margin: 1.5rem auto; padding: 1rem; }
         .admin-title { font-size: 1.6rem; margin-bottom: 1.2rem; color: var(--primary-color); }
+        .deploy-version {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 36px;
+            padding: 0.45rem 0.75rem;
+            border: 1px solid color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--primary-color) 8%, var(--card-bg));
+            color: var(--text-light);
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .deploy-version i { color: var(--primary-color); font-size: 1rem; }
+        .deploy-version code {
+            color: var(--text-color);
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .deploy-version time { color: var(--text-light); }
+        .deploy-version[data-state="error"] { border-color: rgba(239, 68, 68, 0.4); }
         .admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 1rem; margin-bottom: 1.5rem; }
         .admin-stat-card { background: var(--card-bg); border-radius: var(--radius); padding: 1.2rem; box-shadow: var(--shadow); text-align: center; }
         body.dark-mode .admin-stat-card { background: var(--dark-card-bg); }
@@ -444,6 +468,11 @@
             align-self: center !important;
         }
         @media (max-width: 576px) {
+            .deploy-version {
+                width: 100%;
+                justify-content: center;
+                box-sizing: border-box;
+            }
             .form-inline > .save-btn {
                 width: 100%;
                 align-self: stretch !important;
@@ -518,6 +547,12 @@
                             <span data-i18n="page.admin.title">管理后台</span>
                         </h2>
                         <p data-i18n="page.admin.sub">用户管理、审核与站点配置</p>
+                    </div>
+                    <div class="deploy-version" id="deployVersion" aria-live="polite" title="正在读取部署版本">
+                        <i class="ri-git-commit-line" aria-hidden="true"></i>
+                        <span>部署版本</span>
+                        <code id="deployVersionId">读取中…</code>
+                        <time id="deployVersionTime"></time>
                     </div>
                 </div>
 
@@ -657,8 +692,8 @@
                     </div>
                     <p style="font-size:0.85rem;color:var(--text-light);margin:-0.2rem 0 0.9rem;">
                         图片本体存于 Telegram，这里备份的是 D1 元数据（用户 / 图库索引 / 站点设置）。
-                        自动与「立即备份」都会把 <code>.sql</code> 发到存储频道并记录历史；「导出下载」则直接生成最新备份到本地，不经过频道。
-                        恢复：<code>npx wrangler d1 execute duckimg --remote --file=&lt;备份文件&gt;</code>
+                        自动与「立即备份」都会把加密的 <code>.sql[.gz].enc</code> 发到存储频道并记录历史；「导出下载」则直接生成明文 <code>.sql</code> 到本地，不经过频道。
+                        频道备份需先运行 <code>node scripts/decrypt-backup.mjs &lt;备份文件&gt;</code>，如输出为 <code>.gz</code> 再解压，最后回灌 D1。
                     </p>
                     <div class="form-inline" style="align-items:flex-end;">
                         <div class="form-row" style="flex:0 1 260px;">
@@ -731,9 +766,9 @@
                                 <option value="GET">GET (查询参数，多数免费服务)</option>
                             </select>
                         </div>
-                        <div class="form-row"><label>接口密钥 (Bearer Token，可留空)</label><input type="text" id="nsfwApiKey" placeholder="可选"></div>
+                            <div class="form-row"><label>接口密钥（Cloudflare Secret: NSFW_API_KEY）</label><input type="text" id="nsfwApiKey" disabled placeholder="请通过 Wrangler Secret 配置"></div>
                     </div>
-                    <div class="form-row"><label>附加查询参数 (GET 时拼到URL，如 key=xxx 或 api_user=..&api_secret=..)</label><input type="text" id="nsfwExtraParams" placeholder="key=YOUR_KEY"></div>
+                    <div class="form-row"><label>附加查询参数（Cloudflare Secret: NSFW_EXTRA_PARAMS）</label><input type="text" id="nsfwExtraParams" disabled placeholder="请通过 Wrangler Secret 配置"></div>
                     <div class="form-inline">
                         <div class="form-row"><label>图片URL字段名</label><input type="text" id="nsfwImageParam" placeholder="url"></div>
                         <div class="form-row"><label>分数取值路径</label><input type="text" id="nsfwScorePath" placeholder="如 predictions.adult / score"></div>
@@ -757,7 +792,7 @@
                     <!-- Resend 配置 -->
                     <div id="resendFields">
                         <div class="form-inline">
-                            <div class="form-row"><label>Resend API Key（留空保持不变 / 回退环境变量）</label><input type="password" id="resendApiKey" placeholder="留空保持不变" autocomplete="new-password"></div>
+                            <div class="form-row"><label>Resend API Key（Cloudflare Secret: RESEND_API_KEY）</label><input type="password" id="resendApiKey" disabled placeholder="请通过 Wrangler Secret 配置" autocomplete="new-password"></div>
                             <div class="form-row"><label>发件地址 From</label><input type="text" id="resendFrom" placeholder='如 鸭鸭图床 <noreply@yourdomain>'></div>
                         </div>
                     </div>
@@ -777,7 +812,7 @@
                         </div>
                         <div class="form-inline">
                             <div class="form-row"><label>用户名（登录账号）</label><input type="text" id="smtpUsername" placeholder="发信邮箱账号" autocomplete="off"></div>
-                            <div class="form-row"><label>密码 / 授权码（留空保持不变）</label><input type="password" id="smtpPassword" placeholder="留空保持不变" autocomplete="new-password"></div>
+                            <div class="form-row"><label>密码 / 授权码（Cloudflare Secret: SMTP_PASSWORD）</label><input type="password" id="smtpPassword" disabled placeholder="请通过 Wrangler Secret 配置" autocomplete="new-password"></div>
                         </div>
                         <div class="form-inline">
                             <div class="form-row"><label>发件地址</label><input type="text" id="smtpFromAddress" placeholder="noreply@yourdomain.com"></div>

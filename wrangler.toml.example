@@ -1,5 +1,6 @@
 name = "duckimg"
-compatibility_date = "2024-09-23"
+compatibility_date = "2026-08-16"
+compatibility_flags = ["nodejs_compat"]
 main = "src/index.js"
 
 # 复制本文件为 wrangler.toml，填 database_id
@@ -7,13 +8,22 @@ main = "src/index.js"
 #   npx wrangler secret put TG_Bot_Token
 #   npx wrangler secret put TG_Chat_ID
 #   npx wrangler secret put JWT_SECRET
+#   npx wrangler secret put BACKUP_ENCRYPTION_KEY # 备份专用密钥，务必妥善保存
 #   npx wrangler secret put RESEND_API_KEY
+#   npx wrangler secret put SMTP_PASSWORD         # 使用 SMTP 时配置
+#   npx wrangler secret put NSFW_API_KEY           # 使用鉴黄接口时配置
+#   npx wrangler secret put NSFW_EXTRA_PARAMS      # 鉴黄接口附加查询参数（可选）
 #   npx wrangler secret put ADMIN_USERNAME    # 管理员用户名
+#   npx wrangler secret put ADMIN_BOOTSTRAP_TOKEN # 仅首次创建管理员，成功后删除
 #   npx wrangler secret put RESEND_FROM       # 邮件发件人，如 "图床 <noreply@yourdomain.com>"
 
 # 可选固定站点地址
 # [vars]
 # SITE_URL = "https://your-domain.com"
+
+# 每次部署自动生成版本 ID 与上传时间，供管理后台确认线上版本
+[version_metadata]
+binding = "CF_VERSION_METADATA"
 
 [[d1_databases]]
 binding = "DB"
@@ -28,6 +38,19 @@ binding = "ASSETS"
 run_worker_first = true
 html_handling = "none"
 
-# 每日清理过期限流桶与 kv_store 过期行
+# 每日清理过期记录；每日检查是否需要按后台频率执行加密备份
 [triggers]
-crons = ["17 3 * * *"]
+crons = ["17 3 * * *", "37 19 * * *"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 0.05

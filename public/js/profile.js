@@ -44,7 +44,7 @@ function initSecurityForms() {
             const newPassword = document.getElementById('newPassword').value;
             const newPassword2 = document.getElementById('newPassword2').value;
             if (!currentPassword || !newPassword) { showNotification('请填写当前密码和新密码', 'error'); return; }
-            if (newPassword.length < 6) { showNotification('新密码至少 6 位', 'error'); return; }
+            if (newPassword.length < 8) { showNotification('新密码至少 8 位', 'error'); return; }
             if (newPassword !== newPassword2) { showNotification('两次输入的新密码不一致', 'error'); return; }
 
             try {
@@ -544,4 +544,4 @@ style.textContent = `
         animation: rotate 1s linear infinite;
     }
 `;
-document.head.appendChild(style); 
+document.head.appendChild(style);

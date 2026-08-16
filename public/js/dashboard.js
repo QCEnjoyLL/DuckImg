@@ -1776,13 +1776,15 @@ function addTagElement(tag) {
 
     const tagElement = document.createElement('div');
     tagElement.className = 'tag';
-    tagElement.innerHTML = `
-        ${tag}
-        <span class="tag-remove" data-tag="${tag}">&times;</span>
-    `;
+    tagElement.appendChild(document.createTextNode(String(tag)));
+    const removeButton = document.createElement('span');
+    removeButton.className = 'tag-remove';
+    removeButton.dataset.tag = String(tag);
+    removeButton.textContent = '×';
+    tagElement.appendChild(removeButton);
 
     // 添加删除标签事件
-    tagElement.querySelector('.tag-remove').addEventListener('click', () => {
+    removeButton.addEventListener('click', () => {
         removeTag(tag);
         tagElement.remove();
     });

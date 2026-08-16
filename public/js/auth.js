@@ -284,7 +284,7 @@ function showForgotPasswordModal() {
             <button id="fpSend" style="width:100%;padding:0.7rem;background:linear-gradient(135deg,#4361ee,#3730a3);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:500;cursor:pointer;">发送重置验证码</button>
             <div id="fpStep2" style="display:none;margin-top:12px;">
                 <input id="fpCode" type="text" inputmode="numeric" maxlength="6" placeholder="6 位验证码" style="width:100%;box-sizing:border-box;padding:0.6rem 0.8rem;margin-bottom:10px;border:1px solid #d1d5db;border-radius:8px;font-size:0.95rem;">
-                <input id="fpPwd" type="password" placeholder="新密码（至少 6 位）" style="width:100%;box-sizing:border-box;padding:0.6rem 0.8rem;margin-bottom:10px;border:1px solid #d1d5db;border-radius:8px;font-size:0.95rem;">
+                <input id="fpPwd" type="password" minlength="8" placeholder="新密码（至少 8 位）" style="width:100%;box-sizing:border-box;padding:0.6rem 0.8rem;margin-bottom:10px;border:1px solid #d1d5db;border-radius:8px;font-size:0.95rem;">
                 <input id="fpPwd2" type="password" placeholder="确认新密码" style="width:100%;box-sizing:border-box;padding:0.6rem 0.8rem;margin-bottom:10px;border:1px solid #d1d5db;border-radius:8px;font-size:0.95rem;">
                 <button id="fpReset" style="width:100%;padding:0.7rem;background:#10b981;color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:500;cursor:pointer;">重置密码</button>
             </div>
@@ -335,7 +335,7 @@ function showForgotPasswordModal() {
         const newPassword = $('fpPwd').value;
         const newPassword2 = $('fpPwd2').value;
         if (!code || !newPassword) { msg('请填写验证码和新密码'); return; }
-        if (newPassword.length < 6) { msg('新密码至少 6 位'); return; }
+        if (newPassword.length < 8) { msg('新密码至少 8 位'); return; }
         if (newPassword !== newPassword2) { msg('两次输入的新密码不一致'); return; }
         try {
             const body = account.includes('@') ? { email: account, code, newPassword } : { username: account, code, newPassword };
@@ -652,7 +652,7 @@ function showVerifyModal(email, username, devCode) {
     overlay.innerHTML = `
         <div style="background:#fff;color:#1f2937;border-radius:14px;max-width:380px;width:100%;padding:28px;box-shadow:0 20px 50px rgba(0,0,0,0.3);font-family:-apple-system,Segoe UI,Roboto,sans-serif;">
             <h3 style="margin:0 0 8px;font-size:1.25rem;color:#4361ee;">邮箱验证</h3>
-            <p style="margin:0 0 16px;font-size:0.9rem;color:#666;">验证码已发送至 <b>${email || '您的邮箱'}</b>，请输入 6 位验证码完成验证。</p>
+            <p style="margin:0 0 16px;font-size:0.9rem;color:#666;">验证码已发送至 <b id="verifyEmailText"></b>，请输入 6 位验证码完成验证。</p>
             <input id="verifyCodeInput" type="text" inputmode="numeric" maxlength="6" placeholder="6 位验证码"
                 style="width:100%;padding:0.75rem 1rem;border:1px solid #d1d5db;border-radius:8px;font-size:1.1rem;letter-spacing:4px;text-align:center;box-sizing:border-box;">
             <div id="verifyModalError" style="color:#ef4444;font-size:0.85rem;margin-top:8px;min-height:18px;"></div>
@@ -666,6 +666,7 @@ function showVerifyModal(email, username, devCode) {
 
     document.body.appendChild(overlay);
 
+    document.getElementById('verifyEmailText').textContent = email || '您的邮箱';
     const codeInput = document.getElementById('verifyCodeInput');
     const errorEl = document.getElementById('verifyModalError');
     const confirmBtn = document.getElementById('verifyConfirmBtn');
@@ -709,7 +710,7 @@ function showVerifyModal(email, username, devCode) {
         if (e.key === 'Enter') confirmBtn.click();
     });
 
-    // 重新发送（60s 冷却，带倒计时；服务端不再节流，靠前端防刷）
+    // 重新发送（前端 60s 冷却；服务端另有独立限流）
     let resendTimer = null;
     const startResendCooldown = () => {
         let left = 60;

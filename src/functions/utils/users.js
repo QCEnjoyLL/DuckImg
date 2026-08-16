@@ -37,6 +37,7 @@ export function normalizeUser(user, env) {
     lastWarnAt: user.lastWarnAt || null,
     lastWarnDeadline: user.lastWarnDeadline || null,
     warnCount: (typeof user.warnCount === 'number' && user.warnCount > 0) ? user.warnCount : 0,
+    tokenVersion: Number(user.tokenVersion) || 0,
     prefs: {
       loginNotify: !!(user.prefs && user.prefs.loginNotify),
       public: user.prefs && user.prefs.public === false ? false : true,
@@ -82,7 +83,7 @@ export async function loadUserFiles(env, userId) {
 
 export function publicUser(user) {
   if (!user) return null;
-  const { password, ...rest } = user;
+  const { password, tokenVersion, ...rest } = user;
   return rest;
 }
 

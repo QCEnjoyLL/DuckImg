@@ -70,6 +70,7 @@ export function rowToUser(row) {
     warnCount: row.warn_count || 0,
     lastWarnAt: row.last_warn_at || null,
     lastWarnDeadline: row.last_warn_deadline || null,
+    tokenVersion: Number(row.token_version) || 0,
   };
 }
 
@@ -116,8 +117,9 @@ export async function dbSaveUser(env, user) {
     .prepare(
       `INSERT INTO users (
         id, username, email, password, avatar_url, status, email_verified, upload_limit, prefs,
-        created_at, updated_at, last_login_at, warn_count, last_warn_at, last_warn_deadline
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        created_at, updated_at, last_login_at, warn_count, last_warn_at, last_warn_deadline,
+        token_version
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         username = excluded.username,
         email = excluded.email,
@@ -131,7 +133,8 @@ export async function dbSaveUser(env, user) {
         last_login_at = excluded.last_login_at,
         warn_count = excluded.warn_count,
         last_warn_at = excluded.last_warn_at,
-        last_warn_deadline = excluded.last_warn_deadline`
+        last_warn_deadline = excluded.last_warn_deadline,
+        token_version = excluded.token_version`
     )
     .bind(
       user.id,
@@ -149,6 +152,7 @@ export async function dbSaveUser(env, user) {
       user.warnCount || 0,
       user.lastWarnAt || null,
       user.lastWarnDeadline || null,
+      Number(user.tokenVersion) || 0,
     )
     .run();
 }
@@ -448,6 +452,98 @@ export async function dbIncrUploadCount(env, userId, day, by = 1) {
     )
     .bind(userId, day, by)
     .run();
+}
+
+/**
+ * 原子预占一个上传名额。limit=null 表示不限量但仍记录用量；limit=0 表示禁止上传。
+ * 返回 { allowed, count }。
+ */
+export async function dbReserveUploadSlot(env, userId, day, limit = null) {
+  if (!userId || !day) return { allowed: false, count: 0 };
+  if (limit !== null && Number(limit) <= 0) {
+    return { allowed: false, count: await dbGetUploadCount(env, userId, day) };
+  }
+
+  const bounded = limit !== null && Number.isFinite(Number(limit));
+  const row = await db(env)
+    .prepare(
+      `INSERT INTO upload_counts (user_id, day, cnt) VALUES (?1, ?2, 1)
+       ON CONFLICT(user_id, day) DO UPDATE SET cnt = upload_counts.cnt + 1
+       WHERE ?3 = 0 OR upload_counts.cnt < ?4
+       RETURNING cnt`
+    )
+    .bind(userId, day, bounded ? 1 : 0, bounded ? Number(limit) : 0)
+    .first();
+  if (!row) {
+    return { allowed: false, count: await dbGetUploadCount(env, userId, day) };
+  }
+  return { allowed: true, count: Number(row.cnt) || 1 };
+}
+
+/** 释放一个此前预占但最终失败的上传名额。 */
+export async function dbReleaseUploadSlot(env, userId, day) {
+  await db(env)
+    .prepare('UPDATE upload_counts SET cnt = MAX(0, cnt - 1) WHERE user_id = ? AND day = ?')
+    .bind(userId, day)
+    .run();
+}
+
+// —— 一次性验证码 ——
+
+export async function dbSaveVerificationCode(env, record) {
+  await db(env)
+    .prepare(
+      `INSERT INTO verification_codes (
+         code_key, email, purpose, code_hash, expires_at, attempts, max_attempts, created_at
+       ) VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+       ON CONFLICT(code_key) DO UPDATE SET
+         email = excluded.email,
+         purpose = excluded.purpose,
+         code_hash = excluded.code_hash,
+         expires_at = excluded.expires_at,
+         attempts = 0,
+         max_attempts = excluded.max_attempts,
+         created_at = excluded.created_at`
+    )
+    .bind(
+      record.key,
+      record.email,
+      record.purpose,
+      record.codeHash,
+      record.expiresAt,
+      record.maxAttempts || 6,
+      record.createdAt || Date.now(),
+    )
+    .run();
+}
+
+/**
+ * 原子消费正确验证码；错误时原子增加尝试次数。
+ * 并发提交同一个正确验证码时只有一个请求能消费成功。
+ */
+export async function dbConsumeVerificationCode(env, key, codeHash, now = Date.now()) {
+  const consumed = await db(env)
+    .prepare(
+      `DELETE FROM verification_codes
+       WHERE code_key = ? AND code_hash = ? AND expires_at >= ? AND attempts < max_attempts
+       RETURNING code_key`
+    )
+    .bind(key, codeHash, now)
+    .first();
+  if (consumed) return true;
+
+  await db(env)
+    .prepare(
+      `UPDATE verification_codes SET attempts = attempts + 1
+       WHERE code_key = ? AND expires_at >= ? AND attempts < max_attempts`
+    )
+    .bind(key, now)
+    .run();
+  return false;
+}
+
+export async function dbDeleteVerificationCode(env, key) {
+  await db(env).prepare('DELETE FROM verification_codes WHERE code_key = ?').bind(key).run();
 }
 
 // —— admin stats ——

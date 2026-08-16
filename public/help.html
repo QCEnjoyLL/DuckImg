@@ -847,7 +847,7 @@
                                     <i class="ri-arrow-down-s-line faq-toggle"></i>
                                 </div>
                                 <div class="faq-answer">
-                                    <p data-i18n="help.faq.1.a">请先检查邮箱的「垃圾邮件 / 推广」文件夹。验证码为 6 位数字、数分钟内有效；可点弹窗里的「重新发送」（有 60 秒冷却）重新获取最新验证码（旧验证码可能已失效）。如果管理员尚未配置邮件服务，验证码会以提示形式直接显示在页面上（降级模式）。</p>
+                                    <p data-i18n="help.faq.1.a">请先检查邮箱的「垃圾邮件 / 推广」文件夹。验证码为 6 位数字、数分钟内有效；可点弹窗里的「重新发送」（有 60 秒冷却）获取最新验证码。生产环境未配置邮件服务时会直接报错；仅本地开发显式设置 ALLOW_DEV_CODE=1 才会在页面显示验证码。</p>
                                 </div>
                             </div>
 
@@ -1094,4 +1094,4 @@
     <script src="./js/announcement.js"></script>
     <script src="./js/site-config.js"></script>
 </body>
-</html> 
+</html>

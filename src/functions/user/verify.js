@@ -65,7 +65,12 @@ export async function verifyCode(c) {
 
       const fresh = normalizeUser(existingUser, c.env);
       const role = isAdmin(fresh.username, c.env) ? 'admin' : 'user';
-      const token = await generateToken({ id: fresh.id, username: fresh.username, role }, c.env);
+      const token = await generateToken({
+        id: fresh.id,
+        username: fresh.username,
+        role,
+        tv: Number(fresh.tokenVersion) || 0,
+      }, c.env);
       return c.json({ message: '邮箱验证成功', user: publicUser(fresh), token });
     }
 
@@ -99,6 +104,7 @@ export async function verifyCode(c) {
       status: 'active',
       emailVerified: true,
       uploadLimit: null,
+      tokenVersion: 0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -106,7 +112,7 @@ export async function verifyCode(c) {
     await kvDelete(c.env, `pendingreg:${email}`);
 
     const role = isAdmin(pending.username, c.env) ? 'admin' : 'user';
-    const token = await generateToken({ id: userId, username: pending.username, role }, c.env);
+    const token = await generateToken({ id: userId, username: pending.username, role, tv: 0 }, c.env);
     return c.json({
       message: '邮箱验证成功，注册完成',
       user: publicUser(normalizeUser(user, c.env)),

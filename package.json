@@ -6,8 +6,13 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:dry": "wrangler deploy --dry-run",
     "migrate": "wrangler d1 migrations apply duckimg --remote",
-    "setup": "npm run migrate && npm run deploy"
+    "setup": "npm run migrate && npm run deploy",
+    "test": "vitest run",
+    "test:ci": "vitest run --reporter=verbose",
+    "check:syntax": "node scripts/check-syntax.mjs",
+    "check": "npm run check:syntax && npm run test && npm run deploy:dry"
   },
   "keywords": [
     "图床",
@@ -18,10 +23,15 @@
   ],
   "author": "",
   "license": "AGPL-3.0-with-Commons-Clause",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "dependencies": {
-    "hono": "^3.1.0"
+    "hono": "^4.13.2"
   },
   "devDependencies": {
-    "wrangler": "^4.114.0"
+    "@cloudflare/vitest-pool-workers": "^0.21.3",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.123.0"
   }
 }

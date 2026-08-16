@@ -74,7 +74,7 @@
 |------|------|
 | Cloudflare 账户 | [cloudflare.com](https://cloudflare.com) |
 | Telegram Bot | [@BotFather](https://t.me/BotFather) 创建，并准备频道/群 Chat ID |
-| Node.js 16+ | [nodejs.org](https://nodejs.org/) |
+| Node.js 22+ | [nodejs.org](https://nodejs.org/) |
 
 ### 部署
 
@@ -95,7 +95,7 @@ npx wrangler login
 npx wrangler d1 create duckimg
 npm run migrate
 
-# 配置密钥（TG_Chat_ID / JWT_SECRET / RESEND_API_KEY / ADMIN_USERNAME / RESEND_FROM 同理）
+# 配置密钥（完整清单见下方）
 npx wrangler secret put TG_Bot_Token
 
 # 部署
@@ -119,10 +119,34 @@ npm run dev
 npx wrangler secret put TG_Bot_Token      # Telegram Bot Token
 npx wrangler secret put TG_Chat_ID        # 存储频道 ID
 npx wrangler secret put JWT_SECRET        # 登录签名密钥
+npx wrangler secret put BACKUP_ENCRYPTION_KEY # 备份加密密钥，务必离线保存
 npx wrangler secret put ADMIN_USERNAME    # 管理员用户名
+npx wrangler secret put ADMIN_BOOTSTRAP_TOKEN # 仅首次创建管理员时临时设置
 npx wrangler secret put RESEND_API_KEY    # 邮件服务（可选）
 npx wrangler secret put RESEND_FROM       # 邮件发件人（可选）
+npx wrangler secret put SMTP_PASSWORD     # SMTP 密码/授权码（使用 SMTP 时）
+npx wrangler secret put NSFW_API_KEY      # 鉴黄服务密钥（启用时）
+npx wrangler secret put NSFW_EXTRA_PARAMS # 鉴黄服务附加查询参数（可选）
 ```
+
+首次管理员注册需让用户名与 `ADMIN_USERNAME` 一致，并在注册请求中携带
+`X-Admin-Bootstrap-Token`。创建成功后立即执行
+`npx wrangler secret delete ADMIN_BOOTSTRAP_TOKEN`，关闭管理员创建入口。普通注册页面不会读取该密钥。
+
+```powershell
+$siteUrl = Read-Host "站点地址，如 https://example.workers.dev"
+$adminName = Read-Host "ADMIN_USERNAME"
+$adminEmail = Read-Host "管理员邮箱"
+$bootstrap = Read-Host "ADMIN_BOOTSTRAP_TOKEN" -MaskInput
+$adminPassword = Read-Host "管理员密码" -MaskInput
+$body = @{ username = $adminName; email = $adminEmail; password = $adminPassword } | ConvertTo-Json
+Invoke-RestMethod "$siteUrl/api/auth/register" -Method Post -ContentType "application/json" -Headers @{ "X-Admin-Bootstrap-Token" = $bootstrap } -Body $body
+Remove-Variable bootstrap, adminPassword, body
+npx wrangler secret delete ADMIN_BOOTSTRAP_TOKEN
+```
+
+升级已有部署时，必须先执行 `npm run migrate`，确认 `0002_security_hardening.sql` 已应用，再执行
+`npm run deploy`；新代码依赖 `users.token_version` 与 `verification_codes`，顺序颠倒会导致认证接口失败。
 
 部署成功后由 Cloudflare Workers 提供 HTTPS 访问地址（本项目示例：Workers 路由，非 Pages）。
 
@@ -133,19 +157,29 @@ npx wrangler secret put RESEND_FROM       # 邮件发件人（可选）
 图片本体在 Telegram，D1 里只有元数据——备份好这一个库即可完整迁移站点。
 
 - **自动备份**：Worker 每天（UTC 19:37，北京 03:37）检查一次，按管理后台设置的频率
-  （关闭 / 每天 / 每周 / 每月，默认每周，改后即时生效无需部署）把 D1 全量导出为 `.sql`，
-  由 Bot 发送到存储频道（超过 8MB 自动 gzip）。备份自带建表语句、`INSERT OR REPLACE` 幂等，
-  空库直接回灌；瞬态数据（限流桶、tgpath 缓存、过期行）不入备份
+  （关闭 / 每天 / 每周 / 每月，默认每周，改后即时生效无需部署）导出 D1。超过 8MB 先 gzip，
+  再使用 `BACKUP_ENCRYPTION_KEY`（未设置时回退 `JWT_SECRET`）进行 AES-GCM 加密，最终以
+  `.sql[.gz].enc` 发到 Telegram。瞬态验证码、限流桶、缓存和待处理记录不入备份
 - **后台管理**：管理后台「数据备份」页签支持立即备份、备份历史（含失败告警记录）、
   历史下载（经 Bot 中转，上限 20MB，超限到频道手动下载）与即时导出到本地
 - **手动备份**：`npx wrangler d1 export duckimg --remote --output=./backup.sql`
 - **误操作回滚**：D1 自带 Time Travel，可恢复最近 30 天内任意一分钟：
   `npx wrangler d1 time-travel restore duckimg --timestamp=<unix秒>`
 
+恢复频道中的加密备份（解密密钥必须与生成备份时一致）：
+
+```powershell
+$env:BACKUP_ENCRYPTION_KEY = Read-Host "备份密钥" -MaskInput
+node scripts/decrypt-backup.mjs .\duckimg-backup-YYYY-MM-DD.sql.enc
+# 若输出文件以 .gz 结尾，先解压，再执行下方 d1 execute
+Remove-Item Env:BACKUP_ENCRYPTION_KEY
+```
+
 迁移到新账号 / 新库：
 
 ```bash
 npx wrangler d1 create duckimg     # 把输出的 database_id 填进 wrangler.toml
+npx wrangler d1 migrations apply duckimg --remote
 npx wrangler d1 execute duckimg --remote --file=duckimg-backup-YYYY-MM-DD.sql
 npx wrangler secret put TG_Bot_Token   # 其余密钥同理（见上方配置说明）
 npm run deploy

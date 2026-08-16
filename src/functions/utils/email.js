@@ -5,6 +5,15 @@
 import { getSettings } from './settings';
 import { sendMail as sendViaSmtp } from './smtp';
 
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
  * 生成 6 位数字验证码
  */
@@ -95,16 +104,16 @@ export async function sendVerificationCode(email, code, env) {
  * 返回 { success, error?, notConfigured? }
  */
 export async function sendViolationWarning(env, to, { username, siteName, siteUrl, deadlineText } = {}) {
-  const name = siteName || '鸭鸭图床';
-  const manageUrl = siteUrl ? `${siteUrl}/dashboard.html` : '/dashboard.html';
-  const hi = username ? `${username} 您好：` : '您好：';
+  const name = escapeHtml(siteName || '鸭鸭图床');
+  const manageUrl = escapeHtml(siteUrl ? `${siteUrl}/dashboard.html` : '/dashboard.html');
+  const hi = username ? `${escapeHtml(username)} 您好：` : '您好：';
   const html = `
     <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#333;line-height:1.75;">
       <h2 style="color:#ef4444;margin:0 0 14px;">⚠️ 违规内容清理提醒</h2>
       <p>${hi}</p>
       <p>我们在内容审核中发现，您在 <b>${name}</b> 上传的图片中存在<b>违反法律法规或本站规定</b>的内容（例如：色情低俗、暴力血腥、侵权或其他违法不良信息）。</p>
       <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px 16px;margin:14px 0;">
-        请于 <b>3 天内（截止 ${deadlineText || '3 天后'}）</b> 登录账户，自行删除全部违规图片。<br>
+        请于 <b>3 天内（截止 ${escapeHtml(deadlineText || '3 天后')}）</b> 登录账户，自行删除全部违规图片。<br>
         <b>逾期未处理，我们将封禁您的账户并清除相关图片</b>，由此产生的一切后果由您自行承担。
       </div>
       <p>处理方式：登录后进入「我的图片」，逐一删除违规内容。<br>
@@ -118,15 +127,15 @@ export async function sendViolationWarning(env, to, { username, siteName, siteUr
  * 新设备/新会话登录提醒
  */
 export async function sendLoginNotify(env, to, { username, timeText, ua } = {}) {
-  const name = username || '用户';
+  const name = escapeHtml(username || '用户');
   const html = `
     <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#333;line-height:1.75;">
       <h2 style="color:#4361ee;margin:0 0 14px;">登录提醒</h2>
       <p>${name} 您好：</p>
       <p>您的鸭鸭图床账户刚刚成功登录。</p>
       <div style="background:#f5f7ff;border:1px solid #c7d2fe;border-radius:8px;padding:14px 16px;margin:14px 0;">
-        <div>时间：<b>${timeText || new Date().toLocaleString('zh-CN')}</b></div>
-        ${ua ? `<div style="margin-top:6px;word-break:break-all;">设备：${String(ua).slice(0, 180)}</div>` : ''}
+        <div>时间：<b>${escapeHtml(timeText || new Date().toLocaleString('zh-CN'))}</b></div>
+        ${ua ? `<div style="margin-top:6px;word-break:break-all;">设备：${escapeHtml(String(ua).slice(0, 180))}</div>` : ''}
       </div>
       <p style="color:#888;font-size:13px;">若非本人操作，请尽快修改密码并联系管理员。</p>
     </div>`;

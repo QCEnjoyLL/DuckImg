@@ -1,5 +1,5 @@
 /**
- * D1 备份：把全部业务表 dump 成可直接回灌的 .sql，
+ * D1 备份：把业务表 dump 成可回灌的 .sql，压缩（可选）并经 AES-GCM 加密后，
  * 用现有 Bot 以文档形式发到 Telegram 存储频道（备份和图片睡同一个频道）。
  *
  * 触发方式：
@@ -14,11 +14,12 @@
  * - INSERT OR REPLACE 幂等，同一份备份重复回灌不报错；
  * - 不输出 BEGIN/COMMIT/PRAGMA（wrangler d1 execute 会拒绝事务语句）；
  * - 单条 INSERT 限行数与字符数，避免导入时 "Statement too long"；
- * - 瞬态数据不入备份：rate_limits 全表、kv_store 里的 tgpath:* 缓存与已过期行。
+ * - 瞬态数据不入备份：rate_limits、verification_codes，以及 kv_store 的缓存/待处理记录；
+ * - 发往 Telegram 的文件必须加密；后台即时导出接口仍提供管理员主动下载的明文 SQL。
  */
 
 import { kvGet, kvPut } from './db.js';
-import { getSettings } from './settings.js';
+import { getSettings, settingsForStorage } from './settings.js';
 
 const CHUNK_ROWS = 1000;                 // 分页拉取行数（控制单次 D1 响应大小与查询次数）
 const MAX_ROWS_PER_INSERT = 50;          // 单条 INSERT 最多行数
@@ -40,11 +41,28 @@ const DUE_SLACK_MS = 3 * 60 * 60 * 1000;
 // 表级策略：未列出的表（含未来新增）默认全量备份
 const TABLE_RULES = {
   rate_limits: { skipData: true }, // 限流桶纯瞬态，只留表结构
+  verification_codes: { skipData: true },
   kv_store: {
-    // tgpath:* 是 Telegram file_path 的 50 分钟缓存，过期行同样没有保留价值
-    where: (now) => `key NOT LIKE 'tgpath:%' AND (expires_at IS NULL OR expires_at > ${now})`,
+    // 缓存、验证码上下文和备份历史均可重建，不携带进备份。
+    where: (now) => `key NOT LIKE 'tgpath:%'
+      AND key NOT LIKE 'mxok:%'
+      AND key NOT LIKE 'pendingreg:%'
+      AND key NOT LIKE 'emailchange:%'
+      AND key NOT LIKE 'backup:%'
+      AND (expires_at IS NULL OR expires_at > ${now})`,
   },
 };
+
+function sanitizeBackupRow(table, row) {
+  if (table !== 'kv_store' || row.key !== 'config:settings') return row;
+  try {
+    const parsed = JSON.parse(row.value);
+    return { ...row, value: JSON.stringify(settingsForStorage(parsed)) };
+  } catch {
+    // 解析失败时不把未知的旧配置内容带入异地备份。
+    return { ...row, value: JSON.stringify(settingsForStorage(null)) };
+  }
+}
 
 function quoteIdent(name) {
   return '"' + String(name).replace(/"/g, '""') + '"';
@@ -130,7 +148,8 @@ export async function buildBackupSql(env) {
         .all();
       const rows = res.results || [];
       if (!rows.length) break;
-      for (const row of rows) {
+      for (const rawRow of rows) {
+        const row = sanitizeBackupRow(table, rawRow);
         lastRid = row.__rid;
         if (!cols) cols = Object.keys(row).filter((k) => k !== '__rid');
         const tuple = '(' + cols.map((cn) => sqlLit(row[cn])).join(', ') + ')';
@@ -151,6 +170,23 @@ export async function buildBackupSql(env) {
 async function gzipBytes(bytes) {
   const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+const BACKUP_MAGIC = new TextEncoder().encode('DUCKIMG1');
+
+async function encryptBackupBytes(env, bytes) {
+  const secret = (env && (env.BACKUP_ENCRYPTION_KEY || env.JWT_SECRET)) || '';
+  if (!secret) throw new Error('缺少 BACKUP_ENCRYPTION_KEY / JWT_SECRET，拒绝生成明文异地备份');
+  const material = new TextEncoder().encode(`DuckImg backup v1\0${secret}`);
+  const keyBytes = await crypto.subtle.digest('SHA-256', material);
+  const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, bytes));
+  const out = new Uint8Array(BACKUP_MAGIC.length + iv.length + encrypted.length);
+  out.set(BACKUP_MAGIC, 0);
+  out.set(iv, BACKUP_MAGIC.length);
+  out.set(encrypted, BACKUP_MAGIC.length + iv.length);
+  return out;
 }
 
 /** 私有频道 -100xxx / 公开频道 @name → 消息链接（供后台「频道查看」）；算不出返回 null */
@@ -238,6 +274,8 @@ export async function runDbBackup(env, { trigger = 'auto' } = {}) {
       fileName += '.gz';
       gz = true;
     }
+    bytes = await encryptBackupBytes(env, bytes);
+    fileName += '.enc';
     const total = Object.values(counts).reduce((s, n) => s + n, 0);
     const summary =
       Object.entries(counts)
@@ -245,10 +283,8 @@ export async function runDbBackup(env, { trigger = 'auto' } = {}) {
         .map(([t, n]) => `${t} ${n}`)
         .join(' · ') || '空库';
     const caption =
-      `🗄️ D1 ${triggerText}备份 ${dateTag}\n${summary}\n` +
-      (gz
-        ? `恢复：解压后 npx wrangler d1 execute duckimg --remote --file=${fileName.replace(/\.gz$/, '')}`
-        : `恢复：npx wrangler d1 execute duckimg --remote --file=${fileName}`);
+      `🗄️ D1 ${triggerText}加密备份 ${dateTag}\n${summary}\n` +
+      '恢复：先运行 node scripts/decrypt-backup.mjs <备份文件>，如为 .gz 再解压后回灌';
     const sent = await tgSendDocument(env, fileName, bytes, caption);
 
     const entry = {
@@ -258,6 +294,7 @@ export async function runDbBackup(env, { trigger = 'auto' } = {}) {
       fileName,
       bytes: bytes.byteLength,
       gz,
+      encrypted: true,
       total,
       counts,
       tgFileId: sent.fileId,

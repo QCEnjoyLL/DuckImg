@@ -3,9 +3,17 @@ import { isAdmin, getUserById, getUserByName } from "./utils/users";
 import { getSettings } from "./utils/settings";
 import { moderateImage } from "./utils/nsfw";
 import { checkRateLimit } from "./utils/ratelimit";
-import { dbGetUploadCount, dbSetUploadCount, dbSetUserImagesBlocked, dbDeleteImage, dbUpsertImage } from "./utils/db";
+import {
+  dbDeleteImage,
+  dbReleaseUploadSlot,
+  dbReserveUploadSlot,
+  dbSetUserImagesBlocked,
+  dbUpsertImage,
+} from "./utils/db";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+const MAX_REQUEST_FILE_BYTES = 40 * 1024 * 1024;
+const MAX_FILES_PER_REQUEST = 20;
 const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'avif', 'heic', 'heif']);
 const ALLOWED_MIME = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp',
@@ -54,31 +62,41 @@ export async function upload(c) {
     }
 
     const dateKey = new Date().toISOString().slice(0, 10);
-    const effectiveLimit = user.uploadLimit !== null ? user.uploadLimit : settings.dailyUploadLimit;
-    let todayCount = await dbGetUploadCount(env, userId, dateKey);
+    const hasUserLimit = user.uploadLimit !== null;
+    // 用户级 0 表示禁用；全局 0 表示不限量。
+    const effectiveLimit = admin
+      ? null
+      : (hasUserLimit
+        ? Math.max(0, Number(user.uploadLimit) || 0)
+        : (Number(settings.dailyUploadLimit) > 0 ? Number(settings.dailyUploadLimit) : null));
 
     const formData = await c.req.formData();
 
     const files = formData.getAll('file');
     if (!files || files.length === 0) throw new Error('未上传文件');
+    if (files.length > MAX_FILES_PER_REQUEST) {
+      return c.json({ error: `单次最多上传 ${MAX_FILES_PER_REQUEST} 个文件` }, 413);
+    }
+    const totalFileBytes = files.reduce((sum, file) => sum + (typeof file.size === 'number' ? file.size : 0), 0);
+    if (totalFileBytes > MAX_REQUEST_FILE_BYTES) {
+      return c.json({ error: '单次上传文件总大小不能超过 40MB' }, 413);
+    }
 
     const origin = env.SITE_URL || new URL(c.req.url).origin;
-    let todayCountLocal = todayCount;
     const uploadResults = [];
 
     for (const uploadFile of files) {
       if (!uploadFile) continue;
 
-      if (!admin && effectiveLimit > 0 && todayCountLocal >= effectiveLimit) {
-        try { await dbSetUploadCount(env, userId, dateKey, todayCountLocal); } catch (_) {}
-        return c.json({
-          error: `已达每日上传上限（${effectiveLimit} 张），请明天再试`,
-          limitReached: true,
-          results: uploadResults,
-        }, 403);
+      const fileName = String(uploadFile.name || 'unnamed').trim();
+      if (!fileName || fileName.length > 180 || /[\u0000-\u001f\u007f]/.test(fileName)) {
+        uploadResults.push({
+          error: '文件名长度需为 1–180 个字符且不能包含控制字符',
+          blocked: true,
+          fileName: fileName.slice(0, 180),
+        });
+        continue;
       }
-
-      const fileName = uploadFile.name || 'unnamed';
       const fileExtension = (fileName.split('.').pop() || '').toLowerCase();
 
       if (typeof uploadFile.size === 'number' && uploadFile.size > MAX_UPLOAD_BYTES) {
@@ -105,6 +123,17 @@ export async function upload(c) {
         continue;
       }
 
+      const slot = await dbReserveUploadSlot(env, userId, dateKey, effectiveLimit);
+      if (!slot.allowed) {
+        return c.json({
+          error: effectiveLimit === 0
+            ? '该账户已被禁止上传'
+            : `已达每日上传上限（${effectiveLimit} 张），请明天再试`,
+          limitReached: true,
+          results: uploadResults,
+        }, 403);
+      }
+
       const telegramFormData = new FormData();
       telegramFormData.append('chat_id', env.TG_Chat_ID);
       const caption = `👤 ${user.username} · ${fileName}`;
@@ -113,13 +142,19 @@ export async function upload(c) {
 
       const result = await sendToTelegram(telegramFormData, 'sendDocument', env);
       if (!result.success) {
+        await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
         uploadResults.push({ error: result.error || '上传到存储失败', fileName, blocked: true });
         continue;
       }
 
+      // Telegram 已实际接收文件；若后续补偿删除失败则保留配额，防止反复制造孤儿文件。
       const fileId = getFileId(result.data);
       const messageId = getMessageId(result.data);
       if (!fileId) {
+        if (messageId) {
+          const rolledBack = await deleteTelegramMessage(env, messageId);
+          if (rolledBack) await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
+        }
         uploadResults.push({ error: '获取文件 ID 失败', fileName, blocked: true });
         continue;
       }
@@ -132,7 +167,10 @@ export async function upload(c) {
         try {
           const verdict = await moderateImage(`${origin}/file/${fileKey}`, settings);
           if (verdict && verdict.flagged) {
-            if (messageId) await deleteTelegramMessage(env, messageId);
+            const removed = messageId ? await deleteTelegramMessage(env, messageId) : false;
+            if (removed) {
+              await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
+            }
             uploadResults.push({ error: '图片未通过内容审核，已被拦截', blocked: true, fileName });
             continue;
           }
@@ -141,10 +179,9 @@ export async function upload(c) {
         }
       }
 
-      const safeName = String(fileName).slice(0, 180);
       const listItem = {
         id: fileKey,
-        fileName: safeName,
+        fileName,
         fileSize: uploadFile.size,
         uploadTime: timestamp,
         url: `/file/${fileKey}`,
@@ -159,16 +196,20 @@ export async function upload(c) {
         console.error('D1 写入图库异常:', fileKey, e);
       }
 
-      todayCountLocal += 1;
+      if (!listed && messageId) {
+        const rolledBack = await deleteTelegramMessage(env, messageId);
+        if (rolledBack) {
+          await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
+          uploadResults.push({ error: '图库索引写入失败，已回滚本次上传', fileName, blocked: true });
+          continue;
+        }
+      }
+
       uploadResults.push({
         src: `/file/${fileKey}`,
         listed,
         ...(listed ? {} : { warning: '图片已上传到 Telegram，但图库索引写入失败，直链仍可用' }),
       });
-    }
-
-    try { await dbSetUploadCount(env, userId, dateKey, todayCountLocal); } catch (e) {
-      console.warn('写入日计数失败:', e);
     }
 
     if (!uploadResults.length) {
@@ -208,7 +249,11 @@ export async function deleteTelegramMessage(env, messageId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: env.TG_Chat_ID, message_id: messageId }),
     });
-    return res.ok;
+    const data = await res.json().catch(() => null);
+    if (res.ok && data && data.ok === true) return true;
+    // 上次删除已在 Telegram 生效但响应丢失时，重试会得到“not found”；此时存储目标已不存在。
+    const description = String((data && data.description) || '');
+    return /message to delete not found/i.test(description);
   } catch (e) {
     console.warn('删除 Telegram 消息失败（忽略）:', messageId, e);
     return false;
@@ -238,7 +283,7 @@ async function sendToTelegram(formData, apiEndpoint, env, retryCount = 0) {
   try {
     const response = await fetch(apiUrl, { method: 'POST', body: formData });
     const responseData = await response.json();
-    if (response.ok) return { success: true, data: responseData };
+    if (response.ok && responseData && responseData.ok === true) return { success: true, data: responseData };
     return { success: false, error: responseData.description || '上传到Telegram失败' };
   } catch (error) {
     console.error('网络错误:', error);

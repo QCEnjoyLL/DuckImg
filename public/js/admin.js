@@ -62,10 +62,44 @@ async function loadStats() {
     }
 }
 
+function formatDeploymentTime(value) {
+    if (!value) return '本地环境';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '时间未知';
+    return date.toLocaleString('zh-CN', { hour12: false });
+}
+
+async function loadDeploymentVersion() {
+    const box = document.getElementById('deployVersion');
+    const idEl = document.getElementById('deployVersionId');
+    const timeEl = document.getElementById('deployVersionTime');
+    if (!box || !idEl || !timeEl) return;
+
+    try {
+        const { version } = await adminFetch('/api/admin/version', { headers: authHeaders() });
+        const fullId = version && typeof version.id === 'string' ? version.id : 'unknown';
+        const shortId = version && typeof version.shortId === 'string' ? version.shortId : fullId.slice(0, 8);
+        const timeText = formatDeploymentTime(version && version.deployedAt);
+
+        idEl.textContent = shortId;
+        timeEl.textContent = `· ${timeText}`;
+        box.title = `完整版本：${fullId}\n部署时间：${timeText}`;
+        box.dataset.state = 'ready';
+    } catch (e) {
+        if (e.message === '需要重新登录') return;
+        idEl.textContent = '读取失败';
+        timeEl.textContent = '';
+        box.title = e.message;
+        box.dataset.state = 'error';
+    }
+}
+
 // 渲染单页用户行
 function renderUserRows(users) {
     const now = Date.now();
     return users.map(u => {
+        const safeUsername = escAttr(u.username || '');
+        const safeEmail = escAttr(u.email || '');
         const regTime = u.createdAt ? new Date(u.createdAt).toLocaleDateString('zh-CN') : '-';
         const statusBadge = u.role === 'admin'
             ? '<span class="badge badge-admin">管理员</span>'
@@ -75,7 +109,7 @@ function renderUserRows(users) {
         const limitText = (u.uploadLimit === null || u.uploadLimit === undefined) ? '全局' : u.uploadLimit;
         const checkCell = u.role === 'admin'
             ? '<td></td>'
-            : `<td><input type="checkbox" class="user-check" data-user="${u.username}" ${selectedUsers.has(u.username) ? 'checked' : ''}></td>`;
+            : `<td><input type="checkbox" class="user-check" data-user="${safeUsername}" ${selectedUsers.has(u.username) ? 'checked' : ''}></td>`;
 
         // 违规提醒摘要：上次时间 / 截止 / 次数 / 是否已过期可封（已封禁用户不再标"过期"）
         let warnHtml = '';
@@ -94,20 +128,20 @@ function renderUserRows(users) {
 
         const actions = u.role === 'admin' ? '<span style="color:var(--text-light)">—</span>' : `
             <div class="row-actions">
-                <button class="admin-btn btn-images" data-act="images" data-user="${u.username}">查看图片</button>
-                <button class="admin-btn btn-warn" data-act="warn" data-user="${u.username}" title="${u.lastWarnAt ? '再次发送提醒（会刷新截止时间）' : '发送 3 天清理提醒'}">提醒</button>
+                <button class="admin-btn btn-images" data-act="images" data-user="${safeUsername}">查看图片</button>
+                <button class="admin-btn btn-warn" data-act="warn" data-user="${safeUsername}" title="${u.lastWarnAt ? '再次发送提醒（会刷新截止时间）' : '发送 3 天清理提醒'}">提醒</button>
                 ${u.status === 'banned'
-                    ? `<button class="admin-btn btn-unban" data-act="unban" data-user="${u.username}">解封</button>`
-                    : `<button class="admin-btn btn-ban" data-act="ban" data-user="${u.username}">封禁</button>`}
-                <button class="admin-btn btn-limit" data-act="limit" data-user="${u.username}" data-limit="${u.uploadLimit ?? ''}">设上限</button>
-                <button class="admin-btn btn-del" data-act="del" data-user="${u.username}">删除</button>
+                    ? `<button class="admin-btn btn-unban" data-act="unban" data-user="${safeUsername}">解封</button>`
+                    : `<button class="admin-btn btn-ban" data-act="ban" data-user="${safeUsername}">封禁</button>`}
+                <button class="admin-btn btn-limit" data-act="limit" data-user="${safeUsername}" data-limit="${Number.isFinite(Number(u.uploadLimit)) ? Number(u.uploadLimit) : ''}">设上限</button>
+                <button class="admin-btn btn-del" data-act="del" data-user="${safeUsername}">删除</button>
             </div>
         `;
 
         return `<tr>
             ${checkCell}
-            <td class="col-name" title="${escAttr(u.username || '')}">${u.username || '-'}${warnHtml}</td>
-            <td class="col-email" title="${escAttr(u.email || '')}">${u.email || '-'}</td>
+            <td class="col-name" title="${safeUsername}">${safeUsername || '-'}${warnHtml}</td>
+            <td class="col-email" title="${safeEmail}">${safeEmail || '-'}</td>
             <td class="col-date">${regTime}</td>
             <td class="col-status">${statusBadge}</td>
             <td class="col-images">${u.imageCount || 0}</td>
@@ -534,13 +568,13 @@ async function showUserImages(username) {
     overlay.innerHTML = `
       <div class="admin-img-box">
         <div class="admin-img-head">
-          <span><b>${username}</b> 的图片 · 共 <span class="aimg-count">${data.totalImages || 0}</span> 张 · ${sizeText}</span>
+          <span><b>${escAttr(username)}</b> 的图片 · 共 <span class="aimg-count">${Number(data.totalImages) || 0}</span> 张 · ${escAttr(sizeText)}</span>
           <button class="admin-img-close" title="关闭">&times;</button>
         </div>
         <div class="admin-img-grid">
           ${files.length ? files.map(f => `
-            <div class="admin-img-cell" data-id="${(f.id || '').replace(/"/g, '&quot;')}">
-              <a href="${adminFileUrl(f.url)}" target="_blank" rel="noopener" title="${(f.fileName || '').replace(/"/g, '&quot;')}">
+            <div class="admin-img-cell" data-id="${escAttr(f.id || '')}">
+              <a href="${adminFileUrl(f.url)}" target="_blank" rel="noopener" title="${escAttr(f.fileName || '')}">
                 <img src="${adminFileUrl(f.url)}" loading="lazy" alt="">
               </a>
               <button class="admin-img-del" title="删除该图片">删除</button>
@@ -608,13 +642,14 @@ async function loadSettings() {
         document.getElementById('requireVerify').checked = settings.requireEmailVerify !== false;
         document.getElementById('allowSvg').checked = settings.allowSvg !== false;
 
-        // 鉴黄（apiKey 已脱敏，留空表示保持不变）
+        // 鉴黄密钥只允许使用 Cloudflare Secrets。
         document.getElementById('nsfwEnabled').checked = !!settings.nsfw.enabled;
         document.getElementById('nsfwApiUrl').value = settings.nsfw.apiUrl || '';
         document.getElementById('nsfwMethod').value = settings.nsfw.method || 'POST';
         document.getElementById('nsfwApiKey').value = '';
-        document.getElementById('nsfwApiKey').placeholder = settings.nsfw.apiKeySet ? '已配置，留空保持不变' : '可选';
-        document.getElementById('nsfwExtraParams').value = settings.nsfw.extraParams || '';
+        document.getElementById('nsfwApiKey').placeholder = settings.nsfw.apiKeySet ? 'Secret 已配置' : 'Secret 未配置';
+        document.getElementById('nsfwExtraParams').value = '';
+        document.getElementById('nsfwExtraParams').placeholder = settings.nsfw.extraParamsSet ? 'Secret 已配置' : 'Secret 未配置';
         document.getElementById('nsfwImageParam').value = settings.nsfw.imageParam || 'url';
         document.getElementById('nsfwScorePath').value = settings.nsfw.scorePath || 'score';
         document.getElementById('nsfwThreshold').value = settings.nsfw.threshold ?? 0.8;
@@ -624,7 +659,7 @@ async function loadSettings() {
         document.getElementById('emailProvider').value = email.provider || 'resend';
         document.getElementById('resendFrom').value = (email.resend && email.resend.from) || '';
         document.getElementById('resendApiKey').value = '';
-        document.getElementById('resendApiKey').placeholder = (email.resend && email.resend.apiKeySet) ? '已配置，留空保持不变' : '留空回退环境变量';
+        document.getElementById('resendApiKey').placeholder = (email.resend && email.resend.apiKeySet) ? 'Secret 已配置' : 'Secret 未配置';
 
         const smtp = email.smtp || {};
         document.getElementById('smtpHost').value = smtp.host || '';
@@ -632,7 +667,7 @@ async function loadSettings() {
         document.getElementById('smtpEncryption').value = smtp.encryption || 'ssl';
         document.getElementById('smtpUsername').value = smtp.username || '';
         document.getElementById('smtpPassword').value = '';
-        document.getElementById('smtpPassword').placeholder = smtp.passwordSet ? '已配置，留空保持不变' : '密码 / 授权码';
+        document.getElementById('smtpPassword').placeholder = smtp.passwordSet ? 'Secret 已配置' : 'Secret 未配置';
         document.getElementById('smtpFromAddress').value = smtp.fromAddress || '';
         document.getElementById('smtpFromName').value = smtp.fromName || '鸭鸭图床';
 
@@ -705,8 +740,6 @@ function initSettingButtons() {
                 enabled: document.getElementById('nsfwEnabled').checked,
                 apiUrl: document.getElementById('nsfwApiUrl').value.trim(),
                 method: document.getElementById('nsfwMethod').value,
-                apiKey: document.getElementById('nsfwApiKey').value,  // 留空=保持不变
-                extraParams: document.getElementById('nsfwExtraParams').value.trim(),
                 imageParam: document.getElementById('nsfwImageParam').value.trim() || 'url',
                 scorePath: document.getElementById('nsfwScorePath').value.trim() || 'score',
                 threshold: parseFloat(document.getElementById('nsfwThreshold').value || '0.8'),
@@ -722,14 +755,12 @@ function initSettingButtons() {
             email: {
                 provider: document.getElementById('emailProvider').value,
                 resend: {
-                    apiKey: document.getElementById('resendApiKey').value,  // 留空=保持不变
                     from: document.getElementById('resendFrom').value.trim(),
                 },
                 smtp: {
                     host: document.getElementById('smtpHost').value.trim(),
                     port: parseInt(document.getElementById('smtpPort').value || '465', 10),
                     username: document.getElementById('smtpUsername').value.trim(),
-                    password: document.getElementById('smtpPassword').value,  // 留空=保持不变
                     encryption: document.getElementById('smtpEncryption').value,
                     fromAddress: document.getElementById('smtpFromAddress').value.trim(),
                     fromName: document.getElementById('smtpFromName').value.trim() || '鸭鸭图床',
@@ -863,7 +894,14 @@ function auditFmtSize(bytes) {
     return formatFileSize(bytes); // common.js：自动 B/KB/MB/GB
 }
 
-function escAttr(s) { return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+function escAttr(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 // 后台看图：短时预览票（非登录 JWT），降低 token 进 URL/日志的风险
 let _previewTicket = '';
@@ -1298,6 +1336,7 @@ function initAdminTabs() {
 document.addEventListener('DOMContentLoaded', () => {
     if (!guardAdmin()) return;
     initAdminTabs();
+    loadDeploymentVersion();
     loadStats();
     loadUsers().then(() => loadWarnHistory()); // 历史表状态列依赖用户列表
     loadSettings();

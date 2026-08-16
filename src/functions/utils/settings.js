@@ -75,7 +75,7 @@ function mergeSettings(stored) {
   return {
     announcement: { ...DEFAULT_SETTINGS.announcement, ...(s.announcement || {}) },
     topBar: { ...DEFAULT_SETTINGS.topBar, ...(s.topBar || {}) },
-    nsfw: { ...DEFAULT_SETTINGS.nsfw, ...(s.nsfw || {}) },
+    nsfw: { ...DEFAULT_SETTINGS.nsfw, ...(s.nsfw || {}), apiKey: '', extraParams: '' },
     dailyUploadLimit: typeof s.dailyUploadLimit === 'number' ? s.dailyUploadLimit : DEFAULT_SETTINGS.dailyUploadLimit,
     requireEmailVerify: typeof s.requireEmailVerify === 'boolean' ? s.requireEmailVerify : DEFAULT_SETTINGS.requireEmailVerify,
     allowSvg: typeof s.allowSvg === 'boolean' ? s.allowSvg : DEFAULT_SETTINGS.allowSvg,
@@ -83,10 +83,39 @@ function mergeSettings(stored) {
     site: { ...DEFAULT_SETTINGS.site, ...(s.site || {}) },
     email: {
       provider: e.provider === 'smtp' ? 'smtp' : 'resend',
-      resend: { ...DEFAULT_SETTINGS.email.resend, ...(e.resend || {}) },
-      smtp: { ...DEFAULT_SETTINGS.email.smtp, ...(e.smtp || {}) },
+      resend: { ...DEFAULT_SETTINGS.email.resend, ...(e.resend || {}), apiKey: '' },
+      smtp: { ...DEFAULT_SETTINGS.email.smtp, ...(e.smtp || {}), password: '' },
     },
   };
+}
+
+function containsLegacySecrets(stored) {
+  const s = stored && typeof stored === 'object' ? stored : {};
+  const e = s.email && typeof s.email === 'object' ? s.email : {};
+  return !!(
+    (s.nsfw && (s.nsfw.apiKey || s.nsfw.extraParams))
+    || (e.resend && e.resend.apiKey)
+    || (e.smtp && e.smtp.password)
+  );
+}
+
+/** 返回可安全持久化/备份的设置副本。 */
+export function settingsForStorage(settings) {
+  const clean = mergeSettings(settings);
+  clean.nsfw.apiKey = '';
+  clean.nsfw.extraParams = '';
+  clean.email.resend.apiKey = '';
+  clean.email.smtp.password = '';
+  return clean;
+}
+
+function withRuntimeSecrets(settings, env) {
+  const runtime = mergeSettings(settings);
+  runtime.nsfw.apiKey = String((env && env.NSFW_API_KEY) || '');
+  runtime.nsfw.extraParams = String((env && env.NSFW_EXTRA_PARAMS) || '');
+  runtime.email.resend.apiKey = String((env && env.RESEND_API_KEY) || '');
+  runtime.email.smtp.password = String((env && env.SMTP_PASSWORD) || '');
+  return runtime;
 }
 
 let _settingsCache = null;
@@ -100,9 +129,14 @@ export async function getSettings(env) {
   }
   try {
     const stored = await kvGet(env, SETTINGS_KEY, { type: 'json' });
-    _settingsCache = mergeSettings(stored);
+    const persisted = settingsForStorage(stored);
+    // 旧版本允许把 API Key/SMTP 密码写入 D1；首次读取时主动清除。
+    if (containsLegacySecrets(stored)) {
+      try { await kvPut(env, SETTINGS_KEY, persisted); } catch { /* 本次仍使用已脱敏的内存副本 */ }
+    }
+    _settingsCache = withRuntimeSecrets(persisted, env);
   } catch {
-    _settingsCache = mergeSettings(null);
+    _settingsCache = withRuntimeSecrets(mergeSettings(null), env);
   }
   _settingsCacheAt = now;
   return _settingsCache;
@@ -116,7 +150,12 @@ export async function saveSettings(env, patch) {
     topBar: patch.topBar
       ? { enabled: !!patch.topBar.enabled, text: String(patch.topBar.text || '').trim().slice(0, 300) }
       : current.topBar,
-    nsfw: { ...current.nsfw, ...(patch.nsfw || {}) },
+    nsfw: {
+      ...current.nsfw,
+      ...(patch.nsfw || {}),
+      apiKey: current.nsfw.apiKey,
+      extraParams: current.nsfw.extraParams,
+    },
     dailyUploadLimit: typeof patch.dailyUploadLimit === 'number' ? patch.dailyUploadLimit : current.dailyUploadLimit,
     requireEmailVerify: typeof patch.requireEmailVerify === 'boolean' ? patch.requireEmailVerify : current.requireEmailVerify,
     allowSvg: typeof patch.allowSvg === 'boolean' ? patch.allowSvg : current.allowSvg,
@@ -125,23 +164,13 @@ export async function saveSettings(env, patch) {
     email: current.email,
   };
 
-  if (patch.nsfw && (patch.nsfw.apiKey === '' || patch.nsfw.apiKey === undefined)) {
-    next.nsfw.apiKey = current.nsfw.apiKey;
-  }
-
   if (patch.email) {
     const pe = patch.email;
     const merged = {
       provider: pe.provider === 'smtp' ? 'smtp' : (pe.provider === 'resend' ? 'resend' : current.email.provider),
-      resend: { ...current.email.resend, ...(pe.resend || {}) },
-      smtp: { ...current.email.smtp, ...(pe.smtp || {}) },
+      resend: { ...current.email.resend, ...(pe.resend || {}), apiKey: current.email.resend.apiKey },
+      smtp: { ...current.email.smtp, ...(pe.smtp || {}), password: current.email.smtp.password },
     };
-    if (pe.resend && (pe.resend.apiKey === '' || pe.resend.apiKey === undefined)) {
-      merged.resend.apiKey = current.email.resend.apiKey;
-    }
-    if (pe.smtp && (pe.smtp.password === '' || pe.smtp.password === undefined)) {
-      merged.smtp.password = current.email.smtp.password;
-    }
     next.email = merged;
   }
 
@@ -155,8 +184,9 @@ export async function saveSettings(env, patch) {
     }
   }
 
-  await kvPut(env, SETTINGS_KEY, next);
-  _settingsCache = next;
+  const persisted = settingsForStorage(next);
+  await kvPut(env, SETTINGS_KEY, persisted);
+  _settingsCache = withRuntimeSecrets(persisted, env);
   _settingsCacheAt = Date.now();
-  return next;
+  return _settingsCache;
 }

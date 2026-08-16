@@ -1,5 +1,6 @@
 name = "duckimg"
-compatibility_date = "2024-09-23"
+compatibility_date = "2026-08-16"
+compatibility_flags = ["nodejs_compat"]
 main = "src/index.js"
 
 # 元数据存 D1，图片本体走 Telegram；本文件不含密钥，可安全入库
@@ -7,14 +8,23 @@ main = "src/index.js"
 #   npx wrangler secret put TG_Bot_Token
 #   npx wrangler secret put TG_Chat_ID
 #   npx wrangler secret put JWT_SECRET
+#   npx wrangler secret put BACKUP_ENCRYPTION_KEY
 #   npx wrangler secret put RESEND_API_KEY
+#   npx wrangler secret put SMTP_PASSWORD
+#   npx wrangler secret put NSFW_API_KEY
+#   npx wrangler secret put NSFW_EXTRA_PARAMS
 #   npx wrangler secret put ADMIN_USERNAME
+#   npx wrangler secret put ADMIN_BOOTSTRAP_TOKEN  # 仅首次创建管理员，成功后删除
 #   npx wrangler secret put RESEND_FROM
 
 # [vars] 留空：ADMIN_USERNAME / RESEND_FROM 已迁至 Secrets
 # SITE_URL 如需固定站点地址可在此设置
 # [vars]
 # SITE_URL = "https://piv.cc.cd"
+
+# 每次部署自动生成版本 ID 与上传时间，供管理后台确认线上版本
+[version_metadata]
+binding = "CF_VERSION_METADATA"
 
 [[d1_databases]]
 binding = "DB"
@@ -31,6 +41,19 @@ html_handling = "none"
 # 定时任务（表达式需与 src/index.js 的 BACKUP_CRON 保持一致）：
 # - "17 3 * * *"  每日清理过期限流桶与 kv_store 过期行
 # - "37 19 * * *" 每日备份检查（UTC 19:37 = 北京 03:37）——是否真正备份由
-#   管理后台「自动备份频率」（关闭/每天/每周/每月）决定，备份 .sql 发到 Telegram 存储频道
+#   管理后台「自动备份频率」（关闭/每天/每周/每月）决定，加密备份 .sql[.gz].enc 发到 Telegram 存储频道
 [triggers]
 crons = ["17 3 * * *", "37 19 * * *"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 0.05

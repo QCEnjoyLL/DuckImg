@@ -44,7 +44,8 @@ export function clientKey(c) {
 }
 
 const USERNAME_RE = /^[a-zA-Z0-9_一-鿿]{2,24}$/;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_LOCAL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/;
+const EMAIL_DOMAIN_LABEL_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
 
 export function validateUsername(username) {
   const u = String(username || '').trim();
@@ -65,7 +66,14 @@ export function validateEmail(email) {
   const e = String(email || '').trim().toLowerCase();
   if (!e) return { ok: false, error: '邮箱不能为空' };
   if (e.length > 254) return { ok: false, error: '邮箱过长' };
-  if (!EMAIL_RE.test(e)) return { ok: false, error: '邮箱格式不正确' };
+  const parts = e.split('@');
+  if (parts.length !== 2 || !parts[0] || !parts[1] || parts[0].length > 64) {
+    return { ok: false, error: '邮箱格式不正确' };
+  }
+  const labels = parts[1].split('.');
+  if (!EMAIL_LOCAL_RE.test(parts[0]) || labels.length < 2 || labels.some((x) => !EMAIL_DOMAIN_LABEL_RE.test(x))) {
+    return { ok: false, error: '邮箱格式不正确' };
+  }
   return { ok: true, value: e };
 }
 

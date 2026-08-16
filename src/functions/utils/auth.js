@@ -1,8 +1,12 @@
 /**
  * 用户认证相关工具函数
  */
-import { isAdmin, getUserByName } from './users';
-import { getBannedSet } from './bans.js';
+import { isAdmin, getUserById, getUserByName } from './users';
+import {
+  dbConsumeVerificationCode,
+  dbDeleteVerificationCode,
+  dbSaveVerificationCode,
+} from './db.js';
 
 // UTF-8 安全的 base64url 编解码（btoa/atob 无法处理非 ASCII，如中文用户名）
 function b64urlEncode(obj) {
@@ -147,6 +151,21 @@ function timingSafeEqualStr(a, b) {
   return diff === 0;
 }
 
+/** 对两个任意长度的敏感字符串先定长哈希，再恒定工作量比较。 */
+export async function timingSafeEqualSecret(a, b) {
+  if (!a || !b) return false;
+  const encoder = new TextEncoder();
+  const [ha, hb] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(String(a))),
+    crypto.subtle.digest('SHA-256', encoder.encode(String(b))),
+  ]);
+  const aa = new Uint8Array(ha);
+  const bb = new Uint8Array(hb);
+  let diff = 0;
+  for (let i = 0; i < aa.length; i++) diff |= aa[i] ^ bb[i];
+  return diff === 0;
+}
+
 async function sha256Hex(password) {
   const data = new TextEncoder().encode(password);
   const hash = await crypto.subtle.digest('SHA-256', data);
@@ -209,42 +228,75 @@ export async function verifyPassword(password, stored) {
   return timingSafeEqualStr(legacy, s);
 }
 
-// ===== 邮箱验证码：时间确定性码（不读写 KV，免疫 KV 一致性/负缓存） =====
-const CODE_BUCKET_MS = 5 * 60 * 1000; // 5 分钟一个时间桶
+// ===== 邮箱验证码：随机、限次、一次性消费 =====
+const CODE_TTL_MS = 10 * 60 * 1000;
+const CODE_MAX_ATTEMPTS = 6;
 
-// 由 (email, bucket, purpose) 经 HMAC(JWT_SECRET) 派生 6 位验证码
-async function deriveCodeForBucket(secret, email, bucket, purpose = 'verify') {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw', encoder.encode(secret || ''),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+function normalizeVerificationEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function verificationKey(email, purpose) {
+  return `${String(purpose || 'verify')}:${normalizeVerificationEmail(email)}`;
+}
+
+function randomSixDigitCode() {
+  // 拒绝采样，避免 Uint32 对 1,000,000 取模产生轻微偏差。
+  const range = 0x100000000;
+  const ceiling = range - (range % 1000000);
+  const arr = new Uint32Array(1);
+  do { crypto.getRandomValues(arr); } while (arr[0] >= ceiling);
+  return (arr[0] % 1000000).toString().padStart(6, '0');
+}
+
+async function verificationHash(env, email, code, purpose) {
+  if (!env || !env.JWT_SECRET) throw new Error('JWT_SECRET missing');
+  return generateSignature(
+    `verification:${String(purpose || 'verify')}:${normalizeVerificationEmail(email)}:${String(code)}`,
+    env.JWT_SECRET,
   );
-  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(`${purpose}:${email}:${bucket}`));
-  const b = new Uint8Array(sig);
-  // 取前 4 字节组成无符号整数后取模，得到 6 位码
-  const num = ((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]) >>> 0;
-  return (num % 1000000).toString().padStart(6, '0');
 }
 
-// 生成当前时间窗的验证码（发码用）。purpose 区分用途（verify/reset）
-export async function deriveVerifyCode(env, email, purpose = 'verify') {
-  const bucket = Math.floor(Date.now() / CODE_BUCKET_MS);
-  return deriveCodeForBucket(env.JWT_SECRET, email, bucket, purpose);
+/** 创建新验证码；同邮箱同用途的旧验证码会立即失效。 */
+export async function createVerificationCode(env, email, purpose = 'verify') {
+  const normalized = normalizeVerificationEmail(email);
+  if (!normalized) throw new Error('email missing');
+  const code = randomSixDigitCode();
+  const codeHash = await verificationHash(env, normalized, code, purpose);
+  await dbSaveVerificationCode(env, {
+    key: verificationKey(normalized, purpose),
+    email: normalized,
+    purpose: String(purpose || 'verify'),
+    codeHash,
+    expiresAt: Date.now() + CODE_TTL_MS,
+    maxAttempts: CODE_MAX_ATTEMPTS,
+  });
+  return code;
 }
 
-// 校验验证码：接受 当前 + 前 2 个时间桶（约 10–15 分钟有效）
+export async function clearVerificationCode(env, email, purpose = 'verify') {
+  await dbDeleteVerificationCode(env, verificationKey(email, purpose));
+}
+
+/** 校验并原子消费验证码；错误提交会消耗一次全局尝试次数。 */
 export async function verifyCodeMatches(env, email, code, purpose = 'verify') {
-  if (!code) return false;
-  const input = String(code).trim();
-  if (!/^\d{4,8}$/.test(input)) return false;
-  const cur = Math.floor(Date.now() / CODE_BUCKET_MS);
-  let matched = false;
-  // 始终跑完 3 个桶，避免“早退”造成时序差异
-  for (let i = 0; i <= 2; i++) {
-    const expected = await deriveCodeForBucket(env.JWT_SECRET, email, cur - i, purpose);
-    if (timingSafeEqualStr(input, expected)) matched = true;
-  }
-  return matched;
+  const input = String(code || '').trim();
+  if (!/^\d{6}$/.test(input)) return false;
+  const normalized = normalizeVerificationEmail(email);
+  if (!normalized) return false;
+  const codeHash = await verificationHash(env, normalized, input, purpose);
+  return dbConsumeVerificationCode(env, verificationKey(normalized, purpose), codeHash, Date.now());
+}
+
+async function getTokenUser(env, payload) {
+  if (!payload) return null;
+  // 带 id 的新令牌必须严格按 id 命中；账号删除后即使同名重建，也不能让旧令牌“借尸还魂”。
+  if (payload.id) return getUserById(env, payload.id);
+  return payload.username ? getUserByName(env, payload.username) : null;
+}
+
+function tokenVersionMatches(payload, user) {
+  return Number(payload && payload.tv) === Number(user && user.tokenVersion);
 }
 
 // 认证中间件
@@ -262,26 +314,18 @@ export async function authMiddleware(c, next) {
     return c.json({ error: message || '无效的令牌' }, 401);
   }
 
-  // 将用户信息添加到请求上下文
-  c.set('user', payload);
+  const user = await getTokenUser(c.env, payload);
+  if (!user) return c.json({ error: '账户不存在或登录已失效' }, 401);
+  if (user.status === 'banned') return c.json({ error: '该账户已被封禁' }, 403);
+  if (!tokenVersionMatches(payload, user)) return c.json({ error: '登录已失效，请重新登录' }, 401);
 
-  // 热路径封禁检查：优先 banned 集合（带内存缓存），避免每次查用户表
-  try {
-    const banned = await getBannedSet(c.env);
-    if (banned && banned.size > 0) {
-      const uid = payload && payload.id != null ? String(payload.id) : '';
-      if (uid && banned.has(uid)) {
-        return c.json({ error: '该账户已被封禁' }, 403);
-      }
-      // 无 id 的旧 token：回退查用户状态
-      if (!uid && payload && payload.username) {
-        try {
-          const u = await getUserByName(c.env, payload.username);
-          if (u && u.status === 'banned') return c.json({ error: '该账户已被封禁' }, 403);
-        } catch { /* ignore */ }
-      }
-    }
-  } catch { /* 检查失败不阻断正常用户 */ }
+  // 使用数据库中的实时身份，不信任令牌里的可陈旧字段。
+  c.set('user', {
+    ...payload,
+    id: user.id,
+    username: user.username,
+    role: isAdmin(user.username, c.env) ? 'admin' : 'user',
+  });
 
   return next();
 }
@@ -301,12 +345,17 @@ export async function adminMiddleware(c, next) {
     return c.json({ error: message || '无效的令牌' }, 401);
   }
 
-  // 以环境变量为准实时判定管理员身份（不完全信任令牌中的 role）
-  if (!isAdmin(payload.username, c.env)) {
+  const user = await getTokenUser(c.env, payload);
+  if (!user) return c.json({ error: '账户不存在或登录已失效' }, 401);
+  if (user.status === 'banned') return c.json({ error: '该账户已被封禁' }, 403);
+  if (!tokenVersionMatches(payload, user)) return c.json({ error: '登录已失效，请重新登录' }, 401);
+
+  // 以数据库用户名 + 环境变量实时判定管理员身份，不信任令牌中的 role。
+  if (!isAdmin(user.username, c.env)) {
     return c.json({ error: '需要管理员权限' }, 403);
   }
 
-  c.set('user', payload);
+  c.set('user', { ...payload, id: user.id, username: user.username, role: 'admin' });
 
   return next();
 }

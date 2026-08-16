@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { authenticatedUpload } from './functions/upload';
 import { fileHandler } from './functions/file/[id]';
 import { register, login, getCurrentUser, updateUserAvatar, getUserProfile, getQuota, changePassword, changeEmail, confirmEmail, forgotPassword, resetPassword, updateUserPrefs } from './functions/user/auth';
@@ -49,7 +50,14 @@ app.use('/*', async (c, next) => {
 // —— 业务路由（必须在静态回退之前注册）——
 
 // 上传接口
-app.post('/upload', authenticatedUpload);
+app.post(
+  '/upload',
+  bodyLimit({
+    maxSize: 50 * 1024 * 1024,
+    onError: (c) => c.json({ error: '单次上传请求不能超过 50MB' }, 413),
+  }),
+  authenticatedUpload,
+);
 
 // 文件访问接口
 app.get('/file/:id', fileHandler);
@@ -88,6 +96,26 @@ app.get('/api/announcement', getAnnouncement);
 app.get('/api/site', getSiteConfig);
 
 // 管理后台API（需管理员权限）
+app.get('/api/admin/version', adminMiddleware, (c) => {
+  const metadata = c.env && c.env.CF_VERSION_METADATA;
+  const id = metadata && typeof metadata.id === 'string' && metadata.id
+    ? metadata.id
+    : 'local';
+  const tag = metadata && typeof metadata.tag === 'string' ? metadata.tag : '';
+  const deployedAt = metadata && typeof metadata.timestamp === 'string'
+    ? metadata.timestamp
+    : null;
+
+  c.header('Cache-Control', 'no-store');
+  return c.json({
+    version: {
+      id,
+      shortId: id === 'local' ? id : id.slice(0, 8),
+      tag,
+      deployedAt,
+    },
+  });
+});
 app.get('/api/admin/stats', adminMiddleware, adminStats);
 app.get('/api/admin/users', adminMiddleware, adminListUsers);
 app.get('/api/admin/users/:username/images', adminMiddleware, adminUserImages);
@@ -157,6 +185,9 @@ async function scheduled(event, env, _ctx) {
   try {
     await env.DB.prepare('DELETE FROM kv_store WHERE expires_at IS NOT NULL AND expires_at < ?').bind(now).run();
   } catch (e) { console.warn('清理 kv_store 失败:', e && e.message); }
+  try {
+    await env.DB.prepare('DELETE FROM verification_codes WHERE expires_at < ?').bind(now).run();
+  } catch (e) { console.warn('清理 verification_codes 失败:', e && e.message); }
 }
 
 export default { fetch: app.fetch, scheduled };

@@ -799,7 +799,7 @@
                                 <h4 data-i18n="profile.password">修改密码</h4>
                                 <div class="security-form">
                                     <input type="password" id="curPassword" class="sec-input" placeholder="当前密码" autocomplete="current-password" data-i18n-placeholder="profile.password.cur">
-                                    <input type="password" id="newPassword" class="sec-input" placeholder="新密码（至少 6 位）" autocomplete="new-password" data-i18n-placeholder="profile.password.new">
+                                    <input type="password" id="newPassword" class="sec-input" minlength="8" placeholder="新密码（至少 8 位）" autocomplete="new-password" data-i18n-placeholder="profile.password.new">
                                     <input type="password" id="newPassword2" class="sec-input" placeholder="确认新密码" autocomplete="new-password" data-i18n-placeholder="profile.password.confirm">
                                     <button class="action-btn" id="changePasswordBtn">
                                         <i class="ri-lock-password-line"></i> <span data-i18n="profile.password.update">更新密码</span>
@@ -881,4 +881,4 @@
     <script src="./js/announcement.js"></script>
     <script src="./js/site-config.js"></script>
 </body>
-</html> 
+</html>

@@ -38,14 +38,17 @@ export async function adminDeleteUserImage(c) {
     const user = await getUserByName(c.env, username);
     const img = await dbGetImage(c.env, fileId);
 
-    if (img && img.messageId) {
-      try { await deleteTelegramMessage(c.env, img.messageId); } catch {}
-    }
-    try { await dbDeleteImage(c.env, fileId); } catch {}
-
     if (!user && !img) {
       return c.json({ message: '失效记录已清理' });
     }
+    if (user && img && String(img.userId) !== String(user.id)) {
+      return c.json({ error: '图片不属于该用户，拒绝删除' }, 409);
+    }
+    if (img && img.messageId) {
+      const removed = await deleteTelegramMessage(c.env, img.messageId);
+      if (!removed) return c.json({ error: '存储端删除失败，图库记录已保留，请稍后重试' }, 502);
+    }
+    if (img) await dbDeleteImage(c.env, fileId);
     return c.json({ message: img ? '图片已删除' : '失效记录已清理' });
   } catch (error) {
     console.error('删除用户图片错误:', error);
@@ -231,6 +234,9 @@ export async function adminSetUserStatus(c, status) {
 
     const user = await getUserByName(c.env, username);
     if (!user) return c.json({ error: '用户不存在' }, 404);
+    if (String(user.id) === String(admin.id) || isAdmin(user.username, c.env)) {
+      return c.json({ error: '不能封禁管理员账号' }, 400);
+    }
 
     user.status = status;
     await saveUser(c.env, user);
@@ -252,21 +258,27 @@ export async function adminDeleteUser(c) {
 
     const user = await getUserByName(c.env, username);
     if (!user) return c.json({ error: '用户不存在' }, 404);
+    if (String(user.id) === String(admin.id) || isAdmin(user.username, c.env)) {
+      return c.json({ error: '不能删除管理员账号' }, 400);
+    }
 
     if (user.id) {
-      try { await setUserBanned(c.env, user.id, true); } catch {}
-      try { await setUserImagesBlocked(c.env, user.id, true); } catch {}
       try {
         const files = await loadUserFiles(c.env, user.id);
-        const MAX_PURGE = 300;
-        let purged = 0;
+        const MAX_PURGE = 40;
+        if (files.length > MAX_PURGE) {
+          return c.json({ error: `该用户有 ${files.length} 张图片，请先在图库中分批清理后再删除账号` }, 409);
+        }
         for (const f of files) {
-          if (purged >= MAX_PURGE) break;
-          if (f.messageId) { try { await deleteTelegramMessage(c.env, f.messageId); } catch {} }
-          purged++;
+          if (f.messageId) {
+            const removed = await deleteTelegramMessage(c.env, f.messageId);
+            if (!removed) return c.json({ error: '部分图片删除失败；已成功删除的记录已同步，其余可稍后重试' }, 502);
+          }
+          await dbDeleteImage(c.env, f.id);
         }
       } catch (e) {
-        console.warn('清空用户图片出错（忽略）:', e);
+        console.warn('清空用户图片出错，账号保留:', e);
+        return c.json({ error: '清理用户图片失败；账号已保留，可稍后重试' }, 502);
       }
     }
 
@@ -285,6 +297,7 @@ export async function adminSetUserLimit(c) {
     const { uploadLimit } = await c.req.json();
     const user = await getUserByName(c.env, username);
     if (!user) return c.json({ error: '用户不存在' }, 404);
+    if (isAdmin(user.username, c.env)) return c.json({ error: '不能修改管理员上传上限' }, 400);
 
     if (uploadLimit === null || uploadLimit === '' || uploadLimit === undefined) {
       user.uploadLimit = null;
@@ -337,6 +350,10 @@ export async function adminBatchUsers(c) {
 
         const user = await getUserByName(c.env, username);
         if (!user) { failed.push({ username, error: '用户不存在' }); continue; }
+        if (String(user.id) === String(admin.id) || isAdmin(user.username, c.env)) {
+          failed.push({ username, error: '不能操作管理员' });
+          continue;
+        }
 
         if (action === 'ban') {
           user.status = 'banned';
@@ -353,17 +370,11 @@ export async function adminBatchUsers(c) {
           await saveUser(c.env, user);
         } else if (action === 'delete') {
           if (user.id) {
-            try { await setUserBanned(c.env, user.id, true); } catch {}
-            try { await setUserImagesBlocked(c.env, user.id, true); } catch {}
-            try {
-              const files = await loadUserFiles(c.env, user.id);
-              let purged = 0;
-              for (const f of files) {
-                if (purged >= 100) break;
-                if (f.messageId) { try { await deleteTelegramMessage(c.env, f.messageId); } catch {} }
-                purged++;
-              }
-            } catch {}
+            const files = await loadUserFiles(c.env, user.id);
+            if (files.length) {
+              failed.push({ username, error: '请先清空该用户图片，再批量删除账号' });
+              continue;
+            }
           }
           await deleteUserRecord(c.env, user);
         }
@@ -399,7 +410,13 @@ export async function adminGetSettings(c) {
         },
       },
     };
-    masked.nsfw = { ...settings.nsfw, apiKeySet: !!settings.nsfw.apiKey, apiKey: '' };
+    masked.nsfw = {
+      ...settings.nsfw,
+      apiKeySet: !!settings.nsfw.apiKey,
+      extraParamsSet: !!settings.nsfw.extraParams,
+      apiKey: '',
+      extraParams: '',
+    };
     return c.json({ settings: masked });
   } catch (error) {
     console.error('获取配置错误:', error);
