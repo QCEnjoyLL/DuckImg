@@ -28,10 +28,8 @@ app.use('/*', async (c, next) => {
   } catch {}
 });
 
-// 静态资源分层缓存（仅当业务 handler 未显式设置时）
-// - HTML：no-cache（部署后立刻生效）
-// - CSS/JS：短缓存 + SWR
-// - /file/* 由 fileHandler 自行设置长期缓存
+// 仅为动态响应提供缓存兜底。Workers Assets 会自行设置 Cache-Control，
+// 因此静态资源响应会在上面的 has() 检查处直接保留平台生成的缓存策略。
 app.use('/*', async (c, next) => {
   await next();
   try {
@@ -159,7 +157,10 @@ app.all('*', async (c) => {
     }
     return assets.fetch(c.req.raw);
   } catch (e) {
-    console.error('ASSETS fetch error:', e);
+    console.error(JSON.stringify({
+      event: 'assets_fetch_failed',
+      error: e && e.message ? e.message : String(e),
+    }));
     return c.text('Static asset error', 500);
   }
 });
@@ -173,6 +174,14 @@ app.all('*', async (c) => {
 //                改频率无需重新部署。
 const BACKUP_CRON = '37 19 * * *';
 
+function logScheduledCleanupFailure(table, error) {
+  console.warn(JSON.stringify({
+    event: 'scheduled_cleanup_failed',
+    table,
+    error: error && error.message ? error.message : String(error),
+  }));
+}
+
 async function scheduled(event, env, _ctx) {
   if (event && event.cron === BACKUP_CRON) {
     await maybeRunScheduledBackup(env);
@@ -181,13 +190,13 @@ async function scheduled(event, env, _ctx) {
   const now = Date.now();
   try {
     await env.DB.prepare('DELETE FROM rate_limits WHERE reset_at < ?').bind(now).run();
-  } catch (e) { console.warn('清理 rate_limits 失败:', e && e.message); }
+  } catch (e) { logScheduledCleanupFailure('rate_limits', e); }
   try {
     await env.DB.prepare('DELETE FROM kv_store WHERE expires_at IS NOT NULL AND expires_at < ?').bind(now).run();
-  } catch (e) { console.warn('清理 kv_store 失败:', e && e.message); }
+  } catch (e) { logScheduledCleanupFailure('kv_store', e); }
   try {
     await env.DB.prepare('DELETE FROM verification_codes WHERE expires_at < ?').bind(now).run();
-  } catch (e) { console.warn('清理 verification_codes 失败:', e && e.message); }
+  } catch (e) { logScheduledCleanupFailure('verification_codes', e); }
 }
 
 export default { fetch: app.fetch, scheduled };

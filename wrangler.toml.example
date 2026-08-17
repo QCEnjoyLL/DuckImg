@@ -10,7 +10,7 @@ main = "src/index.js"
 #   npx wrangler secret put JWT_SECRET
 #   npx wrangler secret put BACKUP_ENCRYPTION_KEY # 备份专用密钥，务必妥善保存
 #   npx wrangler secret put RESEND_API_KEY
-#   npx wrangler secret put SMTP_PASSWORD         # 使用 SMTP 时配置
+#   npx wrangler secret put SMTP_PASSWORD         # 仅旧部署兼容；新部署可在后台配置
 #   npx wrangler secret put NSFW_API_KEY           # 使用鉴黄接口时配置
 #   npx wrangler secret put NSFW_EXTRA_PARAMS      # 鉴黄接口附加查询参数（可选）
 #   npx wrangler secret put ADMIN_USERNAME    # 管理员用户名

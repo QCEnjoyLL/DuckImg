@@ -653,6 +653,7 @@ async function loadSettings() {
         document.getElementById('nsfwImageParam').value = settings.nsfw.imageParam || 'url';
         document.getElementById('nsfwScorePath').value = settings.nsfw.scorePath || 'score';
         document.getElementById('nsfwThreshold').value = settings.nsfw.threshold ?? 0.8;
+        document.getElementById('nsfwFailurePolicy').value = settings.nsfw.failurePolicy === 'block' ? 'block' : 'allow';
 
         // 邮件配置
         const email = settings.email || {};
@@ -666,10 +667,27 @@ async function loadSettings() {
         document.getElementById('smtpPort').value = smtp.port || 465;
         document.getElementById('smtpEncryption').value = smtp.encryption || 'ssl';
         document.getElementById('smtpUsername').value = smtp.username || '';
-        document.getElementById('smtpPassword').value = '';
-        document.getElementById('smtpPassword').placeholder = smtp.passwordSet ? 'Secret 已配置' : 'Secret 未配置';
+        const smtpPasswordInput = document.getElementById('smtpPassword');
+        const smtpClearPassword = document.getElementById('smtpClearPassword');
+        smtpPasswordInput.value = '';
+        smtpPasswordInput.disabled = false;
+        smtpClearPassword.checked = false;
+        smtpClearPassword.dataset.available = smtp.passwordSet ? 'true' : 'false';
+        const smtpPasswordPlaceholder = smtp.passwordSource === 'database'
+            ? '已在后台配置，留空不修改'
+            : (smtp.passwordSource === 'secret'
+                ? '当前使用 Cloudflare Secret；输入新值可迁移到后台'
+                : '请输入密码 / 授权码');
+        smtpPasswordInput.placeholder = smtpPasswordPlaceholder;
+        const smtpPasswordHint = document.getElementById('smtpPasswordHint');
+        if (smtpPasswordHint) {
+            smtpPasswordHint.textContent = smtp.passwordError || (smtp.passwordSource === 'secret'
+                ? '当前仍使用 SMTP_PASSWORD Secret；保存新密码后会改用 D1 加密配置。'
+                : '密码会使用 JWT_SECRET 派生密钥加密后保存到 D1，不会回传到浏览器。');
+        }
         document.getElementById('smtpFromAddress').value = smtp.fromAddress || '';
         document.getElementById('smtpFromName').value = smtp.fromName || '鸭鸭图床';
+        syncSmtpPasswordControls();
 
         // 站点设置
         const site = settings.site || {};
@@ -696,6 +714,20 @@ function toggleEmailFields() {
     const provider = document.getElementById('emailProvider').value;
     document.getElementById('resendFields').style.display = provider === 'resend' ? 'block' : 'none';
     document.getElementById('smtpFields').style.display = provider === 'smtp' ? 'block' : 'none';
+}
+
+// 新密码与清除动作互斥：输入新密码时禁用清除；选择清除时禁用密码框。
+function syncSmtpPasswordControls() {
+    const passwordInput = document.getElementById('smtpPassword');
+    const clearInput = document.getElementById('smtpClearPassword');
+    if (!passwordInput || !clearInput) return;
+
+    const hasNewPassword = passwordInput.value.length > 0;
+    const hasSavedPassword = clearInput.dataset.available === 'true';
+    if (hasNewPassword) clearInput.checked = false;
+
+    passwordInput.disabled = clearInput.checked;
+    clearInput.disabled = hasNewPassword || (!hasSavedPassword && !clearInput.checked);
 }
 
 async function saveSettings(patch, successMsg) {
@@ -743,14 +775,21 @@ function initSettingButtons() {
                 imageParam: document.getElementById('nsfwImageParam').value.trim() || 'url',
                 scorePath: document.getElementById('nsfwScorePath').value.trim() || 'score',
                 threshold: parseFloat(document.getElementById('nsfwThreshold').value || '0.8'),
+                failurePolicy: document.getElementById('nsfwFailurePolicy').value,
             }
         }, '鉴黄配置已保存');
     });
 
     // 邮件配置
     document.getElementById('emailProvider').addEventListener('change', toggleEmailFields);
+    document.getElementById('smtpPassword').addEventListener('input', syncSmtpPasswordControls);
+    document.getElementById('smtpClearPassword').addEventListener('change', syncSmtpPasswordControls);
 
     document.getElementById('saveEmail').addEventListener('click', () => {
+        const smtpPassword = document.getElementById('smtpPassword').value;
+        // 浏览器自动填充不一定触发 input 事件；提交时仍以新密码为优先，避免冲突误报。
+        const clearSmtpPassword = !smtpPassword && document.getElementById('smtpClearPassword').checked;
+        if (clearSmtpPassword && !confirm('确定清除当前 SMTP 密码吗？保存后需要重新输入才能继续使用 SMTP 发信。')) return;
         saveSettings({
             email: {
                 provider: document.getElementById('emailProvider').value,
@@ -761,6 +800,8 @@ function initSettingButtons() {
                     host: document.getElementById('smtpHost').value.trim(),
                     port: parseInt(document.getElementById('smtpPort').value || '465', 10),
                     username: document.getElementById('smtpUsername').value.trim(),
+                    password: smtpPassword,
+                    clearPassword: clearSmtpPassword,
                     encryption: document.getElementById('smtpEncryption').value,
                     fromAddress: document.getElementById('smtpFromAddress').value.trim(),
                     fromName: document.getElementById('smtpFromName').value.trim() || '鸭鸭图床',

@@ -17,10 +17,14 @@ migration/qxc_*
 
 # 本地 AI 工具目录 / 编辑备份
 .claude/
+.agents/
+.codex/
+skills-lock.json
 *.backup
 
 
 # 打包产物
+dist/
 *.zip
 
 # 系统/编辑器

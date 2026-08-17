@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.0"><img src="https://img.shields.io/badge/release-v2.2.0-blue?style=flat-square" alt="v2.2.0"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.1"><img src="https://img.shields.io/badge/release-v2.2.1-blue?style=flat-square" alt="v2.2.1"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
@@ -116,7 +116,7 @@ npm run dev
 
 `wrangler.toml` 已随仓库提供（内含 D1 绑定与 cron，无任何密钥）；自部署只需替换 `database_id`。
 
-所有敏感配置一律走 Cloudflare Secrets（服务端持久保存，换机器无需重配）：
+平台级密钥走 Cloudflare Secrets（服务端持久保存，换机器无需重配）：
 
 ```bash
 npx wrangler secret put TG_Bot_Token      # Telegram Bot Token
@@ -127,10 +127,15 @@ npx wrangler secret put ADMIN_USERNAME    # 管理员用户名
 npx wrangler secret put ADMIN_BOOTSTRAP_TOKEN # 仅首次创建管理员时临时设置
 npx wrangler secret put RESEND_API_KEY    # 邮件服务（可选）
 npx wrangler secret put RESEND_FROM       # 邮件发件人（可选）
-npx wrangler secret put SMTP_PASSWORD     # SMTP 密码/授权码（使用 SMTP 时）
 npx wrangler secret put NSFW_API_KEY      # 鉴黄服务密钥（启用时）
 npx wrangler secret put NSFW_EXTRA_PARAMS # 鉴黄服务附加查询参数（可选）
 ```
+
+SMTP 密码/授权码可直接在管理后台的「邮件设置」中填写。保存时会使用由 `JWT_SECRET`
+派生的 AES-GCM 密钥加密后写入 D1，接口只返回是否已配置，不会回传密码或密文。旧部署中的
+`SMTP_PASSWORD` Secret 仍兼容；在后台保存新密码后会自动改用 D1 配置。若轮换
+`JWT_SECRET`，请在后台重新输入一次 SMTP 密码。数据库备份不会携带 SMTP 密文，恢复后也需
+重新输入一次。
 
 首次管理员注册需让用户名与 `ADMIN_USERNAME` 一致，并在注册请求中携带
 `X-Admin-Bootstrap-Token`。创建成功后立即执行
@@ -213,6 +218,14 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 📈 更新日志
 
+### 🔐 [v2.2.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.1)（2026-08）
+
+- 🔐 SMTP 密码恢复为后台直接配置，并以 `JWT_SECRET` 派生密钥进行 AES-GCM 加密后存入 D1
+- 🧩 修复“清除已保存的 SMTP 密码”布局与新密码/清除操作冲突，保留旧 `SMTP_PASSWORD` Secret 兼容回退
+- 🛡️ 增加图片真实签名校验、可配置的鉴黄服务异常策略及后台设置参数校验
+- ✅ 新增 SMTP 冷启动解密、清除、Secret 迁移、错误密钥等 Workers 回归测试
+- 🧹 统一 LF 换行，并逐步采用结构化 Workers 日志
+
 ### 🛡️ [v2.2.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.0)（2026-08）
 
 - 🔐 管理员一次性引导令牌、随机一次性验证码、错误次数限制与 JWT `token_version` 撤销
@@ -286,7 +299,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.2.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.0)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.2.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.1)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 

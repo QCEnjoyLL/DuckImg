@@ -24,8 +24,42 @@ const ALLOWED_MIME = new Set([
 function isAllowedImage(file, fileExtension) {
   const mime = String(file.type || '').toLowerCase();
   const extOk = ALLOWED_EXT.has(fileExtension);
-  if (!mime) return extOk;
-  return extOk && (ALLOWED_MIME.has(mime) || mime.startsWith('image/'));
+  if (!mime || mime === 'application/octet-stream') return extOk;
+  return extOk && ALLOWED_MIME.has(mime);
+}
+
+function startsWithBytes(bytes, expected) {
+  return expected.every((value, index) => bytes[index] === value);
+}
+
+function ascii(bytes, start, length) {
+  return String.fromCharCode(...bytes.slice(start, start + length));
+}
+
+/** 只读取文件头，验证内容签名与扩展名一致，避免仅伪造 MIME/文件名。 */
+export async function hasMatchingImageSignature(file, extension) {
+  if (!file || typeof file.slice !== 'function') return false;
+  const bytes = new Uint8Array(await file.slice(0, 4096).arrayBuffer());
+  const ext = String(extension || '').toLowerCase();
+
+  if (ext === 'jpg' || ext === 'jpeg') return startsWithBytes(bytes, [0xff, 0xd8, 0xff]);
+  if (ext === 'png') return startsWithBytes(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (ext === 'gif') return ascii(bytes, 0, 6) === 'GIF87a' || ascii(bytes, 0, 6) === 'GIF89a';
+  if (ext === 'webp') return ascii(bytes, 0, 4) === 'RIFF' && ascii(bytes, 8, 4) === 'WEBP';
+  if (ext === 'bmp') return ascii(bytes, 0, 2) === 'BM';
+  if (ext === 'ico') return startsWithBytes(bytes, [0x00, 0x00, 0x01, 0x00]);
+  if (ext === 'svg') {
+    const text = new TextDecoder().decode(bytes).replace(/^\uFEFF/, '');
+    return /^\s*(?:<\?xml[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg(?:\s|>)/i.test(text);
+  }
+  if (['avif', 'heic', 'heif'].includes(ext)) {
+    if (ascii(bytes, 4, 4) !== 'ftyp') return false;
+    const brands = [];
+    for (let i = 8; i + 4 <= Math.min(bytes.length, 40); i += 4) brands.push(ascii(bytes, i, 4));
+    if (ext === 'avif') return brands.some((brand) => brand === 'avif' || brand === 'avis');
+    return brands.some((brand) => ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1'].includes(brand));
+  }
+  return false;
 }
 
 export const authenticatedUpload = async (c) => {
@@ -117,6 +151,15 @@ export async function upload(c) {
         continue;
       }
 
+      if (!(await hasMatchingImageSignature(uploadFile, fileExtension))) {
+        uploadResults.push({
+          error: '文件内容与图片扩展名不匹配',
+          blocked: true,
+          fileName,
+        });
+        continue;
+      }
+
       if (settings.allowSvg === false &&
           (uploadFile.type === 'image/svg+xml' || fileExtension === 'svg')) {
         uploadResults.push({ error: '本站已禁止上传 SVG 图片', blocked: true, fileName });
@@ -163,9 +206,15 @@ export async function upload(c) {
       const timestamp = Date.now();
       const mimeType = String(uploadFile.type || '').toLowerCase();
 
-      if (settings.nsfw && settings.nsfw.enabled && mimeType.startsWith('image/')) {
+      if (settings.nsfw && settings.nsfw.enabled) {
         try {
           const verdict = await moderateImage(`${origin}/file/${fileKey}`, settings);
+          if (verdict && verdict.error && settings.nsfw.failurePolicy === 'block') {
+            const removed = messageId ? await deleteTelegramMessage(env, messageId) : false;
+            if (removed) await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
+            uploadResults.push({ error: '内容审核服务异常，已按站点策略拦截', blocked: true, fileName });
+            continue;
+          }
           if (verdict && verdict.flagged) {
             const removed = messageId ? await deleteTelegramMessage(env, messageId) : false;
             if (removed) {
@@ -175,7 +224,13 @@ export async function upload(c) {
             continue;
           }
         } catch (e) {
-          console.warn('鉴黄调用异常（放行）:', e);
+          console.warn('鉴黄调用异常:', e);
+          if (settings.nsfw.failurePolicy === 'block') {
+            const removed = messageId ? await deleteTelegramMessage(env, messageId) : false;
+            if (removed) await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
+            uploadResults.push({ error: '内容审核服务异常，已按站点策略拦截', blocked: true, fileName });
+            continue;
+          }
         }
       }
 

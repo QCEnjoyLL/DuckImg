@@ -4,7 +4,7 @@
 import {
   listUserSummaries, getAdminStats, getUserByName, saveUser, isAdmin, loadUserFiles, deleteUserRecord,
 } from '../utils/users';
-import { getSettings, saveSettings } from '../utils/settings';
+import { getSettings, saveSettings, SettingsValidationError } from '../utils/settings';
 import { sendTestEmail, sendViolationWarning } from '../utils/email';
 import { deleteTelegramMessage, setUserImagesBlocked } from '../upload';
 import { setUserBanned } from '../utils/bans';
@@ -13,6 +13,17 @@ import {
   kvGet, kvPut, dbDeleteImage, dbGetImage, dbRecentImages, dbGetUserById,
 } from '../utils/db';
 import { runDbBackup, buildBackupSql, getBackupHistory } from '../utils/backup';
+
+function normalizeUploadLimit(value) {
+  if (value === null || value === '' || value === undefined) return { valid: true, value: null };
+  const text = typeof value === 'string' ? value.trim() : '';
+  const parsed = typeof value === 'number'
+    ? value
+    : (/^\d+$/.test(text) ? Number(text) : Number.NaN);
+  return Number.isSafeInteger(parsed) && parsed >= 0
+    ? { valid: true, value: parsed }
+    : { valid: false, value: null };
+}
 
 export async function adminUserImages(c) {
   try {
@@ -299,13 +310,9 @@ export async function adminSetUserLimit(c) {
     if (!user) return c.json({ error: '用户不存在' }, 404);
     if (isAdmin(user.username, c.env)) return c.json({ error: '不能修改管理员上传上限' }, 400);
 
-    if (uploadLimit === null || uploadLimit === '' || uploadLimit === undefined) {
-      user.uploadLimit = null;
-    } else {
-      const n = parseInt(uploadLimit, 10);
-      if (Number.isNaN(n) || n < 0) return c.json({ error: '上限必须为非负整数' }, 400);
-      user.uploadLimit = n;
-    }
+    const normalizedLimit = normalizeUploadLimit(uploadLimit);
+    if (!normalizedLimit.valid) return c.json({ error: '上限必须为非负整数' }, 400);
+    user.uploadLimit = normalizedLimit.value;
     await saveUser(c.env, user);
     return c.json({ message: '已更新上传上限', uploadLimit: user.uploadLimit });
   } catch (error) {
@@ -332,12 +339,9 @@ export async function adminBatchUsers(c) {
 
     let limitValue = null;
     if (action === 'limit') {
-      if (uploadLimit === null || uploadLimit === '' || uploadLimit === undefined) limitValue = null;
-      else {
-        const n = parseInt(uploadLimit, 10);
-        if (Number.isNaN(n) || n < 0) return c.json({ error: '上限必须为非负整数' }, 400);
-        limitValue = n;
-      }
+      const normalizedLimit = normalizeUploadLimit(uploadLimit);
+      if (!normalizedLimit.valid) return c.json({ error: '上限必须为非负整数' }, 400);
+      limitValue = normalizedLimit.value;
     }
 
     let ok = 0;
@@ -404,8 +408,15 @@ export async function adminGetSettings(c) {
           apiKey: '',
         },
         smtp: {
-          ...settings.email.smtp,
+          host: settings.email.smtp.host,
+          port: settings.email.smtp.port,
+          username: settings.email.smtp.username,
+          encryption: settings.email.smtp.encryption,
+          fromAddress: settings.email.smtp.fromAddress,
+          fromName: settings.email.smtp.fromName,
           passwordSet: !!settings.email.smtp.password,
+          passwordSource: settings.email.smtp.passwordSource || 'none',
+          passwordError: settings.email.smtp.passwordError || '',
           password: '',
         },
       },
@@ -430,7 +441,13 @@ export async function adminSaveSettings(c) {
     await saveSettings(c.env, patch);
     return c.json({ message: '配置已保存' });
   } catch (error) {
-    console.error('保存配置错误:', error);
+    if (error instanceof SettingsValidationError) {
+      return c.json({ error: error.message }, 400);
+    }
+    console.error(JSON.stringify({
+      event: 'admin_settings_save_failed',
+      error: error && error.message ? error.message : String(error),
+    }));
     return c.json({ error: '保存配置失败' }, 500);
   }
 }

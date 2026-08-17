@@ -410,6 +410,69 @@
         }
         .switch-row { display:flex; align-items:center; gap:8px; margin-bottom:1rem; }
 
+        .smtp-clear-row {
+            margin-top: 12px;
+            padding: 11px 13px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.035);
+        }
+        .smtp-clear-control {
+            display: inline-flex !important;
+            align-items: flex-start;
+            gap: 10px;
+            min-height: 0 !important;
+            cursor: pointer;
+            user-select: none;
+        }
+        .form-row .smtp-clear-control input[type="checkbox"] {
+            appearance: auto;
+            -webkit-appearance: checkbox;
+            flex: 0 0 auto;
+            width: 18px;
+            height: 18px;
+            min-height: 18px;
+            margin: 1px 0 0;
+            padding: 0;
+            border-radius: 4px;
+            line-height: normal;
+            accent-color: var(--primary-color, #4361ee);
+            cursor: pointer;
+        }
+        .form-row .smtp-clear-control input[type="checkbox"]:focus-visible {
+            outline: 3px solid color-mix(in srgb, var(--primary-color, #4361ee) 28%, transparent);
+            outline-offset: 3px;
+        }
+        .smtp-clear-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .smtp-clear-title {
+            color: var(--text-color);
+            font-size: 0.86rem;
+            line-height: 1.25;
+        }
+        .smtp-clear-description {
+            color: var(--text-light);
+            font-size: 0.78rem;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+        .smtp-clear-row:has(input:checked) {
+            border-color: rgba(239, 68, 68, 0.45);
+            background: rgba(239, 68, 68, 0.08);
+        }
+        .smtp-clear-row:has(input:disabled) {
+            opacity: 0.52;
+        }
+        .smtp-clear-row:has(input:disabled) .smtp-clear-control {
+            cursor: not-allowed;
+        }
+        body.dark-mode .smtp-clear-row {
+            background: rgba(239, 68, 68, 0.055);
+        }
+
         /* 测试发信：标签单独一行，输入+按钮同一行严格等高对齐 */
         .email-test-block {
             display: flex;
@@ -741,7 +804,7 @@
                 <div class="admin-section" data-admin-tab="system">
                     <h3><i class="ri-settings-3-line"></i> <span data-i18n="admin.upload">上传与验证</span></h3>
                     <div class="form-inline">
-                        <div class="form-row"><label>每日上传上限（0 = 不限制）</label><input type="number" id="dailyLimit" min="0" placeholder="0"></div>
+                        <div class="form-row"><label>每日上传上限（0 = 不限制）</label><input type="number" id="dailyLimit" min="0" step="1" placeholder="0"></div>
                     </div>
                     <div class="switch-row">
                         <input type="checkbox" id="requireVerify"><label for="requireVerify">强制邮箱验证才能登录/上传</label>
@@ -773,6 +836,7 @@
                         <div class="form-row"><label>图片URL字段名</label><input type="text" id="nsfwImageParam" placeholder="url"></div>
                         <div class="form-row"><label>分数取值路径</label><input type="text" id="nsfwScorePath" placeholder="如 predictions.adult / score"></div>
                         <div class="form-row"><label>违规阈值</label><input type="number" id="nsfwThreshold" min="0" step="0.01" placeholder="0.8"></div>
+                        <div class="form-row"><label>审核服务异常时</label><select id="nsfwFailurePolicy"><option value="allow">放行并记录日志</option><option value="block">拦截上传</option></select></div>
                     </div>
                     <p style="font-size:0.8rem;color:var(--text-light);margin:4px 0 10px;">免费示例·ModerateContent：GET，URL=https://api.moderatecontent.com/moderate/，附加参数 key=你的KEY，字段名 url，分数路径 predictions.adult，阈值 60。</p>
                     <button class="save-btn" id="saveNsfw" data-i18n="admin.nsfw.save">保存鉴黄配置</button>
@@ -800,8 +864,8 @@
                     <!-- SMTP 配置 -->
                     <div id="smtpFields" style="display:none;">
                         <div class="form-inline">
-                            <div class="form-row"><label>SMTP 主机</label><input type="text" id="smtpHost" placeholder="smtp.exmail.qq.com"></div>
-                            <div class="form-row"><label>端口</label><input type="number" id="smtpPort" placeholder="465"></div>
+                            <div class="form-row"><label>SMTP 主机</label><input type="text" id="smtpHost" maxlength="255" placeholder="smtp.exmail.qq.com"></div>
+                            <div class="form-row"><label>端口</label><input type="number" id="smtpPort" min="1" max="65535" step="1" placeholder="465"></div>
                             <div class="form-row"><label>加密方式</label>
                                 <select id="smtpEncryption">
                                     <option value="ssl">SSL/TLS（隐式，常用 465）</option>
@@ -812,11 +876,21 @@
                         </div>
                         <div class="form-inline">
                             <div class="form-row"><label>用户名（登录账号）</label><input type="text" id="smtpUsername" placeholder="发信邮箱账号" autocomplete="off"></div>
-                            <div class="form-row"><label>密码 / 授权码（Cloudflare Secret: SMTP_PASSWORD）</label><input type="password" id="smtpPassword" disabled placeholder="请通过 Wrangler Secret 配置" autocomplete="new-password"></div>
+                            <div class="form-row"><label>密码 / 授权码</label><input type="password" id="smtpPassword" placeholder="输入后加密保存；留空不修改" autocomplete="new-password"></div>
                         </div>
+                        <div class="form-row smtp-clear-row">
+                            <label class="smtp-clear-control" for="smtpClearPassword">
+                                <input type="checkbox" id="smtpClearPassword" autocomplete="off" aria-describedby="smtpClearDescription">
+                                <span class="smtp-clear-copy">
+                                    <span class="smtp-clear-title">清除已保存的 SMTP 密码</span>
+                                    <span class="smtp-clear-description" id="smtpClearDescription">勾选并保存后移除当前密码；输入新密码时无需勾选。</span>
+                                </span>
+                            </label>
+                        </div>
+                        <p id="smtpPasswordHint" style="font-size:0.8rem;color:var(--text-light);margin:8px 0 0;">密码会使用 JWT_SECRET 派生密钥加密后保存到 D1，不会回传到浏览器。</p>
                         <div class="form-inline">
-                            <div class="form-row"><label>发件地址</label><input type="text" id="smtpFromAddress" placeholder="noreply@yourdomain.com"></div>
-                            <div class="form-row"><label>发件人名称</label><input type="text" id="smtpFromName" placeholder="鸭鸭图床"></div>
+                            <div class="form-row"><label>发件地址</label><input type="text" id="smtpFromAddress" maxlength="320" placeholder="noreply@yourdomain.com"></div>
+                            <div class="form-row"><label>发件人名称</label><input type="text" id="smtpFromName" maxlength="200" placeholder="鸭鸭图床"></div>
                         </div>
                     </div>
 

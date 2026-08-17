@@ -11,7 +11,7 @@ ADMIN_USERNAME = "你的管理员用户名"
 # BACKUP_ENCRYPTION_KEY = "备份专用高强度随机字符串"
 # RESEND_API_KEY = "re_xxx"
 # RESEND_FROM = "图床 <noreply@yourdomain.com>"
-# SMTP_PASSWORD = "SMTP密码或授权码"
+# SMTP_PASSWORD = "SMTP密码或授权码（仅测试旧版 Secret 回退；也可在后台配置）"
 # NSFW_API_KEY = "鉴黄服务密钥"
 # NSFW_EXTRA_PARAMS = "鉴黄服务附加查询参数"
 # 仅本地开发可设为 1，让未配置邮件时返回验证码；禁止在线上启用

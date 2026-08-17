@@ -19,7 +19,7 @@
  */
 
 import { kvGet, kvPut } from './db.js';
-import { getSettings, settingsForStorage } from './settings.js';
+import { getSettings, settingsForBackup } from './settings.js';
 
 const CHUNK_ROWS = 1000;                 // 分页拉取行数（控制单次 D1 响应大小与查询次数）
 const MAX_ROWS_PER_INSERT = 50;          // 单条 INSERT 最多行数
@@ -57,10 +57,10 @@ function sanitizeBackupRow(table, row) {
   if (table !== 'kv_store' || row.key !== 'config:settings') return row;
   try {
     const parsed = JSON.parse(row.value);
-    return { ...row, value: JSON.stringify(settingsForStorage(parsed)) };
+    return { ...row, value: JSON.stringify(settingsForBackup(parsed)) };
   } catch {
     // 解析失败时不把未知的旧配置内容带入异地备份。
-    return { ...row, value: JSON.stringify(settingsForStorage(null)) };
+    return { ...row, value: JSON.stringify(settingsForBackup(null)) };
   }
 }
 

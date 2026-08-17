@@ -1,5 +1,5 @@
 import { env, exports } from 'cloudflare:workers';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   createVerificationCode,
   generateToken,
@@ -12,6 +12,8 @@ import {
   kvPut,
 } from '../src/functions/utils/db.js';
 import { buildBackupSql } from '../src/functions/utils/backup.js';
+import { getSettings, resetSettingsCacheForTests, saveSettings } from '../src/functions/utils/settings.js';
+import { hasMatchingImageSignature } from '../src/functions/upload.js';
 import { deleteUserRecord, getUserByName, saveUser } from '../src/functions/utils/users.js';
 
 const jsonHeaders = { 'content-type': 'application/json' };
@@ -201,6 +203,174 @@ describe('quota and request limits', () => {
 
     expect(response.status).toBe(413);
     expect(await response.json()).toMatchObject({ error: '单次上传请求不能超过 50MB' });
+  });
+
+  it('checks image content signatures instead of trusting the file name and MIME', async () => {
+    const pngHeader = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+    const validPng = new File([pngHeader], 'valid.png', { type: 'image/png' });
+    const fakePng = new File(['<script>alert(1)</script>'], 'fake.png', { type: 'image/png' });
+
+    expect(await hasMatchingImageSignature(validPng, 'png')).toBe(true);
+    expect(await hasMatchingImageSignature(fakePng, 'png')).toBe(false);
+    expect(await hasMatchingImageSignature(validPng, 'jpg')).toBe(false);
+  });
+});
+
+describe('administrator-managed SMTP credentials', () => {
+  beforeEach(async () => {
+    await env.DB.prepare('DELETE FROM kv_store WHERE key = ?').bind('config:settings').run();
+    resetSettingsCacheForTests();
+  });
+
+  it('encrypts the SMTP password in D1 and never returns it from the admin API', async () => {
+    const password = `smtp-${crypto.randomUUID()}`;
+    await saveSettings(env, {
+      email: {
+        provider: 'smtp',
+        smtp: {
+          host: 'smtp.example.com',
+          fromAddress: 'noreply@example.com',
+          password,
+        },
+      },
+    });
+
+    const row = await env.DB.prepare('SELECT value FROM kv_store WHERE key = ?').bind('config:settings').first();
+    expect(row.value).not.toContain(password);
+    const persisted = JSON.parse(row.value);
+    expect(persisted.email.smtp.password).toBe('');
+    expect(persisted.email.smtp.passwordEncrypted).toMatch(/^enc:v1:/);
+    expect((await getSettings(env)).email.smtp.password).toBe(password);
+    const backup = await buildBackupSql(env);
+    expect(backup.sql).not.toContain(password);
+    expect(backup.sql).not.toContain(persisted.email.smtp.passwordEncrypted);
+
+    const admin = await getUserByName(env, 'testadmin')
+      || await createTestUser({ username: 'testadmin' });
+    const token = await generateToken({
+      id: admin.id,
+      username: admin.username,
+      role: 'admin',
+      tv: admin.tokenVersion,
+    }, env);
+    const response = await request('/api/admin/settings', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(JSON.stringify(body)).not.toContain(password);
+    expect(body.settings.email.smtp).toMatchObject({ password: '', passwordSet: true, passwordSource: 'database' });
+    expect(body.settings.email.smtp.passwordEncrypted).toBeUndefined();
+  });
+
+  it('decrypts an encrypted SMTP password after a cold start', async () => {
+    const password = `cold-start-${crypto.randomUUID()}`;
+    await saveSettings(env, { email: { smtp: { password } } });
+
+    resetSettingsCacheForTests();
+
+    const settings = await getSettings(env);
+    expect(settings.email.smtp.password).toBe(password);
+    expect(settings.email.smtp.passwordSource).toBe('database');
+    expect(settings.email.smtp.passwordError).toBeUndefined();
+  });
+
+  it('clears the encrypted password without falling back to the legacy Secret', async () => {
+    const secretEnv = {
+      DB: env.DB,
+      JWT_SECRET: 'smtp-clear-test-key',
+      SMTP_PASSWORD: 'legacy-password-must-not-return',
+    };
+    await saveSettings(secretEnv, { email: { smtp: { password: 'database-password' } } });
+    await saveSettings(secretEnv, { email: { smtp: { clearPassword: true } } });
+
+    const row = await env.DB.prepare('SELECT value FROM kv_store WHERE key = ?').bind('config:settings').first();
+    const persisted = JSON.parse(row.value);
+    expect(persisted.email.smtp.passwordEncrypted).toBe('');
+    expect(persisted.email.smtp.passwordUseSecret).toBe(false);
+
+    resetSettingsCacheForTests();
+    const settings = await getSettings(secretEnv);
+    expect(settings.email.smtp.password).toBe('');
+    expect(settings.email.smtp.passwordSource).toBe('none');
+  });
+
+  it('uses the legacy Secret until an admin saves a replacement in D1', async () => {
+    const secretEnv = {
+      DB: env.DB,
+      JWT_SECRET: 'smtp-migration-test-key',
+      SMTP_PASSWORD: 'legacy-secret-password',
+    };
+
+    expect((await getSettings(secretEnv)).email.smtp.password).toBe('legacy-secret-password');
+    expect((await getSettings(secretEnv)).email.smtp.passwordSource).toBe('secret');
+
+    await saveSettings(secretEnv, { email: { smtp: { password: 'new-database-password' } } });
+    resetSettingsCacheForTests();
+    const migrated = await getSettings(secretEnv);
+    expect(migrated.email.smtp.password).toBe('new-database-password');
+    expect(migrated.email.smtp.passwordSource).toBe('database');
+
+    const row = await env.DB.prepare('SELECT value FROM kv_store WHERE key = ?').bind('config:settings').first();
+    const persisted = JSON.parse(row.value);
+    expect(persisted.email.smtp.passwordUseSecret).toBe(false);
+    expect(row.value).not.toContain('new-database-password');
+  });
+
+  it('reports an unusable password when JWT_SECRET changes', async () => {
+    const originalEnv = { DB: env.DB, JWT_SECRET: 'original-settings-key' };
+    await saveSettings(originalEnv, { email: { smtp: { password: 'encrypted-password' } } });
+
+    resetSettingsCacheForTests();
+    const settings = await getSettings({ DB: env.DB, JWT_SECRET: 'different-settings-key' });
+    expect(settings.email.smtp.password).toBe('');
+    expect(settings.email.smtp.passwordSource).toBe('database');
+    expect(settings.email.smtp.passwordError).toContain('无法解密');
+  });
+
+  it('validates admin settings and returns a useful 400 response', async () => {
+    const admin = await getUserByName(env, 'testadmin')
+      || await createTestUser({ username: 'testadmin' });
+    const token = await generateToken({
+      id: admin.id,
+      username: admin.username,
+      role: 'admin',
+      tv: admin.tokenVersion,
+    }, env);
+    const headers = { ...jsonHeaders, Authorization: `Bearer ${token}` };
+
+    const invalidPort = await request('/api/admin/settings', {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ email: { smtp: { port: 70000 } } }),
+    });
+    expect(invalidPort.status).toBe(400);
+    expect(await invalidPort.json()).toMatchObject({ error: 'SMTP 端口必须是 1–65535 的整数' });
+
+    const headerInjection = await request('/api/admin/settings', {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ email: { smtp: { fromName: 'DuckImg\r\nBcc: attacker@example.com' } } }),
+    });
+    expect(headerInjection.status).toBe(400);
+
+    const fractionalLimit = await request('/api/admin/settings', {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ dailyUploadLimit: 1.5 }),
+    });
+    expect(fractionalLimit.status).toBe(400);
+
+    const regularUser = await createTestUser();
+    const malformedUserLimit = await request(`/api/admin/users/${encodeURIComponent(regularUser.username)}/limit`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ uploadLimit: '12items' }),
+    });
+    expect(malformedUserLimit.status).toBe(400);
+
+    await expect(saveSettings(env, { nsfw: { method: 'DELETE' } })).rejects.toThrow('鉴黄请求方式无效');
+    await expect(saveSettings(env, { email: { smtp: { encryption: 'auto' } } })).rejects.toThrow('SMTP 加密方式无效');
   });
 });
 
