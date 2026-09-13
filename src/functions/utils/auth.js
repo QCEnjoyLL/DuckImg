@@ -202,6 +202,29 @@ export function needsPasswordRehash(stored) {
   return !stored || !String(stored).startsWith(PBKDF2_PREFIX);
 }
 
+/**
+ * 登录时"用户不存在"路径的等量运算。
+ *
+ * 若 miss 路径直接返回，它的耗时会明显短于"用户存在但密码错误"（后者要跑一次
+ * PBKDF2，默认 10 万次迭代），攻击者据此即可枚举出哪些账号真实存在。
+ * 这里用一个固定的丢弃哈希做一次等价运算，把两条路径的耗时对齐。
+ *
+ * 首次调用时惰性生成（只生成一次，之后复用）。
+ */
+const DUMMY_PASSWORD = 'duckimg-nonexistent-account-placeholder';
+let _dummyHashPromise = null;
+
+export function consumeDummyPasswordCheck(password) {
+  if (!_dummyHashPromise) {
+    _dummyHashPromise = hashPassword(DUMMY_PASSWORD).catch(() => null);
+  }
+  return _dummyHashPromise.then((dummy) => {
+    if (!dummy) return false;
+    // 用调用方提供的密码去比对丢弃哈希，运算量与真实校验一致
+    return verifyPassword(String(password ?? ''), dummy);
+  });
+}
+
 /** 验证密码（兼容旧 SHA-256 hex） */
 export async function verifyPassword(password, stored) {
   if (!stored) return false;

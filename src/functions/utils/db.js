@@ -298,13 +298,25 @@ export async function dbGetImage(env, id) {
 
 export async function dbUpsertImage(env, img) {
   if (!img || !img.id) return false;
-  const tags = JSON.stringify(Array.isArray(img.tags) ? img.tags : []);
+  // 只有调用方**显式提供**这些列时才写；未提供则绑 NULL，交给下面冲突分支的
+  // COALESCE 保留原值。否则上传路径（不带 tags/liked/blocked）会在遇到重复 id 时
+  // 把管理员设的 blocked=1 重置为 0、把用户标签清空、把收藏取消。
+  const hasTags = Array.isArray(img.tags);
+  const hasLiked = typeof img.liked === 'boolean' || typeof img.liked === 'number';
+  const hasBlocked = typeof img.blocked === 'boolean' || typeof img.blocked === 'number';
+  const hasLabel = img.Label !== undefined || img.label !== undefined;
+  const hasListType = img.ListType !== undefined || img.list_type !== undefined;
+
+  const tags = hasTags ? JSON.stringify(img.tags) : null;
   const uploadTime = img.uploadTime || img.TimeStamp || Date.now();
   await db(env)
     .prepare(
       `INSERT INTO images (
         id, user_id, file_name, file_size, upload_time, url, message_id, tags, liked, blocked, label, list_type, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (
+        ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8,
+        COALESCE(?9, 0), COALESCE(?10, 0), COALESCE(?11, 'None'), COALESCE(?12, 'None'), ?13
+      )
       ON CONFLICT(id) DO UPDATE SET
         user_id = COALESCE(excluded.user_id, images.user_id),
         file_name = COALESCE(excluded.file_name, images.file_name),
@@ -312,11 +324,12 @@ export async function dbUpsertImage(env, img) {
         upload_time = COALESCE(excluded.upload_time, images.upload_time),
         url = COALESCE(excluded.url, images.url),
         message_id = COALESCE(excluded.message_id, images.message_id),
-        tags = excluded.tags,
-        liked = excluded.liked,
-        blocked = excluded.blocked,
-        label = excluded.label,
-        list_type = excluded.list_type`
+        tags = COALESCE(excluded.tags, images.tags),
+        liked = COALESCE(?9, images.liked),
+        blocked = COALESCE(?10, images.blocked),
+        label = COALESCE(?11, images.label),
+        list_type = COALESCE(?12, images.list_type),
+        created_at = COALESCE(images.created_at, excluded.created_at)`
     )
     .bind(
       img.id,
@@ -327,10 +340,10 @@ export async function dbUpsertImage(env, img) {
       img.url || `/file/${img.id}`,
       img.messageId || img.message_id || null,
       tags,
-      img.liked ? 1 : 0,
-      img.blocked ? 1 : 0,
-      img.Label || img.label || 'None',
-      img.ListType || img.list_type || 'None',
+      hasLiked ? (img.liked ? 1 : 0) : null,
+      hasBlocked ? (img.blocked ? 1 : 0) : null,
+      hasLabel ? (img.Label || img.label || 'None') : null,
+      hasListType ? (img.ListType || img.list_type || 'None') : null,
       img.createdAt || Date.now(),
     )
     .run();

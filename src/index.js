@@ -197,6 +197,12 @@ async function scheduled(event, env, _ctx) {
   try {
     await env.DB.prepare('DELETE FROM verification_codes WHERE expires_at < ?').bind(now).run();
   } catch (e) { logScheduledCleanupFailure('verification_codes', e); }
+  // upload_counts 此前永不清理：每用户每天一行、只增不减（仅在删号时移除）。
+  // 保留 90 天足够配额统计与排查，再久就没用了。
+  try {
+    const cutoff = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    await env.DB.prepare('DELETE FROM upload_counts WHERE day < ?').bind(cutoff).run();
+  } catch (e) { logScheduledCleanupFailure('upload_counts', e); }
 }
 
 export default { fetch: app.fetch, scheduled };

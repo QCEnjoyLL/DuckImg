@@ -207,7 +207,9 @@
                         <span>上传图片</span>
                     </h2>
                     <p class="upload-subtitle">简单、快速、安全的图片托管服务</p>
-                    <div id="uploadQuota" class="upload-quota" style="display:none;margin-top:10px;font-size:0.9rem;font-weight:500;"></div>
+                    <!-- hidden 属性而非内联 display:none —— .upload-quota 在 CSS 里是
+                         display:inline-flex !important，内联 display 会被它压过，只有 [hidden] 能可靠隐藏 -->
+                    <div id="uploadQuota" class="upload-quota" hidden></div>
                 </div>
 
                 <div class="upload-area" id="dropArea">

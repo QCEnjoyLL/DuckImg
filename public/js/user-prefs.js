@@ -702,13 +702,105 @@
     return 2560;
   }
 
+  /**
+   * 画面里是否存在半透明/全透明像素。
+   * PNG / WebP / GIF / AVIF 都可能带 alpha，导出 JPEG 会把透明区域压成实色底（黑块）。
+   */
+  function hasTransparentPixels(ctx, w, h) {
+    try {
+      const data = ctx.getImageData(0, 0, w, h).data;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] < 255) return true;
+      }
+    } catch (_) {
+      // 画布被标记污染（跨域图）时读不到像素；无法判定就按原样保留格式
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 优先按期望格式编码；浏览器不支持该格式时会静默回退成 PNG，
+   * 这里靠检查产物 MIME 识别（例如旧版 iOS Safari 编不出 WebP）。
+   */
+  async function encodeCanvas(canvas, mime, quality) {
+    if (canvas.convertToBlob) {
+      try {
+        const blob = await canvas.convertToBlob({ type: mime, quality });
+        if (blob && blob.type === mime) return blob;
+      } catch (_) { /* 落到 toBlob 路径 */ }
+    }
+    const expected = mime;
+    const blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), expected, quality));
+    if (!blob) return null;
+    return blob.type === expected ? blob : null;
+  }
+
+  /**
+   * 透明图在「开启自动压缩」且体积超过此阈值时，询问用户是否放弃透明换取体积。
+   * 阈值以下的小图（图标、logo）直接保留透明，不打扰用户。
+   */
+  const TRANSPARENT_ASK_BYTES = 1.5 * 1024 * 1024;
+
+  /**
+   * 询问用户如何取舍透明与体积。
+   * 宿主可覆盖 window.UserPrefs.onTransparentChoice；默认实现用 window.confirm。
+   * 返回 'compress'（放弃透明换小体积）或 'keep'（保持透明）。
+   */
+  async function askTransparentCompression(file, prefs) {
+    const handler = (typeof window !== 'undefined' && window.UserPrefs && window.UserPrefs.onTransparentChoice)
+      || null;
+    const name = (file && file.name) || 'image';
+    const sizeText = `${(file.size / 1024 / 1024).toFixed(1)}MB`;
+
+    if (handler) {
+      try {
+        const r = await handler({ file, name, sizeText });
+        if (r === 'compress' || r === 'keep') return r;
+      } catch (_) { /* 宿主处理失败则退回默认询问 */ }
+    }
+
+    try {
+      // 默认：取消（false）→ 保持透明，不做破坏性选择
+      return window.confirm(
+        `${name}（${sizeText}）含有透明背景。\n\n`
+        + `压缩为 JPEG 能明显减小体积，但会失去透明背景（变成白底）。\n\n`
+        + `确定 = 压缩（失去透明）　取消 = 保留透明（体积较大）`,
+      ) ? 'compress' : 'keep';
+    } catch (_) {
+      return 'keep';
+    }
+  }
+
+  /**
+   * 是否跳过一切处理、直接上传原文件。
+   * 透明图必须和普通图一样能走这条捷径 —— 否则"关掉压缩"时透明图
+   * 仍会被解码再重编码，与用户预期（原图不动）不符。
+   */
+  /**
+   * 是否跳过一切处理、直接上传原文件。
+   * 注意：走到这里时 needProcess 一定为 true（否则上面已经早退），
+   * 所以只需判断「哪些处理是当前设置真正要求的」。
+   */
+  function shouldPassThrough(file, prefs, keepAlpha) {
+    if (prefs.autoCompress || prefs.watermark) return false;
+    if (!prefs.exif) return false;          // 关掉"保留 EXIF"就必须重编码才能剥元数据
+    // 透明图：压缩关 + 保留 EXIF → 一字节不动
+    if (keepAlpha) return true;
+    // 不透明图走到这里只剩「WebP 源图值得重压」这一种情况，交由下面处理
+    return false;
+  }
+
   async function processImageFile(file, prefs) {
     if (!file || !file.type || !file.type.startsWith('image/')) return file;
     if (file.type === 'image/svg+xml') return file;
 
     const p = prefs || read();
+    // 无需任何处理（压缩关、无水印、保留 EXIF）→ 原样直传。
+    // 这里**不能**再要求"质量档为高质量"：质量是压缩参数，压缩都关了它就不是
+    // 重编码的理由；否则用户在"压缩关 + 质量中/低 + 保留 EXIF"时仍会被重编码。
     const needProcess = p.autoCompress || p.watermark || !p.exif;
-    if (!needProcess && p.quality === 'high') return file;
+    if (!needProcess) return file;
 
     let bitmap;
     try {
@@ -750,24 +842,68 @@
         ctx.restore();
       }
 
-      if (p.exif && !p.autoCompress && !p.watermark && p.quality === 'high') {
+      // 透明像素必须保住：JPEG 没有 alpha 通道，转码会把透明区压成实色黑块。
+      const keepAlpha = hasTransparentPixels(ctx, w, h);
+
+      // 什么都不用做时原样直传（透明图同样适用）
+      if (shouldPassThrough(p, keepAlpha)) {
         bitmap.close && bitmap.close();
         return file;
       }
 
-      const mime = file.type === 'image/png' && !p.autoCompress ? 'image/png' : 'image/jpeg';
-      const quality = mime === 'image/jpeg' ? qualityToJpeg(p.quality) : undefined;
+      // 透明图 + 开了压缩 + 体积超过阈值 → 让用户选：保透明，还是压小（转白底 JPEG）
+      let compressTransparent = false;
+      if (keepAlpha && p.autoCompress && file.size > TRANSPARENT_ASK_BYTES) {
+        const choice = await askTransparentCompression(file, p);
+        if (choice === 'compress') {
+          compressTransparent = true;
+          // JPEG 无 alpha：把透明区域按白色填充，而不是留成黑块
+          const flat = document.createElement('canvas');
+          flat.width = w;
+          flat.height = h;
+          const fctx = flat.getContext('2d');
+          fctx.fillStyle = '#ffffff';
+          fctx.fillRect(0, 0, w, h);
+          fctx.drawImage(canvas, 0, 0);
 
-      const blob = await new Promise((resolve) => {
-        canvas.toBlob((b) => resolve(b), mime, quality);
-      });
+          const jpeg = await encodeCanvas(flat, 'image/jpeg', qualityToJpeg(p.quality));
+          bitmap.close && bitmap.close();
+          if (!jpeg) return file;
+          const base = (file.name || 'image').replace(/\.[^.]+$/, '');
+          return new File([jpeg], `${base}.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
+        }
+      }
+
+      // WebP 源图即使不压缩也值得按质量档重编码（体积明显更小）
+      const canRecompress = p.autoCompress || p.watermark || !p.exif || file.type === 'image/webp';
+      if (!compressTransparent && (keepAlpha || canRecompress)) {
+        // 透明图走 PNG（无损 alpha，浏览器普遍可编码）；不透明图才用 JPEG 压缩。
+        // 注意：这里刻意不用 WebP —— 该格式在 Telegram 文档上传链路上未经线上验证，曾导致取不到 file_id。
+        const wantMime = keepAlpha ? 'image/png' : 'image/jpeg';
+        const blob = await encodeCanvas(canvas, wantMime, keepAlpha ? undefined : qualityToJpeg(p.quality));
+        bitmap.close && bitmap.close();
+        if (!blob) return file;
+
+        // 同格式重编码只保留更优结果；去 EXIF/加水印属于功能性变更，允许变大。
+        const formatUnchanged = blob.type === file.type;
+        const functionalChange = !p.exif || p.watermark;
+        const safeShrink = blob.size <= file.size * 1.05;
+        if (formatUnchanged && !functionalChange && !safeShrink) {
+          return file;
+        }
+        if (formatUnchanged && keepAlpha && blob.size > file.size) {
+          // 透明图重编码后反而更大（PNG 无损，重编码可能略胀），原图不动更划算
+          return file;
+        }
+
+        const outMime = blob.type;
+        const base = (file.name || 'image').replace(/\.[^.]+$/, '');
+        const ext = outMime === 'image/jpeg' ? 'jpg' : (outMime === 'image/png' ? 'png' : 'webp');
+        return new File([blob], `${base}.${ext}`, { type: outMime, lastModified: Date.now() });
+      }
 
       bitmap.close && bitmap.close();
-      if (!blob) return file;
-
-      const base = (file.name || 'image').replace(/\.[^.]+$/, '');
-      const ext = mime === 'image/png' ? 'png' : 'jpg';
-      return new File([blob], `${base}.${ext}`, { type: mime, lastModified: Date.now() });
+      return file;
     } catch (e) {
       console.warn('图片预处理失败，使用原文件', e);
       try { bitmap && bitmap.close && bitmap.close(); } catch (_) {}

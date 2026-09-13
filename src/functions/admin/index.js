@@ -7,6 +7,7 @@ import {
 import { getSettings, saveSettings, SettingsValidationError } from '../utils/settings';
 import { sendTestEmail, sendViolationWarning } from '../utils/email';
 import { deleteTelegramMessage, setUserImagesBlocked } from '../upload';
+import { purgeImageEdgeCache } from '../file/[id]';
 import { setUserBanned } from '../utils/bans';
 import { createPreviewTicket } from '../utils/auth';
 import {
@@ -60,6 +61,8 @@ export async function adminDeleteUserImage(c) {
       if (!removed) return c.json({ error: '存储端删除失败，图库记录已保留，请稍后重试' }, 502);
     }
     if (img) await dbDeleteImage(c.env, fileId);
+    // 清边缘缓存：否则直链仍会从 Cloudflare 边缘吐图
+    if (img) c.executionCtx.waitUntil(purgeImageEdgeCache(fileId, new URL(c.req.url).origin));
     return c.json({ message: img ? '图片已删除' : '失效记录已清理' });
   } catch (error) {
     console.error('删除用户图片错误:', error);
@@ -251,8 +254,20 @@ export async function adminSetUserStatus(c, status) {
 
     user.status = status;
     await saveUser(c.env, user);
-    await setUserBanned(c.env, user.id, status === 'banned');
+
+    // 封禁集合写入失败必须让管理员知道 —— 否则界面显示"已封禁"而实际未生效。
+    // 注意：图片侧现在的可靠判据是 images.blocked（D1 列），集合只是加速用的缓存。
+    const bannedListOk = await setUserBanned(c.env, user.id, status === 'banned');
     await setUserImagesBlocked(c.env, user.id, status === 'banned');
+
+    if (status === 'banned' && !bannedListOk) {
+      return c.json({
+        message: '账号已标记为封禁，但封禁集合写入失败；图片级屏蔽已生效，请稍后重试或检查数据库',
+        status,
+        warning: 'banned_list_write_failed',
+      }, 207);
+    }
+
     return c.json({ message: status === 'banned' ? '用户已封禁' : '用户已解封', status });
   } catch (error) {
     console.error('设置用户状态错误:', error);
@@ -286,6 +301,8 @@ export async function adminDeleteUser(c) {
             if (!removed) return c.json({ error: '部分图片删除失败；已成功删除的记录已同步，其余可稍后重试' }, 502);
           }
           await dbDeleteImage(c.env, f.id);
+          // 清边缘缓存（失败不影响主流程）
+          c.executionCtx.waitUntil(purgeImageEdgeCache(f.id, new URL(c.req.url).origin));
         }
       } catch (e) {
         console.warn('清空用户图片出错，账号保留:', e);
@@ -514,11 +531,35 @@ export async function adminRunBackup(c) {
   }
 }
 
-/** 备份历史（含失败记录，最多 60 条） */
+/** 备份历史（含失败记录，最多 60 条）+ 新鲜度判定 */
 export async function adminBackupHistory(c) {
   try {
     const items = await getBackupHistory(c.env);
-    return c.json({ items, total: items.length });
+
+    // 新鲜度：备份失败时 runDbBackup 会往频道发告警并留下 ok:false 记录，
+    // 但「cron 整个没触发」（表达式漂移、worker 坏掉）不会留下任何记录 ——
+    // 那种静默停摆只能靠"距上次成功太久"来发现。
+    let stale = null;
+    try {
+      const settings = await getSettings(c.env);
+      const freq = (settings.backup && settings.backup.frequency) || 'weekly';
+      const lastOk = items.find((it) => it && it.ok === true && typeof it.at === 'number');
+      const lastOkAt = lastOk ? lastOk.at : 0;
+      const days = lastOkAt ? (Date.now() - lastOkAt) / 86400000 : null;
+      // 关闭自动备份时不判定超期（由管理员自行决定何时手动备份）
+      const graceDays = { daily: 3, weekly: 14, monthly: 45 }[freq] ?? null;
+      stale = {
+        frequency: freq,
+        lastSuccessAt: lastOkAt || null,
+        ageDays: days === null ? null : Math.round(days * 10) / 10,
+        overdue: freq === 'off' || graceDays === null ? false : (days === null || days > graceDays),
+        graceDays,
+      };
+    } catch (e) {
+      console.warn('备份新鲜度判定失败（忽略）:', e && e.message);
+    }
+
+    return c.json({ items, total: items.length, staleness: stale });
   } catch (error) {
     console.error('读取备份历史错误:', error);
     return c.json({ error: '获取备份历史失败' }, 500);

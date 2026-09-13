@@ -4,6 +4,26 @@ import { dbGetImage, kvGet, kvPut } from '../utils/db';
 
 // Telegram getFile 返回的 file_path 约 1 小时失效；缓存 50 分钟
 const TG_PATH_TTL_SEC = 50 * 60;
+
+/**
+ * 清除某张图片的边缘缓存。
+ *
+ * 必须与 proxyFile() 里构造的 cacheKey 完全一致（pathname + '?_ct=3'）。
+ * 删除图片时若不清这个缓存，直链会继续从边缘吐图，直到缓存过期为止 ——
+ * 用户会以为"删掉了"，实际外部仍能访问。
+ *
+ * 改这里的版本号会让全部旧的边缘缓存条目作废（首次访问会重新回源 Telegram）。
+ * 这是修改响应头/缓存语义后清理陈旧缓存的正确做法。
+ */
+export async function purgeImageEdgeCache(id, origin) {
+  if (!id || typeof caches === 'undefined') return;
+  try {
+    const key = new Request(new URL(`/file/${id}?_ct=3`, origin), { method: 'GET' });
+    await caches.default.delete(key);
+  } catch (e) {
+    console.warn('清除图片边缘缓存失败（忽略）:', id, e && e.message);
+  }
+}
 // isolate 内内存缓存，避免同 isolate 重复 KV/API
 const _tgPathMem = new Map(); // fileId -> { path, exp }
 
@@ -74,16 +94,26 @@ export async function fileHandler(c) {
     const isPreview = url.searchParams.get('preview') === 'true';
 
     try {
-        // 封禁屏蔽：图片归属用户被封禁时，对公网屏蔽（管理员凭 ?t= 放行）。无人被封时零额外开销。
-        // 必须在边缘缓存命中前检查，避免封禁后仍吐出缓存图。
-        const banned = await getBannedSet(env);
-        if (banned.size > 0 && !(await isAdminViewer(c, env))) {
-            try {
-                const meta = await getImageMetaCached(env, id);
-                if (meta.blocked || (meta.userId && banned.has(String(meta.userId)))) {
-                    return blockedImagePage(c);
-                }
-            } catch { /* 元数据读取失败则放行，不误伤 */ }
+        // 屏蔽检查：必须在边缘缓存命中前做，避免屏蔽后仍吐出缓存图。
+        // 【重要】meta.blocked 是 D1 里可靠的一列，必须**无条件**检查。
+        // 曾经把它套在 `banned.size > 0` 里，导致站点当前没有封禁用户时，
+        // blocked=1 的图片会照常对外提供（封禁形同虚设）。
+        // 管理员凭 ?t= 短时票放行。
+        let blockedMeta = null;
+        try {
+            blockedMeta = await getImageMetaCached(env, id);
+        } catch { /* 元数据读取失败则不据此拦截，避免误伤可用性 */ }
+
+        if (blockedMeta && blockedMeta.blocked) {
+            if (!(await isAdminViewer(c, env))) return blockedImagePage(c);
+        } else {
+            // 用户级封禁走「尽力而为」的封禁集合；集合为空时跳过，零额外开销
+            const banned = await getBannedSet(env);
+            if (banned.size > 0 && blockedMeta && blockedMeta.userId
+                && banned.has(String(blockedMeta.userId))
+                && !(await isAdminViewer(c, env))) {
+                return blockedImagePage(c);
+            }
         }
 
         // 预览页不需要拉 Telegram，直接出 HTML
@@ -94,8 +124,9 @@ export async function fileHandler(c) {
         // 边缘 Cache API：命中则零 Telegram / 零 getFile（仍经过上方封禁检查）
         // 仅缓存「纯展示」路径；?download=true / ?t= 管理员令牌不走缓存
         const canUseEdgeCache = !isDownload && !url.searchParams.has('t');
-        // cache key 带版本：避免沿用旧的 application/octet-stream 缓存
-        const cacheKey = new Request(new URL(url.pathname + '?_ct=2', url.origin), { method: 'GET' });
+        // cache key 带版本：避免沿用旧的 application/octet-stream 缓存。
+        // 本次从 _ct=2 提到 _ct=3，同时作废旧的「一年 immutable」缓存条目。
+        const cacheKey = new Request(new URL(url.pathname + '?_ct=3', url.origin), { method: 'GET' });
         if (canUseEdgeCache) {
             try {
                 const hit = await caches.default.match(cacheKey);
@@ -928,8 +959,11 @@ async function proxyFile(c, fileUrl, opts = {}) {
         if (pass.includes(key.toLowerCase())) headers.set(key, value);
     });
 
-    // 浏览器缓存 1 年（内容按 file_id 寻址，视为不可变）
-    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    // 浏览器缓存：内容按 file_id 寻址，但**并非真正不可变** —— 作者可以删除图片，
+    // 而删除只能清 Cloudflare 边缘缓存，清不掉别人浏览器里的副本。
+    // 所以这里用有限 TTL + stale-while-revalidate：热度不变时依旧零回源，
+    // 同时避免"删了图片，别人浏览器还留一年"。
+    headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
 
     // Content-Type：Telegram 常返回 application/octet-stream，优先用我们 URL 里的扩展名
     const reqId = (c.req.param('id') || '').toLowerCase();

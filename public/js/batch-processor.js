@@ -331,7 +331,9 @@ class BatchProcessor {
     resetUI() {
         document.getElementById('batchProgressSection').style.display = 'none';
         document.getElementById('batchResultsSection').style.display = 'none';
-        document.getElementById('startBatchBtn').style.display = 'block';
+        // 清空内联 display 而不是写 'block'：.batch-btn 在 CSS 里是 display:flex
+        // （图标 + 文字 + gap），写成 block 会让按钮内部布局塌掉
+        document.getElementById('startBatchBtn').style.display = '';
         document.getElementById('cancelBatchBtn').textContent = '取消';
     }
 

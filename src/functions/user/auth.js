@@ -3,6 +3,7 @@
  */
 import {
   clearVerificationCode,
+  consumeDummyPasswordCheck,
   createVerificationCode,
   generateToken,
   hashPassword,
@@ -15,7 +16,7 @@ import { normalizeUser, getUserByName, getUserById, getUserByEmail, saveUser, pu
 import { getSettings } from '../utils/settings';
 import { sendVerificationCode, sendLoginNotify } from '../utils/email';
 import {
-  checkRateLimit, clientKey,
+  checkRateLimit, accountKey, clientKey,
   validateUsername, validatePassword, validateEmail, validateHttpUrl,
 } from '../utils/ratelimit';
 import { kvGet, kvPut, kvDelete, dbGetUploadCount, dbUserImageTotals } from '../utils/db';
@@ -43,11 +44,18 @@ function uploadQuotaPolicy(user, settings, admin = false) {
   return { limit: globalLimit, unlimited: globalLimit === 0 };
 }
 
+/**
+ * 下发验证码。
+ *
+ * 返回的 `clientError` 标记很重要：**不要把它一律当成 500**。
+ * 「域名收不了信」「一次性邮箱」这类都是用户输入问题（应为 4xx），
+ * 当成 500 既误导用户（以为是网站坏了），也会污染错误率监控。
+ */
 export async function issueEmailCode(env, email, purpose = 'verify') {
-  if (!email) return { ok: false, error: '邮箱不能为空' };
+  if (!email) return { ok: false, clientError: true, error: '邮箱不能为空' };
   // 发信前预检：一次性域名 / 无法收信的域名直接拦下，不浪费发信额度也不产生退信
   const deliver = await checkEmailDeliverable(env, email);
-  if (!deliver.ok) return { ok: false, error: deliver.error };
+  if (!deliver.ok) return { ok: false, clientError: true, error: deliver.error };
   const code = await createVerificationCode(env, email, purpose);
   const sendResult = await sendVerificationCode(email, code, env);
   if (!sendResult.success) {
@@ -55,6 +63,8 @@ export async function issueEmailCode(env, email, purpose = 'verify') {
     if (!devFallback) await clearVerificationCode(env, email, purpose).catch(() => {});
     const out = {
       ok: false,
+      // 未配置邮件属于部署问题（服务端），其余发信失败也是服务端
+      clientError: false,
       error: sendResult.error || '验证码发送失败',
       notConfigured: !!sendResult.notConfigured,
     };
@@ -67,7 +77,7 @@ export async function issueEmailCode(env, email, purpose = 'verify') {
 export async function register(c) {
   try {
 
-    const rl = await checkRateLimit(c.env, `reg:${clientKey(c)}`, { limit: 10, windowSec: 3600 });
+    const rl = await checkRateLimit(c.env, `reg:${clientKey(c)}`, { limit: 10, windowSec: 3600, failOpen: false });
     if (!rl.allowed) {
       return c.json({ error: `注册过于频繁，请 ${rl.retryAfterSec} 秒后再试` }, 429);
     }
@@ -166,7 +176,8 @@ export async function register(c) {
 export async function login(c) {
   try {
 
-    const rl = await checkRateLimit(c.env, `login:${clientKey(c)}`, { limit: 20, windowSec: 900 });
+    // 认证端点 failOpen:false —— 限流器坏掉时宁可暂时拒绝，也不放开爆破面
+    const rl = await checkRateLimit(c.env, `login:${clientKey(c)}`, { limit: 20, windowSec: 900, failOpen: false });
     if (!rl.allowed) {
       return c.json({ error: `登录尝试过多，请 ${rl.retryAfterSec} 秒后再试` }, 429);
     }
@@ -174,6 +185,15 @@ export async function login(c) {
     const { username: identifier, password } = await c.req.json();
     if (!identifier || !password) {
       return c.json({ error: '用户名和密码都是必填项' }, 400);
+    }
+
+    // 账号维度限流：只按 IP 计时时，单个 IP 可对 20 个不同账号各试一次，
+    // 换 IP 又能完全绕开 —— 必须在目标账号上加一层。
+    const rlAcct = await checkRateLimit(c.env, `loginacct:${accountKey(identifier)}`, {
+      limit: 10, windowSec: 900, failOpen: false,
+    });
+    if (!rlAcct.allowed) {
+      return c.json({ error: `该账号登录尝试过多，请 ${rlAcct.retryAfterSec} 秒后再试` }, 429);
     }
 
     // 登录标识统一 trim；邮箱再小写（用户名保留大小写仅用于展示匹配）
@@ -189,6 +209,8 @@ export async function login(c) {
       rawUser = await getUserByName(c.env, loginId);
     }
     if (!rawUser || !rawUser.password) {
+      // 等量假运算：避免"用户不存在"比"密码错误"返回得快，从而被用来枚举账号
+      await consumeDummyPasswordCheck(password);
       return c.json({ error: '用户名或密码错误' }, 401);
     }
 
@@ -390,6 +412,16 @@ export async function changePassword(c) {
 export async function changeEmail(c) {
   try {
     const tokenUser = c.get('user');
+
+    // 按用户限流：本接口会给 newEmail 发验证邮件，之前完全没有限流，
+    // 可被用来向任意第三方地址滥发邮件（消耗发信额度、损伤发信信誉）。
+    const rl = await checkRateLimit(c.env, `changeemail:${accountKey(tokenUser && tokenUser.username)}`, {
+      limit: 5, windowSec: 3600, failOpen: false,
+    });
+    if (!rl.allowed) {
+      return c.json({ error: `操作过于频繁，请 ${rl.retryAfterSec} 秒后再试` }, 429);
+    }
+
     const { password, newEmail } = await c.req.json();
     if (!password || !newEmail) return c.json({ error: '请填写密码和新邮箱' }, 400);
     const em = validateEmail(newEmail);
@@ -472,19 +504,50 @@ export async function confirmEmail(c) {
 
 export async function forgotPassword(c) {
   try {
-    const rl = await checkRateLimit(c.env, `forgot:${clientKey(c)}`, { limit: 5, windowSec: 900 });
+    const rl = await checkRateLimit(c.env, `forgot:${clientKey(c)}`, { limit: 5, windowSec: 900, failOpen: false });
     if (!rl.allowed) return c.json({ error: `请求过于频繁，请 ${rl.retryAfterSec} 秒后再试` }, 429);
 
     const { email, username } = await c.req.json();
-    let user = null;
-    if (username) user = await getUserByName(c.env, username);
-    else if (email) user = await getUserByEmail(c.env, String(email).trim().toLowerCase());
 
+    // 账号维度：避免有人反复给同一个邮箱触发重置邮件（骚扰 + 烧发信额度）。
+    // 同样分短冷却与窗口上限：短冷却防连点，窗口上限防滥用。
+    const target = accountKey(username || email);
+    if (target) {
+      const cool = await checkRateLimit(c.env, `forgotcool:${target}`, {
+        limit: 1, windowSec: 60, failOpen: false,
+      });
+      if (!cool.allowed) {
+        return c.json({ error: `请 ${cool.retryAfterSec} 秒后再试` }, 429);
+      }
+      const rlAcct = await checkRateLimit(c.env, `forgotacct:${target}`, {
+        limit: 3, windowSec: 900, failOpen: false,
+      });
+      if (!rlAcct.allowed) {
+        return c.json({ error: `请求过于频繁，请 ${rlAcct.retryAfterSec} 秒后再试` }, 429);
+      }
+    }
+
+    // 统一文案（不区分账号是否存在），并把「查库 + 发信」整体移出响应路径。
+    // 否则未知账号会瞬间返回、已知账号要等 DNS+SMTP，响应耗时本身就泄露了账号是否存在。
     const generic = { message: '若该账户存在，重置验证码已发送至其邮箱' };
-    if (!user || !user.email) return c.json(generic);
 
-    const issued = await issueEmailCode(c.env, user.email, 'reset');
-    return c.json({ ...generic, ...(issued.devCode ? { devCode: issued.devCode } : {}) });
+    const work = (async () => {
+      let user = null;
+      if (username) user = await getUserByName(c.env, username);
+      else if (email) user = await getUserByEmail(c.env, String(email).trim().toLowerCase());
+      if (!user || !user.email) return;
+      await issueEmailCode(c.env, user.email, 'reset');
+    })();
+
+    try {
+      c.executionCtx.waitUntil(work);
+    } catch {
+      // 没有 executionCtx（例如单元测试直接调 handler）时退回等待，
+      // 保证功能正确，只是失去时序收益。
+      await work.catch((e) => console.warn('忘记密码后台任务失败:', e && e.message));
+    }
+
+    return c.json(generic);
   } catch (error) {
     console.error('忘记密码错误:', error);
     return c.json({ error: '发送失败，请稍后再试' }, 500);
@@ -493,11 +556,21 @@ export async function forgotPassword(c) {
 
 export async function resetPassword(c) {
   try {
-    const rl = await checkRateLimit(c.env, `reset:${clientKey(c)}`, { limit: 10, windowSec: 900 });
+    const rl = await checkRateLimit(c.env, `reset:${clientKey(c)}`, { limit: 10, windowSec: 900, failOpen: false });
     if (!rl.allowed) return c.json({ error: `尝试过多，请 ${rl.retryAfterSec} 秒后再试` }, 429);
 
     const { email, username, code, newPassword } = await c.req.json();
     if (!code || !newPassword) return c.json({ error: '请填写验证码和新密码' }, 400);
+
+    // 账号维度：把「猜验证码」限制在被攻击账号上，而不是只按 IP
+    const target = accountKey(username || email);
+    if (target) {
+      const rlAcct = await checkRateLimit(c.env, `resetacct:${target}`, {
+        limit: 6, windowSec: 900, failOpen: false,
+      });
+      if (!rlAcct.allowed) return c.json({ error: `尝试过多，请 ${rlAcct.retryAfterSec} 秒后再试` }, 429);
+    }
+
     const pw = validatePassword(newPassword, { min: 8 });
     if (!pw.ok) return c.json({ error: pw.error }, 400);
 

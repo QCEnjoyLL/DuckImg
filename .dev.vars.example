@@ -16,3 +16,6 @@ ADMIN_USERNAME = "你的管理员用户名"
 # NSFW_EXTRA_PARAMS = "鉴黄服务附加查询参数"
 # 仅本地开发可设为 1，让未配置邮件时返回验证码；禁止在线上启用
 # ALLOW_DEV_CODE = "1"
+# 自建 Telegram Bot API 服务器地址（可选）。免费官方 API 的 getFile 只能下载
+# ≤20MB 的文件；备份超过该体积后，`npm run backup:verify` 需要它才能直接取回备份。
+# TG_API_BASE = "http://127.0.0.1:8081"

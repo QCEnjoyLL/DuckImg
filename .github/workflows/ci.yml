@@ -24,8 +24,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Audit dependencies
+      # 审计只做报告，**不阻断**。原因：单个传递依赖（哪怕是 dev 依赖）出现新 advisory
+      # 就会让每次推送变红，而仓库内没有修复路径 —— 结果是真正的校验步骤被跳过，
+      # 或者大家习惯性忽略红灯。依赖升级由 .github/dependabot.yml 负责提 PR。
+      - name: Audit dependencies (advisory only)
+        continue-on-error: true
         run: npm audit --audit-level=high
 
+      # 关键校验：依赖一致性 + 语法 + 测试 + 打包（deploy --dry-run）
       - name: Syntax, Workers tests, and deploy dry-run
         run: npm run check
+
+      # 前端回归（CDP + 无头浏览器）。最近的故障全部是前端问题，而 test/ 只覆盖
+      # Workers 侧，拦不住这类回归。ubuntu-latest 自带 Chrome，通常无需额外安装。
+      # continue-on-error：浏览器缺失时不应掩盖上面真正关键的校验结果。
+      - name: Frontend regression (headless browser)
+        continue-on-error: true
+        run: npm run test:frontend
+
+      # 备份恢复是「用户数据的唯一副本」，用离线自测确保校验工具本身有效
+      - name: Backup verification tool selftest (offline)
+        run: npm run backup:verify -- --selftest

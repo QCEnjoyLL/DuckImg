@@ -4,18 +4,41 @@
 import { generateToken, verifyCodeMatches } from '../utils/auth';
 import { normalizeUser, getUserByName, getUserByEmail, saveUser, publicUser, isAdmin } from '../utils/users';
 import { issueEmailCode } from './auth';
-import { checkRateLimit, clientKey } from '../utils/ratelimit';
+import { checkRateLimit, accountKey, clientKey } from '../utils/ratelimit';
 import { kvGet, kvDelete } from '../utils/db';
 
 export async function sendCode(c) {
   try {
 
-    const rl = await checkRateLimit(c.env, `sendcode:${clientKey(c)}`, { limit: 8, windowSec: 900 });
+    const rl = await checkRateLimit(c.env, `sendcode:${clientKey(c)}`, { limit: 8, windowSec: 900, failOpen: false });
     if (!rl.allowed) {
       return c.json({ error: `发送过于频繁，请 ${rl.retryAfterSec} 秒后再试` }, 429);
     }
 
     const { email, username } = await c.req.json();
+
+    // 账号维度发码上限：每次重新发码都会把验证码的 attempts 清零，
+    // 所以只按 IP 限会让"6 次尝试"变成"每个 IP 8 次 × 无限 IP"。
+    // 分两层：
+    //   - 60 秒短冷却：防连点；对"打错字重发"这种正常场景足够宽松
+    //   - 5 分钟 3 次：真正的滥用上限（比之前 15 分钟 4 次更早刹车，
+    //     但短冷却的存在让正常用户不会一上来就被锁 15 分钟）
+    const target = accountKey(email || username);
+    if (target) {
+      const cool = await checkRateLimit(c.env, `sendcodecool:${target}`, {
+        limit: 1, windowSec: 60, failOpen: false,
+      });
+      if (!cool.allowed) {
+        return c.json({ error: `请 ${cool.retryAfterSec} 秒后再重新发送` }, 429);
+      }
+      const rlAcct = await checkRateLimit(c.env, `sendcodeacct:${target}`, {
+        limit: 3, windowSec: 300, failOpen: false,
+      });
+      if (!rlAcct.allowed) {
+        return c.json({ error: `发送过于频繁，请 ${rlAcct.retryAfterSec} 秒后再试` }, 429);
+      }
+    }
+
     let targetEmail = email;
     if (!targetEmail && username) {
       const user = await getUserByName(c.env, username);
@@ -25,10 +48,14 @@ export async function sendCode(c) {
 
     const issued = await issueEmailCode(c.env, targetEmail);
     if (!issued.ok) {
+      // 域名收不了信/一次性邮箱属于用户输入问题 → 400；
+      // 只有发信服务本身失败才是 500。此前一律 500，会把"邮箱写错了"
+      // 显示成"网站坏了"。
+      const status = issued.devCode ? 200 : (issued.clientError ? 400 : 500);
       return c.json({
         error: issued.error || '验证码发送失败',
         ...(issued.devCode ? { devCode: issued.devCode } : {}),
-      }, issued.devCode ? 200 : 500);
+      }, status);
     }
     return c.json({ message: '验证码已发送' });
   } catch (error) {
@@ -40,13 +67,25 @@ export async function sendCode(c) {
 export async function verifyCode(c) {
   try {
 
-    const rl = await checkRateLimit(c.env, `verifycode:${clientKey(c)}`, { limit: 20, windowSec: 900 });
+    const rl = await checkRateLimit(c.env, `verifycode:${clientKey(c)}`, { limit: 20, windowSec: 900, failOpen: false });
     if (!rl.allowed) {
       return c.json({ error: `验证尝试过多，请 ${rl.retryAfterSec} 秒后再试` }, 429);
     }
 
     const { email, username, code } = await c.req.json();
     if (!code) return c.json({ error: '请输入验证码' }, 400);
+
+    // 账号维度：把「猜验证码」钉在被攻击账号上（验证码本身有 attempts 上限，
+    // 这里是纵深防御，覆盖用户不存在/输入错误等不消耗 attempts 的路径）
+    const target = accountKey(email || username);
+    if (target) {
+      const rlAcct = await checkRateLimit(c.env, `verifyacct:${target}`, {
+        limit: 20, windowSec: 900, failOpen: false,
+      });
+      if (!rlAcct.allowed) {
+        return c.json({ error: `验证尝试过多，请 ${rlAcct.retryAfterSec} 秒后再试` }, 429);
+      }
+    }
 
     let existingUser = null;
     if (username) existingUser = await getUserByName(c.env, username);

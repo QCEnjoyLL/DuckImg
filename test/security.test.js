@@ -7,11 +7,13 @@ import {
   verifyCodeMatches,
 } from '../src/functions/utils/auth.js';
 import {
+  dbGetImage,
   dbGetUploadCount,
   dbReserveUploadSlot,
+  dbUpsertImage,
   kvPut,
 } from '../src/functions/utils/db.js';
-import { buildBackupSql } from '../src/functions/utils/backup.js';
+import { buildBackupSql, encryptBackupBytes, keyFingerprint } from '../src/functions/utils/backup.js';
 import { getSettings, resetSettingsCacheForTests, saveSettings } from '../src/functions/utils/settings.js';
 import { hasMatchingImageSignature } from '../src/functions/upload.js';
 import { deleteUserRecord, getUserByName, saveUser } from '../src/functions/utils/users.js';
@@ -415,5 +417,142 @@ describe('backup redaction', () => {
     expect(counts.rate_limits).toBe(0);
     expect(counts.kv_store).toBe(1);
     expect(sql).toContain('config:settings');
+  });
+});
+
+describe('backup encryption format is backward compatible', () => {
+  // 回归：备份加密的派生式**绝不能改**，否则用户已存在 Telegram 里的历史备份
+  // 会变成永久无法解密 —— 而这件事只有在真正需要恢复数据时才会被发现。
+  // 这里用「改动前那一版」的派生式手工实现一个解密器，验证新加密器能被它解开。
+  const PLAINTEXT = 'CREATE TABLE t (a);\n-- 中文\n';
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(PLAINTEXT);
+
+  /** 旧版（改动前）加密端：MAGIC(8) | IV(12) | ct，派生 `v1\0<secret>` */
+  async function encryptOldFormat(secret, data) {
+    const material = encoder.encode(`DuckImg backup v1\0${secret}`);
+    const keyBytes = await crypto.subtle.digest('SHA-256', material);
+    const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data));
+    const out = new Uint8Array(8 + 12 + ct.length);
+    out.set(encoder.encode('DUCKIMG1'), 0);
+    out.set(iv, 8);
+    out.set(ct, 20);
+    return out;
+  }
+
+  /** 按「当前 CLI 脚本」的逻辑解密（含无 keyid 时的兜底派生式） */
+  async function decryptLikeCli(data, secret) {
+    const magic = new TextDecoder().decode(data.subarray(0, 8));
+    if (magic !== 'DUCKIMG1') throw new Error('bad magic');
+    let offset = 8;
+    let keyId = '';
+    if (data[8] === 0x3a) {
+      keyId = new TextDecoder().decode(data.subarray(9, 21));
+      offset = 21;
+    }
+    const iv = data.subarray(offset, offset + 12);
+    const ct = data.subarray(offset + 12);
+    const derivations = keyId
+      ? [`DuckImg backup v1\0k1\0${secret}`]
+      : [`DuckImg backup v1\0${secret}`, `DuckImg backup v1\0\0${secret}`];
+    for (const d of derivations) {
+      const kb = await crypto.subtle.digest('SHA-256', encoder.encode(d));
+      const key = await crypto.subtle.importKey('raw', kb, { name: 'AES-GCM' }, false, ['decrypt']);
+      try {
+        return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct));
+      } catch { /* 试下一个派生式 */ }
+    }
+    throw new Error('decrypt failed');
+  }
+
+  it('a backup produced by the CURRENT encryptor decrypts (new key + keyid)', async () => {
+    const secret = 'test-standalone-backup-key';
+    const { secret: _s, tag } = { secret, tag: 'k1' };
+    const blob = await encryptBackupBytes({}, bytes, { secret, tag });
+    expect(blob[8]).toBe(0x3a); // 带 keyid 段
+    await expect(decryptLikeCli(blob, secret)).resolves.toBe(PLAINTEXT);
+  });
+
+  it('a LEGACY backup (pre-change format) still decrypts', async () => {
+    // 这是用户 Telegram 里已存在备份的格式，必须永远可解
+    const secret = 'legacy-jwt-secret';
+    const legacy = await encryptOldFormat(secret, bytes);
+    expect(legacy[8]).not.toBe(0x3a);
+    await expect(decryptLikeCli(legacy, secret)).resolves.toBe(PLAINTEXT);
+  });
+
+  it('JWT_SECRET fallback uses the LEGACY derivation (byte-identical)', async () => {
+    // 无 keyid 时派生式必须与旧实现一致，否则历史备份解不开
+    const secret = 'fallback-secret';
+    const a = new Uint8Array(await crypto.subtle.digest(
+      'SHA-256', encoder.encode(`DuckImg backup v1\0${secret}`),
+    ));
+    const b = new Uint8Array(await crypto.subtle.digest(
+      'SHA-256', encoder.encode(`DuckImg backup v1\0\0${secret}`),
+    ));
+    expect([...a]).not.toEqual([...b]); // 确认两者确实不同（防止有人以为等价）
+
+    const blob = await encryptBackupBytes({ JWT_SECRET: secret }, bytes);
+    expect(blob[8]).not.toBe(0x3a);      // 回退时无 keyid
+    await expect(decryptLikeCli(blob, secret)).resolves.toBe(PLAINTEXT);
+  });
+
+  it('keyid matches the fingerprint written for that key', async () => {
+    const secret = 'fingerprint-check-key';
+    const blob = await encryptBackupBytes({ BACKUP_ENCRYPTION_KEY: secret }, bytes);
+    expect(new TextDecoder().decode(blob.subarray(9, 21))).toBe(await keyFingerprint(secret));
+  });
+
+  it('refuses to produce a backup with no key at all', async () => {
+    await expect(encryptBackupBytes({}, bytes)).rejects.toThrow();
+  });
+});
+
+describe('image upsert must not clobber admin/user-owned columns', () => {
+  // 回归：dbUpsertImage 的 ON CONFLICT 分支曾经直接取 excluded.tags/liked/blocked/
+  // label/list_type，而上传路径不传这些字段 → 一旦遇到重复 id（Telegram 对相同字节
+  // 的重复上传会复用同一 file_id），就会把管理员设的 blocked=1 重置为 0，
+  // 等于封禁被绕过，同时清空用户标签、取消收藏。
+  const imageId = 'test-file-id-1.jpg';
+  const baseRow = {
+    id: imageId,
+    userId: 'user-1',
+    fileName: 'pic.png',
+    fileSize: 100,
+    uploadTime: 1_700_000_000_000,
+  };
+
+  beforeEach(async () => {
+    await env.DB.prepare('DELETE FROM images WHERE id = ?').bind(imageId).run();
+  });
+
+  it('preserves blocked/tags/liked when re-upserting without those fields', async () => {
+    await dbUpsertImage(env, { ...baseRow, tags: ['风景'], liked: true });
+    // 管理员封禁该图
+    await env.DB.prepare('UPDATE images SET blocked = 1 WHERE id = ?').bind(imageId).run();
+
+    // 重新上传同一张图（上传路径不带 tags/liked/blocked）
+    await dbUpsertImage(env, { ...baseRow, messageId: 999 });
+
+    const after = await dbGetImage(env, imageId);
+    expect(after.blocked).toBe(true);         // 封禁标志不能被清掉（rowToImage 返回布尔）
+    expect(after.tags).toEqual(['风景']);      // 用户标签不能被清空
+    expect(after.liked).toBe(true);           // 收藏不能被取消
+    expect(after.messageId).toBe(999);        // 可变更字段仍要更新
+  });
+
+  it('still applies blocked/liked when explicitly provided', async () => {
+    await dbUpsertImage(env, { ...baseRow });
+    await dbUpsertImage(env, { ...baseRow, blocked: true, liked: true });
+    let after = await dbGetImage(env, imageId);
+    expect(after.blocked).toBe(true);
+    expect(after.liked).toBe(true);
+
+    // 解封必须也能生效
+    await dbUpsertImage(env, { ...baseRow, blocked: false });
+    after = await dbGetImage(env, imageId);
+    expect(after.blocked).toBe(false);
   });
 });

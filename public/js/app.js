@@ -232,6 +232,12 @@ function initPageLoader() {
 
 // 剪贴板功能
 function initClipboard() {
+    // 图库页（dashboard.html）也加载了本文件，但 .copy-btn 由 dashboard.js 的
+    // initImageCardEvents() 统一处理（图标式反馈）。若这里再建一个委托实例，
+    // 同一按钮会触发两个 success 回调：本函数用 textContent 还原、dashboard 用
+    // innerHTML 还原，后者会被本函数覆盖成纯文字，卡片按钮的 SVG 图标就永久没了。
+    if (document.getElementById('imageGrid')) return;
+
     const clipboard = new ClipboardJS('.copy-btn');
 
     clipboard.on('success', (e) => {
@@ -267,7 +273,7 @@ async function refreshQuota() {
     const token = localStorage.getItem('token');
     if (!token) {
         // 未登录：匿名上传已关闭，提示登录
-        el.style.display = 'block';
+        el.hidden = false;
         el.style.color = '#f59e0b';
         el.innerHTML = '<i class="ri-information-line"></i> 请先 <a href="/login.html" style="color:inherit;text-decoration:underline;">登录</a> 后上传';
         return;
@@ -275,10 +281,10 @@ async function refreshQuota() {
 
     try {
         const res = await fetch('/api/auth/quota', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!res.ok) { el.style.display = 'none'; return; }
+        if (!res.ok) { el.hidden = true; return; }
         const q = await res.json();
 
-        el.style.display = 'block';
+        el.hidden = false;
         if (q.unlimited) {
             el.style.color = '';
             el.innerHTML = q.isAdmin
@@ -290,7 +296,7 @@ async function refreshQuota() {
             el.innerHTML = `<i class="ri-image-line"></i> 今日已上传 ${q.used} / ${q.limit} 张，剩余 ${q.remaining}${noneLeft ? '（已达上限，请明天再试）' : ''}`;
         }
     } catch (e) {
-        el.style.display = 'none';
+        el.hidden = true;
     }
 }
 
@@ -676,7 +682,10 @@ function initUpload() {
 
         // 隐藏结果，显示上传区域
         resultContainer.style.display = 'none';
-        dropArea.style.display = 'block';
+        // 必须清空内联 display 而不是写 'block'：.upload-area 依赖 CSS 的 display:flex
+        // （flex-direction:column + align-items:center）来居中子元素，写成 block 会让
+        // .upload-hint 这类 flex 子项撑满整行、失去居中与收缩。
+        dropArea.style.display = '';
     });
 
     // 将handleFiles和showError导出到全局，供粘贴上传功能使用

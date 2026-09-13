@@ -1,0 +1,38 @@
+# 依赖更新自动化。
+#
+# 为什么需要：本项目出过一次真实事故 —— 本地 node_modules 里是 hono 3.x，
+# 而 package.json/lockfile 要求 4.x，`hono/body-limit` 在 3.x 不存在，
+# 导致本机根本无法构建 worker，却长期无人发现。依赖漂移是这类事故的根源。
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    # 分组以减少 PR 噪音：wrangler / vitest / workerd 这类工具链一起升
+    groups:
+      cloudflare-toolchain:
+        patterns:
+          - "wrangler"
+          - "@cloudflare/*"
+          - "miniflare"
+          - "workerd"
+      test-tooling:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+    ignore:
+      # 主版本升级可能带来破坏性变更，交由人工评估
+      - dependency-name: hono
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(ci)"

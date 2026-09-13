@@ -2,6 +2,7 @@
  * 用户图片管理 API（D1）
  */
 import { deleteTelegramMessage } from '../upload';
+import { purgeImageEdgeCache } from '../file/[id]';
 import {
   dbGetImage, dbUpsertImage, dbDeleteImage, dbUserImagesPage,
   dbBatchImagesByIds, dbDeleteImagesByIds, dbUpdateImageTags,
@@ -107,7 +108,12 @@ export async function batchImages(c) {
       }));
       const deletedIds = results.filter((r) => r.deleted).map((r) => r.id);
       const failedIds = results.filter((r) => !r.deleted).map((r) => r.id);
-      if (deletedIds.length) await dbDeleteImagesByIds(c.env, userId, deletedIds);
+      if (deletedIds.length) {
+        await dbDeleteImagesByIds(c.env, userId, deletedIds);
+        // 清边缘缓存：否则已删图片的直链仍会从 Cloudflare 边缘继续对外提供
+        const origin = new URL(c.req.url).origin;
+        c.executionCtx.waitUntil(Promise.all(deletedIds.map((id) => purgeImageEdgeCache(id, origin))));
+      }
       return c.json({
         message: failedIds.length ? '部分图片删除失败，记录已保留以便重试' : '删除成功',
         deleted: deletedIds.length,
@@ -164,6 +170,8 @@ export async function deleteUserImage(c) {
       if (!removed) return c.json({ error: '存储端删除失败，图库记录已保留，请稍后重试' }, 502);
     }
     await dbDeleteImage(c.env, fileId);
+    // 清边缘缓存：否则直链仍会从 Cloudflare 边缘吐图（用户以为删了，外部仍可访问）
+    c.executionCtx.waitUntil(purgeImageEdgeCache(fileId, new URL(c.req.url).origin));
     return c.json({ message: '文件删除成功' });
   } catch (error) {
     console.error('删除用户图片错误:', error);

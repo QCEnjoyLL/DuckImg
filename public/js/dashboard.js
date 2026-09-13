@@ -713,13 +713,15 @@ async function loadUserImages(page = 1, query = '', tag = '') {
         // 检查是否有图片
         if (currentImages.length === 0) {
             imageGrid.innerHTML = '';
-            emptyState.style.display = 'block';
+            // 用 hidden 属性而非内联 display：.empty-state 在 CSS 里是 display:flex
+            // 且靠 align-items/justify-content 居中，写成 block 会让图标与文案失去居中
+            emptyState.hidden = false;
             pagination.style.display = 'none';
             return;
         }
 
         // 隐藏空状态
-        emptyState.style.display = 'none';
+        emptyState.hidden = true;
 
         // 根据当前视图模式渲染图片
         if (currentViewMode === 'timeline') {
@@ -1451,6 +1453,14 @@ function updateCustomOrder() {
 function renderTagFilters() {
     const tagFilters = document.getElementById('tagFilters');
 
+    // 标签是用户可控内容（服务端只限长度与控制字符，允许 <>"'），
+    // 这里会拼进 innerHTML，必须转义——否则可存储 <svg onload=...> 造成存储型 XSS。
+    const esc = (typeof escapeHtml === 'function')
+        ? escapeHtml
+        : (window.commonUtils && window.commonUtils.escapeHtml) || ((s) => String(s ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;'));
+
     // 如果没有标签，隐藏过滤器
     if (allTags.size === 0) {
         tagFilters.style.display = 'none';
@@ -1471,7 +1481,8 @@ function renderTagFilters() {
 
     // 添加标签选项
     topTags.forEach(tag => {
-        filtersHtml += `<span class="image-tag ${currentTagFilter === tag ? 'active' : ''}" data-tag="${tag}">${tag}</span>`;
+        const safeTag = esc(tag);
+        filtersHtml += `<span class="image-tag ${currentTagFilter === tag ? 'active' : ''}" data-tag="${safeTag}">${safeTag}</span>`;
     });
 
     tagFilters.innerHTML = filtersHtml;
@@ -1691,21 +1702,9 @@ function initEditModal() {
         }
     });
 
-    // 初始化复制链接功能
-    new ClipboardJS('#copyEditLink').on('success', function(e) {
-        const button = e.trigger;
-        const originalHTML = button.innerHTML;
-
-        button.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-        `;
-
-        setTimeout(() => {
-            button.innerHTML = originalHTML;
-        }, 2000);
-    });
+    // 注意：#copyEditLink 的 ClipboardJS 已在 initDashboard() 中统一初始化。
+    // 这里再绑一次会让同一按钮有两个实例、两个 success 回调：第二个会把第一个设成的
+    // "对勾"当成 originalHTML，2 秒后还原成对勾 → 按钮永久停在 ✓ 不再显示复制图标。
 }
 
 // 打开编辑模态框

@@ -1,12 +1,17 @@
 /**
- * 轻量限流（D1 rate_limits 表）。失败 fail-open。
+ * 轻量限流（D1 rate_limits 表）。
+ *
+ * `failOpen` 默认 true：D1 异常时放行，保证可用性优先（适合上传/普通读接口）。
+ * 认证类端点应传 `failOpen: false` —— 限流器本身坏掉时，登录/重置这类接口
+ * 宁可暂时不可用，也不能变成无限次尝试的爆破入口。
  */
 
 export async function checkRateLimit(env, key, opts = {}) {
   const limit = Math.max(1, opts.limit || 10);
   const windowSec = Math.max(1, opts.windowSec || 60);
+  const failOpen = opts.failOpen !== false;
   if (!env || !env.DB || !key) {
-    return { allowed: true, remaining: limit, retryAfterSec: 0 };
+    return { allowed: failOpen, remaining: failOpen ? limit : 0, retryAfterSec: 0, degraded: true };
   }
 
   const bucket = `rl:${key}`;
@@ -29,10 +34,19 @@ export async function checkRateLimit(env, key, opts = {}) {
     }
     return { allowed: true, remaining: Math.max(0, limit - count), retryAfterSec: 0 };
   } catch (e) {
-    console.warn('限流检查失败（放行）:', e && e.message);
-    return { allowed: true, remaining: limit, retryAfterSec: 0 };
+    console.warn('限流检查失败（' + (failOpen ? '放行' : '拒绝') + '）:', e && e.message);
+    if (failOpen) return { allowed: true, remaining: limit, retryAfterSec: 0, degraded: true };
+    return { allowed: false, remaining: 0, retryAfterSec: 30, degraded: true };
   }
 }
+
+/** 把任意标识归一化后用作限流键的一部分，避免大小写/空格绕过账号维度限流 */
+export function accountKey(identifier) {
+  const s = String(identifier || '').trim().toLowerCase();
+  // 键长上限，避免超长输入把 bucket 撑爆
+  return s.slice(0, 128);
+}
+
 
 export function clientKey(c) {
   const ip =

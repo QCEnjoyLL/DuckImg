@@ -1,18 +1,23 @@
 {
   "name": "duckimg",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "鸭鸭图床 — 基于 Telegram + Cloudflare 的免费图床服务",
   "main": "index.js",
   "scripts": {
     "dev": "wrangler dev",
+    "check:deps": "node scripts/check-deps.mjs",
+    "predeploy": "npm run check:deps",
     "deploy": "wrangler deploy",
     "deploy:dry": "wrangler deploy --dry-run",
+    "release": "npm ci && npm run check && npm run deploy",
     "migrate": "wrangler d1 migrations apply duckimg --remote",
-    "setup": "npm run migrate && npm run deploy",
+    "setup": "npm run check",
     "test": "vitest run",
+    "test:frontend": "node scripts/test-frontend.mjs",
     "test:ci": "vitest run --reporter=verbose",
     "check:syntax": "node scripts/check-syntax.mjs",
-    "check": "npm run check:syntax && npm run test && npm run deploy:dry"
+    "backup:verify": "node scripts/verify-backup.mjs",
+    "check": "npm run check:deps && npm run check:syntax && npm run test && npm run deploy:dry"
   },
   "keywords": [
     "图床",

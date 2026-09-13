@@ -47,11 +47,16 @@ crons = ["17 3 * * *", "37 19 * * *"]
 
 [observability]
 enabled = true
-head_sampling_rate = 1
+# 采样率说明：本 worker 配了 run_worker_first = true（为了让静态资源也带上安全响应头），
+# 因此**每个 CSS/JS/图片请求（含外部盗链）都算一次 Worker 调用**。
+# logs 若按 1.0 采样，日志事件量会随这些流量线性膨胀，白花成本。
+# 排障时把 [observability.logs].head_sampling_rate 调回 1 即可看到全部请求；
+# traces 保持低采样（5%）用于性能分析。
+head_sampling_rate = 0.1
 
 [observability.logs]
 enabled = true
-head_sampling_rate = 1
+head_sampling_rate = 0.1
 invocation_logs = true
 
 [observability.traces]

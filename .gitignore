@@ -4,11 +4,21 @@ node_modules/
 
 # 本地真实配置（含密钥，切勿提交）
 # wrangler.toml 已入库：密钥全部走 Cloudflare Secrets，文件内无敏感信息
-.dev.vars
+# .dev.vars* 覆盖 wrangler 的按环境文件名（.dev.vars.production 等），
+# 只豁免 .example 模板；仅写 .dev.vars 会漏掉这些变体。
+.dev.vars*
+!.dev.vars.example
 .env
 .env.*
 !.env.example
-!.dev.vars.example
+
+# 数据库导出与备份产物（含用户邮箱、密码哈希，切勿提交）
+# README 的 d1 export / 解密脚本默认就产出这些名字
+*.sql
+*.sql.gz
+*.sql.enc
+*.enc
+duckimg-backup-*
 
 # 迁移导出（含用户哈希/邮箱，切勿提交）
 migration/export/
@@ -21,6 +31,10 @@ migration/qxc_*
 .codex/
 skills-lock.json
 *.backup
+
+# 安全体检清单：含逐行攻击面描述（哪些检查缺门控、哪个端点无限流、绕过条件等）。
+# 即使问题已修复，公开在仓库里也等于公开一份历史弱点图，因此只留本地。
+AUDIT.md
 
 
 # 打包产物

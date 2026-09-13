@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.1"><img src="https://img.shields.io/badge/release-v2.2.1-blue?style=flat-square" alt="v2.2.1"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.0"><img src="https://img.shields.io/badge/release-v2.3.0-blue?style=flat-square" alt="v2.3.0"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
@@ -87,7 +87,8 @@ git clone https://github.com/QCEnjoyLL/DuckImg.git
 cd DuckImg
 
 # 安装依赖
-npm install
+# 安装依赖（用 npm ci：严格按 package-lock.json 安装，避免本地依赖漂移）
+npm ci
 
 # 登录 Cloudflare
 npx wrangler login
@@ -122,7 +123,7 @@ npm run dev
 npx wrangler secret put TG_Bot_Token      # Telegram Bot Token
 npx wrangler secret put TG_Chat_ID        # 存储频道 ID
 npx wrangler secret put JWT_SECRET        # 登录签名密钥
-npx wrangler secret put BACKUP_ENCRYPTION_KEY # 备份加密密钥，务必离线保存
+npx wrangler secret put BACKUP_ENCRYPTION_KEY # 备份加密密钥，务必离线保存（强烈建议设置，见下方说明）
 npx wrangler secret put ADMIN_USERNAME    # 管理员用户名
 npx wrangler secret put ADMIN_BOOTSTRAP_TOKEN # 仅首次创建管理员时临时设置
 npx wrangler secret put RESEND_API_KEY    # 邮件服务（可选）
@@ -130,6 +131,10 @@ npx wrangler secret put RESEND_FROM       # 邮件发件人（可选）
 npx wrangler secret put NSFW_API_KEY      # 鉴黄服务密钥（启用时）
 npx wrangler secret put NSFW_EXTRA_PARAMS # 鉴黄服务附加查询参数（可选）
 ```
+
+> ⚠️ **`BACKUP_ENCRYPTION_KEY` 不能不设。** 未设置时备份会回退用 `JWT_SECRET` 加密，
+> 于是**任何一次 `JWT_SECRET` 轮换都会让此前所有备份永久无法解密** —— 而且要到真正
+> 恢复数据时才会发现。设置后备份文件头会带一个密钥指纹，解密时能立刻指出密钥是否用错。
 
 SMTP 密码/授权码可直接在管理后台的「邮件设置」中填写。保存时会使用由 `JWT_SECRET`
 派生的 AES-GCM 密钥加密后写入 D1，接口只返回是否已配置，不会回传密码或密文。旧部署中的
@@ -168,13 +173,41 @@ npx wrangler secret delete ADMIN_BOOTSTRAP_TOKEN
 
 - **自动备份**：Worker 每天（UTC 19:37，北京 03:37）检查一次，按管理后台设置的频率
   （关闭 / 每天 / 每周 / 每月，默认每周，改后即时生效无需部署）导出 D1。超过 8MB 先 gzip，
-  再使用 `BACKUP_ENCRYPTION_KEY`（未设置时回退 `JWT_SECRET`）进行 AES-GCM 加密，最终以
+  再用 `BACKUP_ENCRYPTION_KEY`（**建议必须设置**；未设置会回退 `JWT_SECRET` 并在日志里告警，
+  那种情况下轮换 `JWT_SECRET` 会让历史备份永久不可解密）进行 AES-GCM 加密，最终以
   `.sql[.gz].enc` 发到 Telegram。瞬态验证码、限流桶、缓存和待处理记录不入备份
 - **后台管理**：管理后台「数据备份」页签支持立即备份、备份历史（含失败告警记录）、
   历史下载（经 Bot 中转，上限 20MB，超限到频道手动下载）与即时导出到本地
-- **手动备份**：`npx wrangler d1 export duckimg --remote --output=./backup.sql`
+- **手动备份**：⚠️ **务必导出到仓库之外**（导出的 .sql 含用户邮箱与密码哈希，仓库根目录会被 `git add -A` 收走；`.gitignore` 虽已兜底 `*.sql`，仍不要放在仓库里）
+  `npx wrangler d1 export duckimg --remote --output=~/duckimg-backup.sql`（Windows：`--output=$env:TEMP\duckimg-backup.sql`）
 - **误操作回滚**：D1 自带 Time Travel，可恢复最近 30 天内任意一分钟：
   `npx wrangler d1 time-travel restore duckimg --timestamp=<unix秒>`
+
+### ✅ 验证备份真的能恢复（强烈建议定期跑）
+
+D1 备份是**用户元数据的唯一副本**（图片在 Telegram），而"备份存在"不等于"备份能恢复"。
+一条命令即可端到端验证：读备份历史 → 从 Telegram 取回 → 用你的密钥解密 → 校验内容结构。
+
+```bash
+npm run backup:verify                  # 验证最新一份（会提示输入密钥，或读 BACKUP_ENCRYPTION_KEY）
+npm run backup:verify -- --all         # 验证历史里全部备份
+npm run backup:verify -- --no-download # 只检查"有没有备份、有多新"（不需要密钥）
+npm run backup:verify -- --file x.enc  # 验证本地文件（已手动从频道下载时用）
+npm run backup:verify -- --selftest    # 离线自测：不需要任何凭据，确认校验工具本身有效
+```
+
+它会明确区分几种情况，便于直接行动：
+
+| 现象 | 含义 |
+|---|---|
+| `密钥指纹不匹配` | 你手上的密钥 ≠ 生成该备份的密钥（不是数据损坏，但必须解决） |
+| `指纹不匹配` 报的是别的 hex | 备份由独立密钥加密，请用 `BACKUP_ENCRYPTION_KEY` |
+| 下载报 20MB 上限 | 免费 Bot API 的 `getFile` 限制；改用 `--file` 手动下载验证，或设 `TG_API_BASE` 指向自建 Bot API |
+| 内容校验 FAIL | 备份缺表/被截断，**恢复会不完整**，需要立刻重新备份 |
+
+> 提示：把密钥通过环境变量传入（`BACKUP_ENCRYPTION_KEY`）可避免进入 shell 历史；
+> 未设置时脚本会**静默**提示输入（不回显）。
+
 
 恢复频道中的加密备份（解密密钥必须与生成备份时一致）：
 
@@ -217,6 +250,27 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 ---
 
 ## 📈 更新日志
+
+### 🛡️ [v2.3.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.0)（2026-09）
+
+- 🔐 修复标签过滤器的存储型 XSS（`dashboard.js` 未转义标签，服务端只限长度不限特殊字符）
+- 🔐 修复封禁绕过：`images.blocked` 的检查此前被“当前存在封禁用户”这个条件门控，无人被封时被屏蔽图片仍会正常对外提供
+- 🔐 修复登录时序枚举：不存在的账号会立即返回，而已存在账号要跑一次 PBKDF2，据此可枚举账号；现已补等量运算
+- 🔐 忘记密码改为统一文案 + 后台异步发信，响应不再因账号是否存在而差异；`changeEmail` 补限流
+- 🔐 认证端点限流增加账号维度并改为 fail-closed，登录/发码/验码/重置均可按目标账号限速（此前只按 IP，换 IP 即可绕过）
+- 🗑️ 修复“删除图片”未清边缘缓存：直链在 Cloudflare 边缘与浏览器缓存中仍可访问最长一年；现删除时同步清缓存，并把 `/file/` 缓存从一年 `immutable` 改为有限 TTL
+- 🚫 修复重复上传会把管理员设置的封禁标志重置为 0（`ON CONFLICT` 覆盖了审核/用户自有列）
+- 🖼️ 透明背景不再变黑：含透明像素的图片不再被转成 JPEG；开启压缩时对超过 1.5MB 的透明图询问“保透明还是压小体积”，关闭压缩时原图一字节不动
+- 💾 备份加密新增密钥指纹：用错密钥时会明确提示指纹不匹配，而不是含糊的“解密失败”；未设置 `BACKUP_ENCRYPTION_KEY` 时日志告警
+- 🧰 新增 `npm run backup:verify`：一键从 Telegram 取回备份并解密校验内容完整性（含离线自测与反向对照）
+- 🧰 新增 `npm run check:deps` 依赖守卫与 `predeploy` 钩子：node_modules 与 lockfile 不一致时直接拒绝部署
+- ✅ 新增前端回归测试 `npm run test:frontend`（CDP + 无头浏览器，零新增依赖），覆盖布局回归与 XSS
+- ✅ 新增配置一致性测试：`wrangler.toml` 的 crons 与源码 `BACKUP_CRON` 漂移会直接失败（此前只靠注释约束，漂移会导致备份静默停摆）
+- 🗄️ 新增 `0003_indexes` 迁移：补 `images(upload_time)` 与 `rate_limits(reset_at)` 索引，管理端“最近上传”不再全表扫描；删除无人使用的 `idx_images_blocked`
+- 🧹 移除 Cloudflare Pages 时代的 `.cloudflare/` 遗留配置（一键部署会对生产库执行迁移）
+- 🔧 关闭自动备份频率为 `off` 时不再判定超期；后台备份历史新增 `staleness` 超期提示
+- 🤖 CI 调整：`npm audit` 由硬门禁改为建议项、新增 Dependabot、CI 内运行前端回归与备份自测；日志采样率 1.0 → 0.1
+- 🐛 `send-code` 对“域名无法收信/一次性邮箱”返回 400 而非 500（那是用户输入问题，此前会显示成“网站坏了”）
 
 ### 🔐 [v2.2.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.1)（2026-08）
 
@@ -299,7 +353,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.2.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.2.1)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.3.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.0)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 

@@ -128,6 +128,13 @@ body.dark-mode .upload-container {
   border: 1px solid var(--border-color);
 }
 
+/* 隐藏态必须能压过上面的 display:inline-flex !important（以及窄屏媒体查询里的 display:block !important）。
+   仅靠内联 style.display 是无效的——非 important 的内联声明永远输给作者 !important。
+   所以 JS 用 el.hidden 切换，这里兜住。 */
+.upload-quota[hidden] {
+  display: none !important;
+}
+
 /* ONE drop surface — frosted glass */
 .upload-area {
   position: relative;

@@ -174,18 +174,68 @@ async function gzipBytes(bytes) {
 
 const BACKUP_MAGIC = new TextEncoder().encode('DUCKIMG1');
 
-async function encryptBackupBytes(env, bytes) {
-  const secret = (env && (env.BACKUP_ENCRYPTION_KEY || env.JWT_SECRET)) || '';
+/**
+ * 备份密钥解析。
+ *
+ * 优先 `BACKUP_ENCRYPTION_KEY`。若只能回退到 `JWT_SECRET`，返回空 tag ——
+ * tag 参与密钥派生，空 tag 使派生与旧格式完全一致，因此**旧备份仍可解密**。
+ * 但回退意味着轮换 JWT_SECRET 会让历史备份永久不可恢复，所以要显式告警。
+ */
+export function resolveBackupKey(env) {
+  const dedicated = String((env && env.BACKUP_ENCRYPTION_KEY) || '');
+  if (dedicated) return { secret: dedicated, tag: 'k1' };
+  const fallback = String((env && env.JWT_SECRET) || '');
+  if (fallback) return { secret: fallback, tag: '' };
+  return { secret: '', tag: '' };
+}
+
+/** 密钥指纹（前 6 字节 hex），写进文件头，便于恢复时判断该用哪把钥匙 */
+export async function keyFingerprint(secret) {
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('DuckImg backup keyid v1\0' + secret));
+  return Array.from(new Uint8Array(h).slice(0, 6))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * 加密备份。导出供测试直接调用（可用 keyOverride 注入密钥，避免依赖 env）。
+ *
+ * 格式：
+ *   MAGIC(8) | [':' + keyid(12hex)]? | IV(12) | ciphertext
+ * 派生式：
+ *   有 keyid → `DuckImg backup v1\0k1\0<secret>`
+ *   无 keyid → `DuckImg backup v1\0<secret>`（**与改动前的实现逐字节一致**，保证历史备份可解）
+ */
+export async function encryptBackupBytes(env, bytes, keyOverride = null) {
+  const { secret, tag } = keyOverride || resolveBackupKey(env);
   if (!secret) throw new Error('缺少 BACKUP_ENCRYPTION_KEY / JWT_SECRET，拒绝生成明文异地备份');
-  const material = new TextEncoder().encode(`DuckImg backup v1\0${secret}`);
+  if (!tag) {
+    console.warn(JSON.stringify({
+      event: 'backup_key_fallback',
+      message: '备份正在使用 JWT_SECRET 加密：一旦轮换 JWT_SECRET，历史备份将永久无法解密。请设置独立的 BACKUP_ENCRYPTION_KEY。',
+    }));
+  }
+
+  // 派生式：
+  //   有 tag（用了独立密钥）→ `v1\0k1\0<key>`
+  //   无 tag（回退 JWT_SECRET）→ `v1\0<key>`，与改动前的实现**逐字节一致**，
+  //     这样此前生成的备份仍然可以解密（绝不改变历史格式的派生）。
+  const material = new TextEncoder().encode(
+    tag ? `DuckImg backup v1\0${tag}\0${secret}` : `DuckImg backup v1\0${secret}`,
+  );
   const keyBytes = await crypto.subtle.digest('SHA-256', material);
   const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, bytes));
-  const out = new Uint8Array(BACKUP_MAGIC.length + iv.length + encrypted.length);
+
+  // 布局：MAGIC(8) | keyid(0 或 ':' + 12 hex) | IV(12) | ciphertext
+  // 旧格式没有 keyid 段，解密端靠 magic 后是否紧跟 ':' 来区分，两者都能解。
+  const keyIdBytes = tag ? new TextEncoder().encode(':' + await keyFingerprint(secret)) : new Uint8Array(0);
+  const out = new Uint8Array(BACKUP_MAGIC.length + keyIdBytes.length + iv.length + encrypted.length);
   out.set(BACKUP_MAGIC, 0);
-  out.set(iv, BACKUP_MAGIC.length);
-  out.set(encrypted, BACKUP_MAGIC.length + iv.length);
+  out.set(keyIdBytes, BACKUP_MAGIC.length);
+  out.set(iv, BACKUP_MAGIC.length + keyIdBytes.length);
+  out.set(encrypted, BACKUP_MAGIC.length + keyIdBytes.length + iv.length);
   return out;
 }
 
