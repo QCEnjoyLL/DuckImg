@@ -13,12 +13,16 @@ node_modules/
 !.env.example
 
 # 数据库导出与备份产物（含用户邮箱、密码哈希，切勿提交）
-# README 的 d1 export / 解密脚本默认就产出这些名字
-*.sql
-*.sql.gz
-*.sql.enc
-*.enc
-duckimg-backup-*
+# 注意：这里的模式**必须锚定到仓库根目录**（前导 /）。gitignore 的 `*` 可以跨目录匹配，
+# 裸写 `*.sql` 会连 `migrations/*.sql` 一起忽略 —— 那是必须入库的数据库迁移文件。
+# README 的 d1 export / 解密脚本默认就产出下面这些名字。
+/*.sql
+/*.sql.gz
+/*.sql.enc
+/*.enc
+/*.dump
+/duckimg-backup-*
+/backup.sql
 
 # 迁移导出（含用户哈希/邮箱，切勿提交）
 migration/export/
