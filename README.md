@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.0"><img src="https://img.shields.io/badge/release-v2.3.0-blue?style=flat-square" alt="v2.3.0"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.1"><img src="https://img.shields.io/badge/release-v2.3.1-blue?style=flat-square" alt="v2.3.1"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
@@ -250,6 +250,15 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 📈 更新日志
 
+### 🧩 [v2.3.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.1)（2026-09）
+
+**仓库完整性补丁，Worker 与前端代码无任何变更**（因此无需重新部署）。
+
+- 🗄️ **补入遗漏的 `migrations/0003_indexes.sql`**：v2.3.0 的 `.gitignore` 里裸写 `*.sql` 会跨目录匹配，把 `migrations/*.sql` 一并忽略，导致该迁移文件只在本地存在、没有入库。**clone 仓库的人此前无法执行这个迁移，而线上库已经应用过它** —— 仓库与线上状态对不上
+- 🔧 修正 `.gitignore`：导出/备份类模式全部锚定到仓库根目录（`/*.sql`、`/*.enc`、`/duckimg-backup-*` 等），既能拦住含用户邮箱与密码哈希的 dump，又不再误伤 `migrations/*.sql`
+- 🤖 新增 tag 触发的自动发版：推送 `v*` 标签时由 GitHub Actions 自动创建 Release，说明文字取自 tag 注解（只用自带 `gh` CLI 与 `GITHUB_TOKEN`，不引入第三方 action，也不部署生产）
+- 🔒 Dependabot 增加全局规则忽略 major 升级：此前只对 `hono` 单独设置，导致 vitest 5.0.0、actions v7 这类破坏性升级也会被直接提议
+
 ### 🛡️ [v2.3.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.0)（2026-09）
 
 - 🔐 修复标签过滤器的存储型 XSS（`dashboard.js` 未转义标签，服务端只限长度不限特殊字符）
@@ -352,7 +361,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.3.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.0)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.3.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.1)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 
