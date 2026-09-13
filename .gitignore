@@ -36,6 +36,9 @@ skills-lock.json
 # 即使问题已修复，公开在仓库里也等于公开一份历史弱点图，因此只留本地。
 AUDIT.md
 
+# Release 说明的本地草稿（用于在 GitHub 网页粘贴；正文已进 tag 注解与 README 更新日志）
+release-notes-*.md
+
 
 # 打包产物
 dist/
