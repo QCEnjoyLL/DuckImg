@@ -25,9 +25,11 @@ updates:
         patterns:
           - "vitest"
           - "@vitest/*"
+    # 全局忽略 major：重大版本升级可能带来破坏性变更，必须人工评估后手动升级，
+    # 绝不能混在日常 PR 里被顺手合并。补上这条是因为此前只对 hono 单独设了规则，
+    # 结果 vitest 5.0.0 这类 major 也会被直接提议。
     ignore:
-      # 主版本升级可能带来破坏性变更，交由人工评估
-      - dependency-name: hono
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
@@ -36,3 +38,9 @@ updates:
       interval: monthly
     commit-message:
       prefix: "chore(ci)"
+    # GitHub Actions 同样只接受非破坏性升级（v4 → v5 会自动提 PR，
+    # v4 → v7 这种跨多个 major 的由人工评估）。actions 的大版本经常伴随
+    # runner 要求变化，直接合并容易让 CI 无声坏掉。
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
