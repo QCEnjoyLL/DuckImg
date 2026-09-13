@@ -86,7 +86,6 @@
 git clone https://github.com/QCEnjoyLL/DuckImg.git
 cd DuckImg
 
-# 安装依赖
 # 安装依赖（用 npm ci：严格按 package-lock.json 安装，避免本地依赖漂移）
 npm ci
 

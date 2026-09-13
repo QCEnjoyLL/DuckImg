@@ -1,0 +1,60 @@
+# 推送标签时自动创建 GitHub Release。
+#
+# 为什么这样设计：
+#  - 说明文字直接取自 **tag 的注解**（git 对象里就有），不需要额外维护一份
+#    release notes 文件，也不会和 README 的更新日志脱节。
+#  - 只用 GitHub 自带的 `gh` CLI（ubuntu-latest 预装）+ 仓库自动注入的 GITHUB_TOKEN，
+#    **不引入任何第三方 action**，也就没有需要审计的供应链面。
+#  - 只创建 Release，**不部署到 Cloudflare**。本项目的部署需要人工把握顺序
+#    （README 里写明：新代码依赖 users.token_version，迁移与部署顺序颠倒会导致
+#    认证接口失败），所以部署必须留在人手里。
+#
+# 用法：打 tag 并推送即可
+#   git tag -a v2.3.1 -m "修复说明……"
+#   git push origin v2.3.1
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # 创建 Release 所需；除此之外不需要别的权限
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout (with tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 需要完整历史才能读到 tag 注解
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          # 取 tag 注解正文（git tag -a 的 -m 内容）
+          NOTES="$(git tag -l --format='%(contents)' "$TAG")"
+
+          # 若注解为空，退回到 GitHub 自动生成的变更说明
+          if [ -z "${NOTES//[[:space:]]/}" ]; then
+            echo "tag $TAG 没有注解，使用 --generate-notes"
+            gh release create "$TAG" --title "$TAG" --generate-notes
+            exit 0
+          fi
+
+          # 预发布版本（如 v2.4.0-beta.1）标记为 prerelease
+          EXTRA=""
+          case "$TAG" in
+            *-*) EXTRA="--prerelease" ;;
+          esac
+
+          printf '%s\n' "$NOTES" | gh release create "$TAG" --title "$TAG" --notes-file - $EXTRA
+          echo "已创建 Release：$TAG"
