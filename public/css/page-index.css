@@ -505,6 +505,17 @@ body.dark-mode .result-container {
   margin-bottom: 6px;
 }
 
+/* Labels already contain an icon; the legacy mask duplicates it (Markdown has no mask). */
+.link-item label::before {
+  content: none;
+  display: none;
+}
+
+.link-item label > i {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
 .copy-container {
   display: flex;
   gap: 8px;

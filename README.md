@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.3"><img src="https://img.shields.io/badge/release-v2.3.3-blue?style=flat-square" alt="v2.3.3"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.4"><img src="https://img.shields.io/badge/release-v2.3.4-blue?style=flat-square" alt="v2.3.4"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
@@ -250,6 +250,11 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 📈 更新日志
 
+### 🧩 [v2.3.4](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.4)（2026-10）
+
+- 🖼️ 修复上传结果中 Markdown 标签左侧的实心色块，去掉旧 CSS 重复装饰，四种链接均保留各自正确的图标
+- ✅ 增加图标与复制目标的前端回归检查，并在移动端布局断言前等待视口更新
+
 ### 🖼️ [v2.3.3](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.3)（2026-10）
 
 - 🖼️「我的图片」新增每页数量选择，默认 20 张，可选 20 / 40 / 60 / 100 张，并在当前浏览器记住选择
@@ -375,7 +380,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.3.3](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.3)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.3.4](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.4)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 

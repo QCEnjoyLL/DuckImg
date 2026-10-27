@@ -163,6 +163,17 @@ async function main() {
     check('.upload-hint 保持单行', again.rows === 1, `${again.rows} 行`);
     check('.upload-hint 与标题水平居中一致', Math.abs(again.hintVsText) <= 1, `偏移 ${again.hintVsText}px`);
 
+    const linkIcons = await evalIn(`(() => {
+      return [...document.querySelectorAll('.link-item label')].map(label => ({
+        icons: label.querySelectorAll('i').length,
+        before: getComputedStyle(label, '::before').content,
+        beforeDisplay: getComputedStyle(label, '::before').display,
+        icon: label.querySelector('i')?.className,
+      }));
+    })()`);
+    check('四种链接标签只显示一个图标，无重复装饰色块', linkIcons.length === 4 && linkIcons.every(item => item.icons === 1 && item.before === 'none' && item.beforeDisplay === 'none'), JSON.stringify(linkIcons));
+    check('Markdown 使用自己的图标且复制目标保持不变', linkIcons[3]?.icon === 'ri-markdown-line' && await evalIn(`document.querySelector('[data-clipboard-target="#mdCode"]') !== null`));
+
     // Use mocked upload responses: no images or credentials leave the browser.
     console.log('\nupload moderation dialog');
     await evalIn(`(() => {
@@ -349,7 +360,8 @@ async function main() {
     check('旧请求不覆盖最新分页结果', race.page === 1 && race.query === 'new' && race.count === 20, JSON.stringify(race));
 
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 1, mobile: true });
-    const pageSizeMobile = await evalIn(`(() => {
+    const pageSizeMobile = await evalIn(`(async () => {
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const el = document.getElementById('pageSizeSelect');
       const r = el.getBoundingClientRect();
       return { fits: r.left >= 0 && r.right <= innerWidth, width: r.width, label: el.labels[0].textContent };
