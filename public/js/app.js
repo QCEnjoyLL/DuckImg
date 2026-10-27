@@ -120,6 +120,8 @@ function initPasteUpload() {
         const dropArea = document.getElementById('dropArea');
         const resultContainer = document.getElementById('resultContainer');
 
+        if (document.getElementById('uploadModerationDialog')?.open) return;
+
         // 焦点在输入框/文本域/可编辑元素时不劫持粘贴（让正常文本粘贴生效）
         const t = e.target;
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
@@ -317,6 +319,8 @@ function initUpload() {
     // 非首页（如 dashboard）没有上传区，直接跳过，避免中断后续初始化
     if (!dropArea || !fileInput) return;
 
+    const showModerationNotice = initUploadModerationDialog();
+
     // 点击上传区域触发文件选择
     dropArea.addEventListener('click', (e) => {
         // 防止点击到上传状态区域时触发文件选择
@@ -366,6 +370,7 @@ function initUpload() {
 
     // 处理多个文件上传
     async function handleFiles(files) {
+        if (document.getElementById('uploadModerationDialog')?.open) return;
         // 检查所有文件是否都是图片
         for (let i = 0; i < files.length; i++) {
             if (!files[i].type.match('image.*')) {
@@ -495,6 +500,11 @@ function initUpload() {
                 } catch (_) {}
                 showError(`上传失败: 服务器返回 ${xhr.status}${extra ? ' ' + extra : ''}`);
             }
+
+            // 403 也可能带部分结果；每个响应只弹一次，不影响成功图片的展示。
+            const moderationResults = Array.isArray(data) ? data
+                : (Array.isArray(data?.results) ? data.results : (data?.error ? [data] : []));
+            showModerationNotice(moderationResults);
 
             // 无论成功失败都刷新配额（计数可能已变化）
             refreshQuota();
@@ -696,6 +706,59 @@ function initUpload() {
 
     // 初始化时显示当前上传配额
     refreshQuota();
+}
+
+function initUploadModerationDialog() {
+    const dialog = document.getElementById('uploadModerationDialog');
+    if (!dialog) return () => {};
+    const title = document.getElementById('uploadModerationTitle');
+    const summary = document.getElementById('uploadModerationSummary');
+    const files = document.getElementById('uploadModerationFiles');
+    let failures = [];
+    let returnFocus = null;
+    let scrollLocked = false;
+
+    dialog.addEventListener('close', () => {
+        failures = [];
+        if (scrollLocked) window.DuckShell.unlockScroll();
+        scrollLocked = false;
+        if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    });
+
+    return (results) => {
+        const rejected = results.filter((item) => item && typeof item.error === 'string'
+            && /^(图片未通过内容审核|内容审核服务异常)/.test(item.error));
+        if (!rejected.length) return;
+        failures.push(...rejected);
+        const serviceOnly = failures.every((item) => item.error.startsWith('内容审核服务异常'));
+        title.textContent = serviceOnly ? '审核服务暂时不可用' : '图片未通过内容审核';
+        summary.textContent = serviceOnly
+            ? `${failures.length} 张图片因审核服务异常被拦截，请稍后重试。`
+            : `${failures.length} 张图片被内容审核拦截，未生成可用链接。其余上传结果不受影响。`;
+        files.replaceChildren();
+        for (const item of failures) {
+            const row = document.createElement('li');
+            const name = document.createElement('strong');
+            const reason = document.createElement('span');
+            name.textContent = item.fileName || '上传图片';
+            reason.textContent = item.error;
+            row.append(name, reason);
+            files.appendChild(row);
+        }
+        if (!dialog.open) {
+            if (typeof dialog.showModal !== 'function') {
+                alert(`${title.textContent}\n${summary.textContent}`);
+                failures = [];
+                return;
+            }
+            returnFocus = document.activeElement;
+            dialog.showModal();
+            if (window.DuckShell) {
+                window.DuckShell.lockScroll();
+                scrollLocked = true;
+            }
+        }
+    };
 }
 
 // 图片预览功能

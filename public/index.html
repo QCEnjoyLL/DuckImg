@@ -306,6 +306,15 @@
         </footer>
     </div>
 
+    <dialog id="uploadModerationDialog" class="upload-moderation-dialog" role="alertdialog" aria-labelledby="uploadModerationTitle" aria-describedby="uploadModerationSummary">
+        <div class="upload-moderation-icon" aria-hidden="true"><i class="ri-shield-cross-line"></i></div>
+        <h2 id="uploadModerationTitle">图片未通过内容审核</h2>
+        <p id="uploadModerationSummary"></p>
+        <ul id="uploadModerationFiles" class="upload-moderation-files" aria-label="被拦截的文件"></ul>
+        <p class="upload-moderation-note">如有疑问，请联系站点管理员。</p>
+        <form method="dialog"><button type="submit" class="upload-moderation-confirm" autofocus>我知道了</button></form>
+    </dialog>
+
     <!-- 返回顶部按钮 -->
     <div class="back-to-top" id="backToTop">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -163,6 +163,101 @@ async function main() {
     check('.upload-hint 保持单行', again.rows === 1, `${again.rows} 行`);
     check('.upload-hint 与标题水平居中一致', Math.abs(again.hintVsText) <= 1, `偏移 ${again.hintVsText}px`);
 
+    // Use mocked upload responses: no images or credentials leave the browser.
+    console.log('\nupload moderation dialog');
+    await evalIn(`(() => {
+      window.__originalXHR = window.XMLHttpRequest;
+      if (window.UserPrefs) window.UserPrefs.processFiles = async files => Array.from(files);
+      window.__uploadResponse = [];
+      window.__uploadHttpStatus = 200;
+      window.XMLHttpRequest = class {
+        upload = { addEventListener() {} };
+        open() {} setRequestHeader() {}
+        send() { this.status = window.__uploadHttpStatus; this.response = window.__uploadResponse; this.onload(); }
+      };
+      window.__testUpload = async (response, status = 200) => {
+        window.__uploadResponse = response;
+        window.__uploadHttpStatus = status;
+        document.getElementById('uploadAgainBtn').click();
+        document.getElementById('uploadBtn').focus();
+        await window.uploadHandlers.handleFiles([new File(['test'], 'test.png', { type: 'image/png' })]);
+      };
+    })()`);
+    const blocked = await evalIn(`(async () => {
+      await window.__testUpload([
+        { blocked: true, error: '图片未通过内容审核，已被拦截', fileName: '<img src=x onerror=alert(1)>.png' },
+        { blocked: true, error: '图片未通过内容审核，已被拦截', fileName: 'second.png' },
+      ]);
+      const dialog = document.getElementById('uploadModerationDialog');
+      return {
+        open: dialog.open, modal: dialog.matches(':modal'),
+        rows: dialog.querySelectorAll('li').length,
+        focus: document.activeElement.className,
+        images: dialog.querySelectorAll('img').length,
+        filename: dialog.querySelector('strong').textContent,
+        scrollLocked: document.body.classList.contains('dk-scroll-lock'),
+        inline: document.getElementById('uploadStatus').textContent,
+      };
+    })()`);
+    check('审核失败显示真正的模态弹窗', blocked.open && blocked.modal);
+    check('批量拦截合并到一个弹窗', blocked.rows === 2, `${blocked.rows} rows`);
+    check('默认聚焦确认按钮且锁定背景滚动', blocked.focus === 'upload-moderation-confirm' && blocked.scrollLocked);
+    check('文件名安全显示，不作为 HTML 解析', blocked.images === 0 && blocked.filename.startsWith('<img'));
+    check('保留原上传区错误提示', blocked.inline.includes('图片未通过内容审核'));
+
+    if (process.env.DUCKIMG_FRONTEND_SCREENSHOTS) {
+      fs.mkdirSync(process.env.DUCKIMG_FRONTEND_SCREENSHOTS, { recursive: true });
+      const shot = await send('Page.captureScreenshot', { format: 'png' });
+      fs.writeFileSync(path.join(process.env.DUCKIMG_FRONTEND_SCREENSHOTS, 'moderation-desktop.png'), Buffer.from(shot.data, 'base64'));
+    }
+    await evalIn(`document.querySelector('.upload-moderation-confirm').click()`);
+    await sleep(50);
+    const closed = await evalIn(`({ open: document.getElementById('uploadModerationDialog').open,
+      locked: document.body.classList.contains('dk-scroll-lock'), focus: document.activeElement.id })`);
+    check('确认后关闭、解锁并恢复焦点', !closed.open && !closed.locked && closed.focus === 'uploadBtn', JSON.stringify(closed));
+
+    const mixed = await evalIn(`(async () => {
+      await window.__testUpload([{ src: '/file/test.png', listed: true },
+        { blocked: true, error: '图片未通过内容审核，已被拦截', fileName: 'blocked.png' }]);
+      return { open: document.getElementById('uploadModerationDialog').open,
+        resultsVisible: document.getElementById('resultContainer').style.display === 'block' };
+    })()`);
+    check('部分成功仍弹窗，成功图片正常展示', mixed.open && mixed.resultsVisible);
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    await sleep(50);
+    check('Escape 可以关闭弹窗', await evalIn(`!document.getElementById('uploadModerationDialog').open && !document.body.classList.contains('dk-scroll-lock')`));
+
+    const service = await evalIn(`(async () => {
+      await window.__testUpload({ error: '已达每日上传上限', results: [
+        { blocked: true, error: '内容审核服务异常，已按站点策略拦截', fileName: 'service.png' }] }, 403);
+      return { open: document.getElementById('uploadModerationDialog').open,
+        title: document.getElementById('uploadModerationTitle').textContent };
+    })()`);
+    check('403 中的审核异常也提醒，不误报为图片违规', service.open && service.title === '审核服务暂时不可用');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 1, mobile: true });
+    const mobile = await evalIn(`(() => {
+      const dialog = document.getElementById('uploadModerationDialog');
+      const r = dialog.getBoundingClientRect();
+      return { fits: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight,
+        overflow: dialog.scrollWidth > dialog.clientWidth };
+    })()`);
+    check('375px 窄屏弹窗完整可见且无水平溢出', mobile.fits && !mobile.overflow, JSON.stringify(mobile));
+    if (process.env.DUCKIMG_FRONTEND_SCREENSHOTS) {
+      const shot = await send('Page.captureScreenshot', { format: 'png' });
+      fs.writeFileSync(path.join(process.env.DUCKIMG_FRONTEND_SCREENSHOTS, 'moderation-mobile.png'), Buffer.from(shot.data, 'base64'));
+    }
+    await send('Emulation.clearDeviceMetricsOverride');
+    await evalIn(`document.querySelector('.upload-moderation-confirm').click()`);
+    await sleep(50);
+    const ordinary = await evalIn(`(async () => {
+      await window.__testUpload([{ blocked: true, error: '文件超过大小限制', fileName: 'large.png' }]);
+      const result = !document.getElementById('uploadModerationDialog').open;
+      window.XMLHttpRequest = window.__originalXHR;
+      return result;
+    })()`);
+    check('普通上传错误不触发审核弹窗', ordinary);
+
     // ── 3. dashboard.html：空状态 hidden 与 flex ───────────────────────
     console.log('\ndashboard.html');
     await open('public/dashboard.html', `!!document.getElementById('emptyState')`);
