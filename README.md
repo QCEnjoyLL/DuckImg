@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.1"><img src="https://img.shields.io/badge/release-v2.3.1-blue?style=flat-square" alt="v2.3.1"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.2"><img src="https://img.shields.io/badge/release-v2.3.2-blue?style=flat-square" alt="v2.3.2"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
@@ -250,6 +250,13 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 📈 更新日志
 
+### 🛡️ [v2.3.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.2)（2026-10）
+
+- 🚫 图片审核拦截改为居中确认弹窗，展示文件名与原因，同时保留上传区提示
+- 🧩 批量拦截合并提醒，部分成功时不影响成功图片展示；审核服务异常使用独立文案
+- ♿ 支持键盘关闭、焦点恢复、背景滚动锁和手机窄屏布局，文件名按纯文本安全展示
+- ✅ 前端回归测试增加审核弹窗场景；同步项目与锁文件版本号，不变更依赖
+
 ### 🧩 [v2.3.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.1)（2026-09）
 
 **仓库完整性补丁，Worker 与前端代码无任何变更**（因此无需重新部署）。
@@ -361,7 +368,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.3.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.1)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.3.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.2)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 
