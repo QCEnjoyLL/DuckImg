@@ -307,6 +307,16 @@
             min-width: 0;
         }
 
+        .page-size-filter {
+            flex-wrap: nowrap;
+        }
+
+        #pageSizeSelect {
+            width: 5.5rem;
+            min-height: 44px;
+            flex: 0 0 auto;
+        }
+
         /* keep favorite + drag + view on one chip row */
         .filter-group.favorite-filter,
         .filter-group.drag-toggle {
@@ -2165,6 +2175,16 @@
                             <option value="size">文件大小</option>
                             <option value="custom">自定义排序</option>
                         </select>
+                    </div>
+                    <div class="filter-group page-size-filter">
+                        <label for="pageSizeSelect" class="filter-label" data-i18n="gallery.pageSize">每页显示:</label>
+                        <select id="pageSizeSelect" class="sort-select">
+                            <option value="20" selected>20</option>
+                            <option value="40">40</option>
+                            <option value="60">60</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span class="filter-label" data-i18n="gallery.pageSize.unit">张</span>
                     </div>
                     <div class="filter-group" id="tagFilters">
                         <!-- 标签过滤器将通过JavaScript动态生成 -->

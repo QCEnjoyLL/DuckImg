@@ -261,6 +261,113 @@ async function main() {
     // ── 3. dashboard.html：空状态 hidden 与 flex ───────────────────────
     console.log('\ndashboard.html');
     await open('public/dashboard.html', `!!document.getElementById('emptyState')`);
+
+    console.log('gallery page size');
+    const defaultSize = await evalIn(`(async () => {
+      window.__galleryOriginalFetch = window.fetch;
+      window.__galleryRequests = [];
+      window.__galleryMockData = url => {
+        const u = new URL(url, 'https://duckimg.test');
+        const page = Number(u.searchParams.get('page'));
+        const limit = Number(u.searchParams.get('limit'));
+        const count = Math.max(0, Math.min(limit, 125 - (page - 1) * limit));
+        return {
+          files: Array.from({ length: count }, (_, i) => ({
+            id: 'page-test-' + ((page - 1) * limit + i), fileName: 'image-' + i + '.png',
+            fileSize: 100, uploadTime: 1700000000000 + i, tags: ['test-tag'],
+            url: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+          })),
+          pagination: { page, limit, totalPages: Math.ceil(125 / limit), total: 125 },
+          totalImages: 125, totalSize: 12500, recentUploads: 0, averageFileSize: 100,
+        };
+      };
+      window.fetch = async url => {
+        window.__galleryRequests.push(String(url));
+        return { ok: true, json: async () => window.__galleryMockData(url) };
+      };
+      localStorage.removeItem('duckimg.galleryPageSize');
+      initGalleryPageSize();
+      await loadUserImages(1, '', '');
+      return { value: document.getElementById('pageSizeSelect').value,
+        cards: document.querySelectorAll('#imageGrid .image-card').length,
+        pages: totalPages, url: window.__galleryRequests.at(-1),
+        options: [...document.getElementById('pageSizeSelect').options].map(o => o.value).join(',') };
+    })()`);
+    check('默认每页 20 张，真实请求带 limit', defaultSize.value === '20' && defaultSize.cards === 20 && defaultSize.pages === 7 && defaultSize.url.includes('limit=20'), JSON.stringify(defaultSize));
+    check('提供 20/40/60/100 四档选择', defaultSize.options === '20,40,60,100');
+
+    for (const size of [40, 60, 100]) {
+      const changed = await evalIn(`(async () => {
+        await loadUserImages(2, 'image', 'test-tag');
+        const select = document.getElementById('pageSizeSelect');
+        select.value = '${size}';
+        select.dispatchEvent(new Event('change'));
+        await new Promise(r => setTimeout(r, 30));
+        const u = new URL(window.__galleryRequests.at(-1), 'https://duckimg.test');
+        return { page: currentPage, count: currentImages.length,
+          cards: document.querySelectorAll('#imageGrid .image-card').length,
+          limit: u.searchParams.get('limit'), query: u.searchParams.get('q'), tag: u.searchParams.get('tag'),
+          saved: localStorage.getItem('duckimg.galleryPageSize'),
+          pages: totalPages };
+      })()`);
+      check(`切换每页 ${size} 张回到第一页并正确渲染`, changed.page === 1 && changed.count === size && changed.cards === size && changed.pages === Math.ceil(125 / size), JSON.stringify(changed));
+      check(`每页 ${size} 张保留搜索/标签并保存选择`, changed.limit === String(size) && changed.query === 'image' && changed.tag === 'test-tag' && changed.saved === String(size));
+    }
+    const nextPage = await evalIn(`(async () => {
+      const next = [...document.querySelectorAll('#pagination button')].find(b => b.textContent === tt('common.next', '下一页'));
+      next.click();
+      await new Promise(r => setTimeout(r, 30));
+      return { page: currentPage, count: currentImages.length, url: window.__galleryRequests.at(-1) };
+    })()`);
+    check('翻页沿用数量和筛选，末页剩余 25 张', nextPage.page === 2 && nextPage.count === 25 && nextPage.url.includes('limit=100') && nextPage.url.includes('tag=test-tag') && nextPage.url.includes('q=image'), JSON.stringify(nextPage));
+
+    const preference = await evalIn(`(() => {
+      imagesPerPage = 20;
+      initGalleryPageSize();
+      const restored = imagesPerPage;
+      localStorage.setItem('duckimg.galleryPageSize', '999999');
+      initGalleryPageSize();
+      const fallback = imagesPerPage;
+      const original = Storage.prototype.getItem;
+      Storage.prototype.getItem = () => { throw new Error('storage unavailable'); };
+      try { initGalleryPageSize(); } finally { Storage.prototype.getItem = original; }
+      return { restored, fallback, unavailable: imagesPerPage };
+    })()`);
+    check('重新初始化恢复选择，非法值/存储不可用回退 20', preference.restored === 100 && preference.fallback === 20 && preference.unavailable === 20, JSON.stringify(preference));
+
+    const race = await evalIn(`(async () => {
+      let release;
+      const baseFetch = window.fetch;
+      window.fetch = url => new Promise(resolve => { release = () => resolve({ ok: true, json: async () => window.__galleryMockData(url) }); });
+      const slow = loadUserImages(2, 'old', '');
+      window.fetch = baseFetch;
+      await loadUserImages(1, 'new', 'test-tag');
+      release();
+      await slow;
+      return { page: currentPage, query: currentSearchQuery, count: currentImages.length };
+    })()`);
+    check('旧请求不覆盖最新分页结果', race.page === 1 && race.query === 'new' && race.count === 20, JSON.stringify(race));
+
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 1, mobile: true });
+    const pageSizeMobile = await evalIn(`(() => {
+      const el = document.getElementById('pageSizeSelect');
+      const r = el.getBoundingClientRect();
+      return { fits: r.left >= 0 && r.right <= innerWidth, width: r.width, label: el.labels[0].textContent };
+    })()`);
+    check('375px 窄屏数量选择可用且有明确标签', pageSizeMobile.fits && pageSizeMobile.width >= 50 && pageSizeMobile.label.length > 0, JSON.stringify(pageSizeMobile));
+    if (process.env.DUCKIMG_FRONTEND_SCREENSHOTS) {
+      await evalIn(`document.getElementById('pageSizeSelect').scrollIntoView({ block: 'center' })`);
+      const shot = await send('Page.captureScreenshot', { format: 'png' });
+      fs.writeFileSync(path.join(process.env.DUCKIMG_FRONTEND_SCREENSHOTS, 'gallery-page-size-mobile.png'), Buffer.from(shot.data, 'base64'));
+    }
+    await send('Emulation.clearDeviceMetricsOverride');
+    const pageSizeEnglish = await evalIn(`(() => {
+      window.UserPrefs.applyLanguage('en-US');
+      return document.querySelector('label[for="pageSizeSelect"]').textContent;
+    })()`);
+    check('每页数量控件支持英文', pageSizeEnglish === 'Per page:', pageSizeEnglish);
+    await evalIn(`window.UserPrefs.applyLanguage('zh-CN'); window.fetch = window.__galleryOriginalFetch; localStorage.removeItem('duckimg.galleryPageSize')`);
+
     const empty = await evalIn(`(() => {
       const el = document.getElementById('emptyState');
       el.hidden = false; const shown = getComputedStyle(el).display; const align = getComputedStyle(el).alignItems;

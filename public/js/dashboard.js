@@ -6,6 +6,11 @@
 // 全局变量
 let currentPage = 1;
 let totalPages = 1;
+const GALLERY_PAGE_SIZES = [20, 40, 60, 100];
+const GALLERY_PAGE_SIZE_KEY = 'duckimg.galleryPageSize';
+let imagesPerPage = 20;
+let currentSearchQuery = '';
+let galleryLoadVersion = 0;
 let currentImages = [];
 let currentTags = [];
 let currentEditingImageId = null;
@@ -61,6 +66,8 @@ function initDashboard() {
             openChartsPanel();
         }, 300);
     }
+
+    initGalleryPageSize();
 
     // 加载用户图片（带标签过滤）
     loadUserImages(1, '', urlTag || '');
@@ -654,8 +661,33 @@ function toggleFavorite(imageId, button) {
     }
 }
 
-// 加载用户图片
-async function loadUserImages(page = 1, query = '', tag = '') {
+function initGalleryPageSize() {
+    const select = document.getElementById('pageSizeSelect');
+    if (!select) return;
+    try {
+        const saved = Number(localStorage.getItem(GALLERY_PAGE_SIZE_KEY));
+        imagesPerPage = GALLERY_PAGE_SIZES.includes(saved) ? saved : 20;
+    } catch {
+        imagesPerPage = 20;
+    }
+    select.value = String(imagesPerPage);
+    select.onchange = () => {
+        const value = Number(select.value);
+        if (!GALLERY_PAGE_SIZES.includes(value) || value === imagesPerPage) {
+            select.value = String(imagesPerPage);
+            return;
+        }
+        imagesPerPage = value;
+        try { localStorage.setItem(GALLERY_PAGE_SIZE_KEY, String(value)); } catch { /* 当前页面仍可使用 */ }
+        loadUserImages(1);
+    };
+}
+
+// 加载用户图片；翻页、切换数量和刷新均保留当前筛选条件。
+async function loadUserImages(page = 1, query = currentSearchQuery, tag = currentTagFilter) {
+    const loadVersion = ++galleryLoadVersion;
+    currentSearchQuery = query;
+    currentTagFilter = tag;
     try {
         const imageGrid = document.getElementById('imageGrid');
         const emptyState = document.getElementById('emptyState');
@@ -665,7 +697,7 @@ async function loadUserImages(page = 1, query = '', tag = '') {
         imageGrid.innerHTML = '<div class="loading-text">' + tt('common.loading','加载中…') + '</div>';
 
         // 构建API URL
-        let url = `/api/images?page=${page}`;
+        let url = `/api/images?page=${page}&limit=${imagesPerPage}`;
         if (query) {
             url += `&q=${encodeURIComponent(query)}`;
         }
@@ -683,6 +715,8 @@ async function loadUserImages(page = 1, query = '', tag = '') {
         }
 
         const data = await response.json();
+        // 快速切换数量/筛选时，只允许最后一次请求更新页面。
+        if (loadVersion !== galleryLoadVersion) return;
         let images = data.files || [];
 
         // 更新分页信息
@@ -736,6 +770,7 @@ async function loadUserImages(page = 1, query = '', tag = '') {
         // 渲染标签过滤器
         renderTagFilters();
     } catch (error) {
+        if (loadVersion !== galleryLoadVersion) return;
         console.error('加载图片错误:', error);
         document.getElementById('imageGrid').innerHTML = `
             <div class="error-message">

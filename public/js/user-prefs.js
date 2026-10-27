@@ -111,6 +111,8 @@
       // gallery
       'gallery.search': '搜索图片名称或标签…',
       'gallery.sort': '排序方式:',
+      'gallery.pageSize': '每页显示:',
+      'gallery.pageSize.unit': '张',
       'gallery.sort.newest': '最新上传',
       'gallery.sort.oldest': '最早上传',
       'gallery.sort.name': '文件名',
@@ -434,6 +436,8 @@
       'common.images': 'images',
       'gallery.search': 'Search name or tags…',
       'gallery.sort': 'Sort:',
+      'gallery.pageSize': 'Per page:',
+      'gallery.pageSize.unit': 'images',
       'gallery.sort.newest': 'Newest',
       'gallery.sort.oldest': 'Oldest',
       'gallery.sort.name': 'Name',
