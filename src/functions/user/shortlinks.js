@@ -43,7 +43,9 @@ async function createLink(target, token, signal) {
   // Construct fresh headers: never forward the user's JWT, cookies, or Origin.
   const response = await fetch(`${SHORT_ORIGIN}/create`, {
     method: 'POST', headers, body: JSON.stringify({ url: target }),
-    redirect: 'error', signal,
+    // Workers supports only follow/manual. Keep redirects visible so credentials
+    // cannot be forwarded to a different endpoint; !response.ok rejects 3xx below.
+    redirect: 'manual', signal,
   });
   if (!response.ok) {
     await response.body?.cancel();

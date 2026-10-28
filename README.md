@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.0"><img src="https://img.shields.io/badge/release-v2.4.0-blue?style=flat-square" alt="v2.4.0"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.1"><img src="https://img.shields.io/badge/release-v2.4.1-blue?style=flat-square" alt="v2.4.1"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
@@ -267,6 +267,12 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 📈 更新日志
 
+### 🔧 [v2.4.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.1)（2026-10）
+
+- 🔧 修复短链请求在 Cloudflare Workers 中因不支持 `redirect: 'error'` 而立即失败的问题，改用 `manual` 并拒绝所有非成功响应，仍不跟随跳转
+- ✅ 增加请求参数原生校验及 301/302/307/308 拒绝回归测试；通过 Cloudflare 远程预览验证同一后端处理函数成功生成真实短直链和短预览链接
+- 🛡️ 原上传逻辑、上方原始链接与短链区域界面不变，无需数据库迁移或修改 short 项目
+
 ### 🔗 [v2.4.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.0)（2026-10）
 
 - 🔗 上传结果下方新增可选短链按钮，接入自建 short 服务，在独立区域展示短直链、短预览链接、HTML 和 Markdown
@@ -404,7 +410,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.4.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.0)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.4.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.1)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 

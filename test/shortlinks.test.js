@@ -31,6 +31,9 @@ beforeEach(async () => {
   imageId = `short_${crypto.randomUUID()}.png`;
   await dbUpsertImage(env, { id: imageId, userId: user.id, fileName: 'image.png' });
   upstream = vi.fn(async (_url, init) => {
+    // Preserve native Workers request-option validation rather than hiding it
+    // behind an unconditional fetch stub (not all browser redirect modes work here).
+    new Request(_url, init);
     const preview = JSON.parse(init.body).url.endsWith('?preview=true');
     const slug = preview ? 'preview123' : 'direct123';
     return Response.json({ slug, link: `https://tny.cc.cd/${slug}` });
@@ -63,7 +66,7 @@ describe('optional image short links', () => {
     expect(upstream).toHaveBeenCalledTimes(2);
     for (const [endpoint, init] of upstream.mock.calls) {
       expect(endpoint).toBe('https://tny.cc.cd/create');
-      expect(init.redirect).toBe('error');
+      expect(init.redirect).toBe('manual');
       expect(new Headers(init.headers).get('Authorization')).toBeNull();
       expect(new Headers(init.headers).get('Cookie')).toBeNull();
       expect(new Headers(init.headers).get('Origin')).toBeNull();
@@ -108,11 +111,13 @@ describe('optional image short links', () => {
     expect(await response.text()).not.toContain('test-only-creation-token');
   });
 
-  it.each([401, 403, 429, 500])('handles upstream HTTP %s without returning upstream error bodies', async status => {
+  it.each([301, 302, 307, 308, 401, 403, 429, 500])('handles upstream HTTP %s without returning upstream error bodies', async status => {
     upstream.mockImplementation(async () => new Response('private-upstream-value', { status }));
     const response = await request({ id: imageId });
     expect(response.status).toBe(502);
     expect(await response.text()).not.toContain('private-upstream-value');
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect(upstream.mock.calls[0][1].redirect).toBe('manual');
   });
 
   it.each([
