@@ -164,7 +164,7 @@ async function main() {
     check('.upload-hint 与标题水平居中一致', Math.abs(again.hintVsText) <= 1, `偏移 ${again.hintVsText}px`);
 
     const linkIcons = await evalIn(`(() => {
-      return [...document.querySelectorAll('.link-item label')].map(label => ({
+      return [...document.querySelectorAll('#resultContainer > .link-group .link-item label')].map(label => ({
         icons: label.querySelectorAll('i').length,
         before: getComputedStyle(label, '::before').content,
         beforeDisplay: getComputedStyle(label, '::before').display,
@@ -186,12 +186,12 @@ async function main() {
         open() {} setRequestHeader() {}
         send() { this.status = window.__uploadHttpStatus; this.response = window.__uploadResponse; this.onload(); }
       };
-      window.__testUpload = async (response, status = 200) => {
+      window.__testUpload = async (response, status = 200, files = [new File(['test'], 'test.png', { type: 'image/png' })]) => {
         window.__uploadResponse = response;
         window.__uploadHttpStatus = status;
         document.getElementById('uploadAgainBtn').click();
         document.getElementById('uploadBtn').focus();
-        await window.uploadHandlers.handleFiles([new File(['test'], 'test.png', { type: 'image/png' })]);
+        await window.uploadHandlers.handleFiles(files);
       };
     })()`);
     const blocked = await evalIn(`(async () => {
@@ -264,10 +264,121 @@ async function main() {
     const ordinary = await evalIn(`(async () => {
       await window.__testUpload([{ blocked: true, error: '文件超过大小限制', fileName: 'large.png' }]);
       const result = !document.getElementById('uploadModerationDialog').open;
-      window.XMLHttpRequest = window.__originalXHR;
       return result;
     })()`);
     check('普通上传错误不触发审核弹窗', ordinary);
+
+    console.log('\noptional short links');
+    const shortInitial = await evalIn(`(async () => {
+      window.__shortOriginalFetch = window.fetch;
+      window.__shortCalls = [];
+      window.__shortMode = 'success';
+      window.__shortSnapshot = () => ['directLink','previewLink','htmlCode','mdCode'].map(id => document.getElementById(id).value);
+      window.__shortValues = () => ['shortDirectLink','shortPreviewLink','shortHtmlCode','shortMdCode'].map(id => document.getElementById(id).value);
+      window.fetch = async (url, init) => {
+        if (url !== '/api/images/shortlinks') return { ok: false };
+        window.__shortCalls.push({ url, id: JSON.parse(init.body).id });
+        if (window.__shortMode === 'pending') return new Promise(resolve => { window.__shortRelease = resolve; });
+        if (window.__shortMode === 'fail') throw new Error('network failure');
+        if (window.__shortMode === 'malicious') return { ok: true, json: async () => ({ direct:'javascript:alert(1)', preview:'https://evil.example/image' }) };
+        return { ok: true, json: async () => ({ direct:'https://tny.cc.cd/direct123', preview:'https://tny.cc.cd/preview123' }) };
+      };
+      await window.__testUpload([{ src:'/file/first.png', listed:true }]);
+      window.__originalLinks = window.__shortSnapshot();
+      return { calls:window.__shortCalls.length, hidden:document.getElementById('shortLinkResults').hidden,
+        originals:window.__originalLinks, button:!document.getElementById('generateShortLinks').disabled,
+        below:!!(document.getElementById('resultContainer').querySelector(':scope > .link-group')
+          .compareDocumentPosition(document.querySelector('.shortlink-controls')) & Node.DOCUMENT_POSITION_FOLLOWING) };
+    })()`);
+    check('上传后不自动缩短，按钮位于原始四种链接下方', shortInitial.calls === 0 && shortInitial.hidden && shortInitial.button && shortInitial.below, JSON.stringify(shortInitial));
+    const shortGenerated = await evalIn(`(async () => {
+      document.getElementById('generateShortLinks').click();
+      await new Promise(r=>setTimeout(r,30));
+      return { unchanged:JSON.stringify(window.__shortSnapshot()) === JSON.stringify(window.__originalLinks),
+        values:window.__shortValues(), hidden:document.getElementById('shortLinkResults').hidden,
+        preview:document.getElementById('previewImage').getAttribute('src'), calls:window.__shortCalls.length,
+        copyTargets:[...document.querySelectorAll('#shortLinkResults [data-clipboard-target]')].map(b=>!!document.querySelector(b.dataset.clipboardTarget)) };
+    })()`);
+    check('点击按钮后另显四种短链格式', !shortGenerated.hidden && shortGenerated.values[0] === 'https://tny.cc.cd/direct123'
+      && shortGenerated.values[1] === 'https://tny.cc.cd/preview123'
+      && shortGenerated.values[2].includes('src="https://tny.cc.cd/direct123"')
+      && shortGenerated.values[3] === '![test.png](https://tny.cc.cd/direct123)', JSON.stringify(shortGenerated));
+    check('原始四种链接和图片预览完全不变', shortGenerated.unchanged && shortGenerated.preview.endsWith('/file/first.png'));
+    check('短链复制按钮目标各自独立且有效', shortGenerated.copyTargets.length === 4 && shortGenerated.copyTargets.every(Boolean));
+    const repeated = await evalIn(`(async()=>{document.getElementById('generateShortLinks').click();await new Promise(r=>setTimeout(r,20));return window.__shortCalls.length;})()`);
+    check('重复点击复用当前结果，不重复发请求', repeated === 1);
+
+    const shortFailure = await evalIn(`(async()=>{
+      window.__shortMode='fail'; await window.__testUpload([{src:'/file/error.png',listed:true}]);
+      const before=window.__shortSnapshot(); document.getElementById('generateShortLinks').click();
+      await new Promise(r=>setTimeout(r,30));
+      return { unchanged:JSON.stringify(before)===JSON.stringify(window.__shortSnapshot()),hidden:document.getElementById('shortLinkResults').hidden,
+        error:document.getElementById('shortLinkStatus').classList.contains('is-error'),retry:!document.getElementById('generateShortLinks').disabled };
+    })()`);
+    check('网络失败只在短链区提示，原始结果保留且可重试', shortFailure.unchanged && shortFailure.hidden && shortFailure.error && shortFailure.retry, JSON.stringify(shortFailure));
+    const retried = await evalIn(`(async()=>{window.__shortMode='success';document.getElementById('generateShortLinks').click();await new Promise(r=>setTimeout(r,20));return !document.getElementById('shortLinkResults').hidden;})()`);
+    check('失败后可点击重试成功', retried);
+    const badShort = await evalIn(`(async()=>{
+      window.__shortMode='malicious';await window.__testUpload([{src:'/file/bad.png',listed:true}]);
+      const before=window.__shortSnapshot();document.getElementById('generateShortLinks').click();await new Promise(r=>setTimeout(r,20));
+      return document.getElementById('shortLinkResults').hidden && window.__shortValues().every(v=>!v) && JSON.stringify(before)===JSON.stringify(window.__shortSnapshot());
+    })()`);
+    check('拒绝异常短链响应，不污染原链接或显示区', badShort);
+
+    const switched = await evalIn(`(async()=>{
+      window.__shortMode='pending';
+      await window.__testUpload([{src:'/file/a.png',listed:true},{src:'/file/b.png',listed:true}],200,[new File(['a'],'a.png',{type:'image/png'}),new File(['b'],'b.png',{type:'image/png'})]);
+      const before=window.__shortCalls.length;document.getElementById('generateShortLinks').click();
+      const busy=document.getElementById('generateShortLinks').disabled;
+      document.querySelectorAll('#imageListContainer img')[1].click();
+      const afterSwitch=window.__shortSnapshot();
+      window.__shortRelease({ok:true,json:async()=>({direct:'https://tny.cc.cd/old123',preview:'https://tny.cc.cd/old456'})});
+      await new Promise(r=>setTimeout(r,20));
+      return { busy,calls:window.__shortCalls.length-before,hidden:document.getElementById('shortLinkResults').hidden,
+        unchanged:JSON.stringify(afterSwitch)===JSON.stringify(window.__shortSnapshot()),second:afterSwitch[0].endsWith('/file/b.png'),
+        enabled:!document.getElementById('generateShortLinks').disabled };
+    })()`);
+    check('批量切图不自动缩短，旧请求不串到新图片', switched.busy && switched.calls === 1 && switched.hidden && switched.unchanged && switched.second && switched.enabled, JSON.stringify(switched));
+    await evalIn(`(async()=>{window.__shortMode='success';document.getElementById('generateShortLinks').click();await new Promise(r=>setTimeout(r,20));})()`);
+
+    if (process.env.DUCKIMG_FRONTEND_SCREENSHOTS) {
+      await evalIn(`document.querySelector('.shortlink-controls').scrollIntoView({block:'start',behavior:'instant'})`);
+      const shot = await send('Page.captureScreenshot', { format: 'png' });
+      fs.writeFileSync(path.join(process.env.DUCKIMG_FRONTEND_SCREENSHOTS, 'shortlinks-desktop.png'), Buffer.from(shot.data, 'base64'));
+    }
+    await send('Emulation.setDeviceMetricsOverride', { width:375,height:812,deviceScaleFactor:1,mobile:true });
+    const shortMobile = await evalIn(`(async()=>{
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      // The shared shell animates its width/margins when crossing the mobile breakpoint.
+      await new Promise(r=>setTimeout(r,500));
+      const area=document.querySelector('.shortlink-controls');const rect=area.getBoundingClientRect();
+      return { fits:rect.left>=0&&rect.right<=innerWidth,noOverflow:area.scrollWidth<=area.clientWidth,
+        clientWidth:area.clientWidth,scrollWidth:area.scrollWidth,
+        overflowElements:[...area.querySelectorAll('*')].filter(el=>el.getBoundingClientRect().right>rect.right+1).map(el=>el.id||el.className),
+        inputs:[...document.querySelectorAll('#shortLinkResults input')].every(el=>el.getBoundingClientRect().width<=area.clientWidth) };
+    })()`);
+    check('手机短链区域及四种输入框无水平溢出', shortMobile.fits && shortMobile.noOverflow && shortMobile.inputs, JSON.stringify(shortMobile));
+    if (process.env.DUCKIMG_FRONTEND_SCREENSHOTS) {
+      await evalIn(`document.querySelector('.shortlink-controls').scrollIntoView({block:'start',behavior:'instant'})`);
+      const shot=await send('Page.captureScreenshot',{format:'png'});
+      fs.writeFileSync(path.join(process.env.DUCKIMG_FRONTEND_SCREENSHOTS,'shortlinks-mobile.png'),Buffer.from(shot.data,'base64'));
+    }
+    await send('Emulation.clearDeviceMetricsOverride');
+    const shortUnlisted = await evalIn(`(async()=>{
+      await window.__testUpload([{src:'/file/unlisted.png',listed:false}]);
+      return document.getElementById('generateShortLinks').disabled && document.getElementById('shortLinkResults').hidden;
+    })()`);
+    check('未写入图库时禁用短链，原图上传结果不受影响', shortUnlisted);
+    const shortReset = await evalIn(`(()=>{
+      document.getElementById('uploadAgainBtn').click();
+      const reset=document.getElementById('shortLinkResults').hidden&&window.__shortValues().every(v=>!v);
+      window.UserPrefs.applyLanguage('en-US');
+      const english=document.querySelector('#generateShortLinks span').textContent;
+      window.UserPrefs.applyLanguage('zh-CN');
+      window.fetch=window.__shortOriginalFetch; window.XMLHttpRequest=window.__originalXHR;
+      return {reset,english};
+    })()`);
+    check('再次上传清空短链结果，按钮支持英文', shortReset.reset && shortReset.english === 'Generate short links', JSON.stringify(shortReset));
 
     // ── 3. dashboard.html：空状态 hidden 与 flex ───────────────────────
     console.log('\ndashboard.html');

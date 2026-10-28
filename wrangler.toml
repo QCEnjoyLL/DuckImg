@@ -16,6 +16,7 @@ main = "src/index.js"
 #   npx wrangler secret put ADMIN_USERNAME
 #   npx wrangler secret put ADMIN_BOOTSTRAP_TOKEN  # 仅首次创建管理员，成功后删除
 #   npx wrangler secret put RESEND_FROM
+#   npx wrangler secret put SHORT_LINK_TOKEN  # 可选：短链站的 CREATE_TOKEN，公开模式无需配置
 
 # [vars] 留空：ADMIN_USERNAME / RESEND_FROM 已迁至 Secrets
 # SITE_URL 如需固定站点地址可在此设置

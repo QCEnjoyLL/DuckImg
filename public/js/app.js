@@ -320,6 +320,7 @@ function initUpload() {
     if (!dropArea || !fileInput) return;
 
     const showModerationNotice = initUploadModerationDialog();
+    const shortLinks = initUploadShortLinks();
 
     // 点击上传区域触发文件选择
     dropArea.addEventListener('click', (e) => {
@@ -533,6 +534,7 @@ function initUpload() {
 
     // 显示多个上传结果
     function showResults(results, files) {
+        shortLinks.reset();
         // 获取或创建图片列表容器
         let imageListContainer = document.getElementById('imageListContainer');
         if (!imageListContainer) {
@@ -563,6 +565,7 @@ function initUpload() {
             previewLink.value = previewUrl;
             htmlCode.value = `<img src="${fileUrl}" alt="${files[0].name}" />`;
             mdCode.value = `![${files[0].name}](${fileUrl})`;
+            shortLinks.select(results[0], files[0].name);
         } else {
             // 批量上传的情况，创建图片列表
             for (let i = 0; i < results.length; i++) {
@@ -586,6 +589,7 @@ function initUpload() {
                     previewLink.value = previewUrl;
                     htmlCode.value = `<img src="${fileUrl}" alt="${fileName}" />`;
                     mdCode.value = `![${fileName}](${fileUrl})`;
+                    shortLinks.select(results[i], fileName);
                 });
 
                 // 添加到容器
@@ -608,6 +612,7 @@ function initUpload() {
                 previewLink.value = firstPreviewUrl;
                 htmlCode.value = `<img src="${firstFileUrl}" alt="${firstName}" />`;
                 mdCode.value = `![${firstName}](${firstFileUrl})`;
+                shortLinks.select(results[0], firstName);
             }
         }
 
@@ -685,6 +690,7 @@ function initUpload() {
 
     // 再次上传
     uploadAgainBtn.addEventListener('click', () => {
+        shortLinks.reset();
         // 清空文件输入
         fileInput.value = '';
         uploadStatus.textContent = '';
@@ -706,6 +712,107 @@ function initUpload() {
 
     // 初始化时显示当前上传配额
     refreshQuota();
+}
+
+function initUploadShortLinks() {
+    const button = document.getElementById('generateShortLinks');
+    const status = document.getElementById('shortLinkStatus');
+    const results = document.getElementById('shortLinkResults');
+    const direct = document.getElementById('shortDirectLink');
+    const preview = document.getElementById('shortPreviewLink');
+    const html = document.getElementById('shortHtmlCode');
+    const markdown = document.getElementById('shortMdCode');
+    if (!button || !status || !results || !direct || !preview || !html || !markdown) {
+        return { select() {}, reset() {} };
+    }
+    const cache = new Map();
+    let selected = null;
+    let generation = 0;
+    let statusKey = 'upload.shortlinks.hint';
+
+    const text = (key) => window.UserPrefs?.t(key, window.UserPrefs.read().language || 'zh-CN') || key;
+    function setStatus(key, error = false) {
+        statusKey = key;
+        status.textContent = text(key);
+        status.classList.toggle('is-error', error);
+    }
+    function clearResults() {
+        results.hidden = true;
+        direct.value = preview.value = html.value = markdown.value = '';
+        button.removeAttribute('aria-busy');
+    }
+    function writeLinks(links, image) {
+        direct.value = links.direct;
+        preview.value = links.preview;
+        html.value = `<img src="${links.direct}" alt="${image.name}" />`;
+        markdown.value = `![${image.name}](${links.direct})`;
+        results.hidden = false;
+    }
+    function validateLinks(links) {
+        return links && ['direct', 'preview'].every(key => typeof links[key] === 'string'
+            && /^https:\/\/tny\.cc\.cd\/[A-Za-z0-9_-]{2,32}$/.test(links[key]));
+    }
+    async function update() {
+        if (!selected || button.disabled) return;
+        const version = ++generation;
+        const image = selected;
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        setStatus('upload.shortlinks.loading');
+        try {
+            if (!cache.has(image.src)) {
+                const pending = (async () => {
+                    const response = await fetch('/api/images/shortlinks', {
+                        method: 'POST', headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: image.src.slice('/file/'.length) }),
+                        signal: AbortSignal.timeout(15000),
+                    });
+                    if (!response.ok) throw new Error('shortlinks_failed');
+                    const links = await response.json();
+                    if (!validateLinks(links)) throw new Error('invalid_shortlinks');
+                    return links;
+                })();
+                cache.set(image.src, pending);
+            }
+            const pending = cache.get(image.src);
+            let links;
+            try { links = await pending; } catch (error) {
+                if (cache.get(image.src) === pending) cache.delete(image.src);
+                throw error;
+            }
+            if (version !== generation || selected !== image) return;
+            writeLinks(links, image);
+            setStatus('upload.shortlinks.ready');
+        } catch {
+            if (version !== generation || selected !== image) return;
+            clearResults();
+            setStatus('upload.shortlinks.error', true);
+        } finally {
+            if (version === generation && selected === image) {
+                button.disabled = false;
+                button.removeAttribute('aria-busy');
+            }
+        }
+    }
+    button.addEventListener('click', update);
+    window.addEventListener('languageChanged', () => setStatus(statusKey, status.classList.contains('is-error')));
+    return {
+        select(result, name) {
+            generation++;
+            selected = { src: result.src, name };
+            clearResults();
+            button.disabled = result.listed === false;
+            setStatus(button.disabled ? 'upload.shortlinks.unlisted' : 'upload.shortlinks.hint');
+        },
+        reset() {
+            generation++;
+            selected = null;
+            cache.clear();
+            clearResults();
+            button.disabled = false;
+            setStatus('upload.shortlinks.hint');
+        },
+    };
 }
 
 function initUploadModerationDialog() {

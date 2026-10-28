@@ -13,6 +13,7 @@ import {
   adminRunBackup, adminBackupHistory, adminBackupDownload, adminBackupExport
 } from './functions/admin/index';
 import { maybeRunScheduledBackup } from './functions/utils/backup';
+import { createImageShortLinks } from './functions/user/shortlinks';
 
 const app = new Hono();
 
@@ -85,6 +86,10 @@ app.get('/api/images', authMiddleware, getUserImages);
 app.get('/api/images/search', authMiddleware, searchUserImages);
 app.post('/api/images/claim', authMiddleware, claimUserImage);
 app.post('/api/images/batch', authMiddleware, batchImages);
+app.post('/api/images/shortlinks', authMiddleware, bodyLimit({
+  maxSize: 2048,
+  onError: (c) => c.json({ error: '短链接请求过大' }, 413),
+}), createImageShortLinks);
 app.delete('/api/images/:id', authMiddleware, deleteUserImage);
 app.put('/api/images/:id', authMiddleware, updateImageInfo);
 

@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.4"><img src="https://img.shields.io/badge/release-v2.3.4-blue?style=flat-square" alt="v2.3.4"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.0"><img src="https://img.shields.io/badge/release-v2.4.0-blue?style=flat-square" alt="v2.4.0"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
@@ -166,6 +166,23 @@ npx wrangler secret delete ADMIN_BOOTSTRAP_TOKEN
 
 ---
 
+## 🔗 可选短链接
+
+上传成功后，原有直接链接、预览链接、HTML 和 Markdown 不变。下方新增独立的
+「短链接（可选）」区域，点击「生成短链接」后，通过 [short](https://github.com/QCEnjoyLL/short)
+的 `https://tny.cc.cd/create` 生成当前图片的短直链与短预览链接，并在下方另行展示四种可复制格式。
+批量上传时先选中图片再生成，不会自动为整批创建短链；切换图片或再次上传会清空当前显示。
+
+- 不改变上传、预览、编辑、分享及上方原始链接。失败仅在短链区域提示，可重试。
+- 图床后端代转请求，不需要 short 开放跨域，也不会把用户 JWT 或创建密码发到浏览器。
+- 仅允许登录用户为自己已写入图库、未被屏蔽的图片创建短链；每用户每分钟最多 20 次。
+- short 公开创建模式无需密钥；若启用密码，在 DuckImg 中用 `npx wrangler secret put SHORT_LINK_TOKEN`
+  配置与 short 的 `CREATE_TOKEN` 相同的值。此密钥只在服务端使用，勿写进前端或 Git。
+- 短链使用 HTTP 302 跳转，部分论坛/图片代理不支持这种嵌入方式，届时使用上方原始链接。
+  短链记录由 short 自己的 D1 保存；图片删除/屏蔽仍由图床控制，图床备份不包含 short 数据库。
+
+---
+
 ## 🗄️ 备份与迁移
 
 图片本体在 Telegram，D1 里只有元数据——备份好这一个库即可完整迁移站点。
@@ -249,6 +266,13 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 ---
 
 ## 📈 更新日志
+
+### 🔗 [v2.4.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.0)（2026-10）
+
+- 🔗 上传结果下方新增可选短链按钮，接入自建 short 服务，在独立区域展示短直链、短预览链接、HTML 和 Markdown
+- 🛡️ 原有上传逻辑和四种链接不变；短链接口校验归属、屏蔽状态与请求频率，限制超时及响应大小，创建密码仅在服务端使用
+- 🧩 批量切图不会自动缩短，重复生成复用结果；失败只提示短链区，不影响原链接，支持中英文和手机布局
+- ✅ 新增短链权限、异常处理及前端交互回归测试，无需数据库迁移，也无需修改 short 项目
 
 ### 🧩 [v2.3.4](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.4)（2026-10）
 
@@ -380,7 +404,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.3.4](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.3.4)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.4.0](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.0)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 

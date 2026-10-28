@@ -18,6 +18,7 @@ main = "src/index.js"
 #   npx wrangler secret put RESEND_FROM       # 邮件发件人，如 "图床 <noreply@yourdomain.com>"
 
 # 可选固定站点地址
+# 短链站若启用创建密码：npx wrangler secret put SHORT_LINK_TOKEN（填 short 的 CREATE_TOKEN）
 # [vars]
 # SITE_URL = "https://your-domain.com"
 

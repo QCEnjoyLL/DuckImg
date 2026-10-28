@@ -279,6 +279,46 @@
                         </div>
                     </div>
 
+                    <section class="shortlink-controls" aria-labelledby="shortLinkTitle">
+                        <div class="shortlink-header">
+                            <h4 id="shortLinkTitle"><i class="ri-links-line" aria-hidden="true"></i> <span data-i18n="upload.shortlinks.title">短链接（可选）</span></h4>
+                            <button type="button" id="generateShortLinks" class="action-btn" aria-describedby="shortLinkStatus">
+                                <i class="ri-link" aria-hidden="true"></i><span data-i18n="upload.shortlinks.generate">生成短链接</span>
+                            </button>
+                        </div>
+                        <p id="shortLinkStatus" class="shortlink-status" role="status" aria-live="polite" data-i18n="upload.shortlinks.hint">通过 tny.cc.cd 缩短当前图片链接，不改变上方原始链接。</p>
+                        <div id="shortLinkResults" class="link-group shortlink-results" hidden>
+                            <div class="link-item">
+                                <label for="shortDirectLink"><i class="ri-link" aria-hidden="true"></i> <span data-i18n="upload.shortlinks.direct">短直接链接:</span></label>
+                                <div class="copy-container">
+                                    <input type="text" id="shortDirectLink" readonly>
+                                    <button type="button" class="copy-btn" data-clipboard-target="#shortDirectLink"><i class="ri-file-copy-line" aria-hidden="true"></i> <span data-i18n="common.copy">复制</span></button>
+                                </div>
+                            </div>
+                            <div class="link-item">
+                                <label for="shortPreviewLink"><i class="ri-eye-line" aria-hidden="true"></i> <span data-i18n="upload.shortlinks.preview">短预览链接:</span></label>
+                                <div class="copy-container">
+                                    <input type="text" id="shortPreviewLink" readonly>
+                                    <button type="button" class="copy-btn" data-clipboard-target="#shortPreviewLink"><i class="ri-file-copy-line" aria-hidden="true"></i> <span data-i18n="common.copy">复制</span></button>
+                                </div>
+                            </div>
+                            <div class="link-item">
+                                <label for="shortHtmlCode"><i class="ri-code-s-slash-line" aria-hidden="true"></i> HTML:</label>
+                                <div class="copy-container">
+                                    <input type="text" id="shortHtmlCode" readonly>
+                                    <button type="button" class="copy-btn" data-clipboard-target="#shortHtmlCode"><i class="ri-file-copy-line" aria-hidden="true"></i> <span data-i18n="common.copy">复制</span></button>
+                                </div>
+                            </div>
+                            <div class="link-item">
+                                <label for="shortMdCode"><i class="ri-markdown-line" aria-hidden="true"></i> Markdown:</label>
+                                <div class="copy-container">
+                                    <input type="text" id="shortMdCode" readonly>
+                                    <button type="button" class="copy-btn" data-clipboard-target="#shortMdCode"><i class="ri-file-copy-line" aria-hidden="true"></i> <span data-i18n="common.copy">复制</span></button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <div class="result-actions">
                         <button class="action-btn action-btn-primary" id="editImageBtn">
                             <i class="ri-image-edit-line"></i>
