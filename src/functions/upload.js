@@ -206,7 +206,8 @@ export async function upload(c) {
       const timestamp = Date.now();
       const mimeType = String(uploadFile.type || '').toLowerCase();
 
-      if (settings.nsfw && settings.nsfw.enabled) {
+      // 只豁免后端按实时用户名确认的管理员，不信任前端或 JWT 中的 role。
+      if (!admin && settings.nsfw && settings.nsfw.enabled) {
         try {
           const verdict = await moderateImage(`${origin}/file/${fileKey}`, settings);
           if (verdict && verdict.error && settings.nsfw.failurePolicy === 'block') {

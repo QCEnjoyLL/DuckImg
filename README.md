@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.2"><img src="https://img.shields.io/badge/release-v2.4.2-blue?style=flat-square" alt="v2.4.2"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.3"><img src="https://img.shields.io/badge/release-v2.4.3-blue?style=flat-square" alt="v2.4.3"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
@@ -53,6 +53,7 @@
 - 头像（上传或粘贴 URL）
 - 系统设置：语言、配色、上传偏好、登录邮件提醒、清空本地缓存、删除全部图片
 - 管理后台：用户管理、公告、上传上限、鉴黄、邮件、加密备份与站点配置
+- 图片鉴黄只作用于普通用户上传，管理员自动豁免（服务端按数据库用户名与 `ADMIN_USERNAME` 判断）；所有用户仍受文件格式、内容签名、大小及封禁检查约束
 - 部署指纹：后台自动显示 Cloudflare Version ID 与部署时间，便于核对线上版本
 
 ---
@@ -267,6 +268,12 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 📈 更新日志
 
+### 🛡️ [v2.4.3](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.3)（2026-10）
+
+- 🛡️ 管理员上传自动跳过图片鉴黄，不调用外部审核服务；普通用户仍按现有阈值和服务异常策略审核
+- 🔐 豁免以服务端实时管理员身份为准，不信任前端或 JWT 的 role；格式、内容签名、大小校验和账户封禁继续生效
+- ✅ 新增上传链路回归测试，覆盖管理员豁免、普通用户拦截/放行、鉴黄故障、角色伪装和安全校验；后台注明豁免规则，无需数据库迁移
+
 ### 🎨 [v2.4.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.2)（2026-10）
 
 - 🎨 图片预览页复用主站设计 tokens、明暗主题和配色管理器，移除写死的紫蓝背景；同源窗口间同步主题和配色变化
@@ -417,7 +424,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.4.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.2)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.4.3](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.3)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 
