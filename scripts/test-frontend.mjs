@@ -19,6 +19,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createServer } from 'node:http';
 
 const ROOT = process.cwd();
 const KEEP = process.argv.includes('--keep-open');
@@ -49,6 +50,70 @@ function check(label, ok, detail = '') {
   console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? '  → ' + detail : ''}`);
 }
 
+// Render preview HTML through the actual Worker, using an isolated in-memory D1.
+// Static assets and the test image are local; no Telegram or production DB is used.
+async function createPreviewFixture() {
+  const { build } = await import('esbuild');
+  const { Miniflare, Log, LogLevel, convertV4MiniflareOptions } = await import('miniflare');
+  const bundle = await build({
+    entryPoints: [path.join(ROOT, 'src/index.js')], bundle: true, write: false,
+    format: 'esm', platform: 'browser', external: ['cloudflare:*', 'node:*'],
+  });
+  const mf = new Miniflare(convertV4MiniflareOptions({
+    host: '127.0.0.1', port: 0,
+    modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-08-16',
+    compatibilityFlags: ['nodejs_compat'], d1Databases: ['DB'], log: new Log(LogLevel.NONE),
+  }));
+  try {
+    const site = { siteName: 'Preview Test', logoUrl: '/images/logo.svg' };
+    const db = await mf.getD1Database('DB');
+    await db.batch([
+      db.prepare('CREATE TABLE kv_store (key TEXT PRIMARY KEY, value TEXT, expires_at INTEGER)'),
+      db.prepare('CREATE TABLE images (id TEXT PRIMARY KEY, user_id TEXT, blocked INTEGER)'),
+      db.prepare('CREATE TABLE users (id TEXT PRIMARY KEY, status TEXT)'),
+      db.prepare('INSERT INTO kv_store (key, value) VALUES (?, ?)').bind('config:settings', JSON.stringify({ site })),
+    ]);
+    const server = createServer(async (req, res) => {
+      try {
+        const origin = `http://127.0.0.1:${server.address().port}`;
+        const url = new URL(req.url, origin);
+        if (url.pathname.startsWith('/file/') && url.searchParams.get('preview') === 'true') {
+          const response = await mf.dispatchFetch(url.href);
+          res.writeHead(response.status, Object.fromEntries(response.headers));
+          res.end(Buffer.from(await response.arrayBuffer()));
+        } else if (url.pathname.startsWith('/file/')) {
+          res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+          res.end('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="#758f70"/><circle cx="300" cy="200" r="100" fill="#e5eddc"/></svg>');
+        } else if (url.pathname.startsWith('/api/')) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ site }));
+        } else {
+          const publicRoot = path.join(ROOT, 'public');
+          const file = path.resolve(publicRoot, '.' + (url.pathname === '/' ? '/index.html' : url.pathname));
+          if (!file.startsWith(publicRoot + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+            res.writeHead(404); res.end(); return;
+          }
+          const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml' };
+          res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream' });
+          res.end(fs.readFileSync(file));
+        }
+      } catch (error) { res.writeHead(500); res.end(error.message); }
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    return {
+      origin: `http://127.0.0.1:${server.address().port}`,
+      async close() {
+        server.closeAllConnections();
+        await new Promise(resolve => server.close(resolve));
+        await mf.dispose();
+      },
+    };
+  } catch (error) {
+    await mf.dispose();
+    throw error;
+  }
+}
+
 async function main() {
   const browser = findBrowser();
   if (!browser) {
@@ -65,7 +130,7 @@ async function main() {
     '--window-size=1400,900', 'about:blank',
   ], { stdio: 'ignore' });
 
-  let ws, msgId = 0;
+  let ws, msgId = 0, previewFixture;
   const pending = new Map();
   const send = (method, params = {}) => {
     const id = ++msgId;
@@ -81,7 +146,8 @@ async function main() {
     return r.result.value;
   };
   const open = async (relPath, readyExpr) => {
-    await send('Page.navigate', { url: 'file:///' + path.join(ROOT, relPath).replace(/\\/g, '/') });
+    const url = /^https?:/.test(relPath) ? relPath : 'file:///' + path.join(ROOT, relPath).replace(/\\/g, '/');
+    await send('Page.navigate', { url });
     for (let i = 0; i < 80; i++) {
       await sleep(250);
       const r = await send('Runtime.evaluate', { expression: `document.readyState === 'complete'`, returnByValue: true });
@@ -529,9 +595,83 @@ async function main() {
     }))()`);
     check('dashboard 上是图库页（#imageGrid 存在，app.js 据此跳过重复绑定）', clip.hasGrid, JSON.stringify(clip));
 
+    console.log('\npreview theme and branding (real Worker HTML)');
+    previewFixture = await createPreviewFixture();
+    await open(previewFixture.origin + '/', `!!window.DuckPalette && !!window.themeManager`);
+    const mainTheme = await evalIn(`(() => {
+      window.themeManager.setTheme('dark');
+      window.DuckPalette.apply('moss');
+      return { background:getComputedStyle(document.body).backgroundColor,
+        accent:getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() };
+    })()`);
+    await open(previewFixture.origin + '/file/preview-test.png?preview=true', `!!window.DuckPalette && !!window.themeManager && !!document.getElementById('previewBrandLogo')`);
+    const previewTheme = await evalIn(`(async () => {
+      await new Promise(r=>setTimeout(r,650));
+      const logo=document.getElementById('previewBrandLogo');
+      return { background:getComputedStyle(document.body).backgroundColor,
+        accent:getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim(),
+        dark:document.documentElement.classList.contains('dark-mode'),
+        palette:document.documentElement.dataset.palette, logoLoaded:logo.complete&&logo.naturalWidth>0,
+        name:document.querySelector('.brand-name').textContent, title:document.title,
+        favicon:document.querySelector('link[rel="icon"]').href,logo:logo.src,
+        imageLoaded:document.getElementById('previewImage').naturalWidth===600 };
+    })()`);
+    check('预览页与主窗口的暗色/苔原配色一致', previewTheme.dark && previewTheme.palette === 'moss'
+      && previewTheme.background === mainTheme.background && previewTheme.accent === mainTheme.accent, JSON.stringify(previewTheme));
+    check('预览页使用后台 Logo、站名与 favicon，图片正常加载', previewTheme.logoLoaded && previewTheme.name === 'Preview Test'
+      && previewTheme.title === '图片预览 - Preview Test' && previewTheme.favicon === previewTheme.logo && previewTheme.imageLoaded);
+    if (process.env.DUCKIMG_FRONTEND_SCREENSHOTS) {
+      const shot=await send('Page.captureScreenshot',{format:'png'});
+      fs.writeFileSync(path.join(process.env.DUCKIMG_FRONTEND_SCREENSHOTS,'preview-theme-desktop.png'),Buffer.from(shot.data,'base64'));
+    }
+    const liveTheme = await evalIn(`(() => {
+      localStorage.setItem('theme','light');
+      window.dispatchEvent(new StorageEvent('storage',{key:'theme',newValue:'light'}));
+      localStorage.setItem('themePalette','porcelain');
+      window.dispatchEvent(new StorageEvent('storage',{key:'themePalette',newValue:'porcelain'}));
+      return { dark:document.documentElement.classList.contains('dark-mode'),palette:document.documentElement.dataset.palette,
+        background:getComputedStyle(document.body).backgroundColor };
+    })()`);
+    check('其他窗口变更明暗和配色后预览页同步更新', !liveTheme.dark && liveTheme.palette === 'porcelain' && liveTheme.background === 'rgb(243, 238, 229)', JSON.stringify(liveTheme));
+    const previewActions = await evalIn(`(() => {
+      document.getElementById('infoBtn').click();
+      const info=document.getElementById('infoPanel').classList.contains('show');
+      document.getElementById('fullscreenBtn').click();
+      const full=document.getElementById('previewImage').classList.contains('fullscreen');
+      document.getElementById('fullscreenBtn').click();
+      document.getElementById('infoBtn').click();
+      const logo=document.getElementById('previewBrandLogo');logo.src='/missing-logo.png';logo.dispatchEvent(new Event('error'));
+      return { info,full,fallback:logo.src.endsWith('/images/logo.svg'),download:document.getElementById('downloadBtn').getAttribute('onclick') };
+    })()`);
+    check('信息、全屏和下载入口保留，Logo 失败时回退本地图标', previewActions.info && previewActions.full && previewActions.fallback && previewActions.download === 'downloadImage()');
+    await send('Emulation.setDeviceMetricsOverride', { width:375,height:667,deviceScaleFactor:1,mobile:true });
+    const previewMobile = await evalIn(`(async () => {
+      await new Promise(r=>setTimeout(r,300));
+      document.getElementById('infoBtn').click();
+      const brand=document.querySelector('.brand').getBoundingClientRect();
+      const controls=document.querySelector('.controls').getBoundingClientRect();
+      const info=document.getElementById('infoPanel').getBoundingClientRect();
+      return { brandFits:brand.left>=0&&brand.right<=innerWidth, controlsFit:controls.left>=0&&controls.right<=innerWidth&&controls.bottom<=innerHeight,
+        noOverlap:info.top>=brand.bottom };
+    })()`);
+    check('375px 预览页 Logo 和操作区可见，信息面板不遮品牌', previewMobile.brandFits && previewMobile.controlsFit && previewMobile.noOverlap, JSON.stringify(previewMobile));
+    if (process.env.DUCKIMG_FRONTEND_SCREENSHOTS) {
+      await evalIn(`document.getElementById('infoBtn').click();window.themeManager.setTheme('dark');window.DuckPalette.apply('moss')`);
+      const shot=await send('Page.captureScreenshot',{format:'png'});
+      fs.writeFileSync(path.join(process.env.DUCKIMG_FRONTEND_SCREENSHOTS,'preview-theme-mobile.png'),Buffer.from(shot.data,'base64'));
+    }
+    await send('Emulation.clearDeviceMetricsOverride');
+    const previewSystem = await evalIn(`(() => {
+      localStorage.removeItem('theme');
+      window.dispatchEvent(new StorageEvent('storage',{key:'theme',newValue:null}));
+      return document.documentElement.classList.contains('dark-mode')===matchMedia('(prefers-color-scheme:dark)').matches;
+    })()`);
+    check('清除手动主题后跟随系统明暗', previewSystem);
+
     console.log(`\n合计: ${pass} passed, ${fail} failed`);
     process.exitCode = fail ? 1 : 0;
   } finally {
+    await previewFixture?.close();
     if (!KEEP) {
       try { ws && ws.close(); } catch {}
       proc.kill();

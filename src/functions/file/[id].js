@@ -1,6 +1,7 @@
 import { verifyPreviewTicket } from '../utils/auth';
 import { getBannedSet } from '../utils/bans';
 import { dbGetImage, kvGet, kvPut } from '../utils/db';
+import { getSettings } from '../utils/settings';
 
 // Telegram getFile 返回的 file_path 约 1 小时失效；缓存 50 分钟
 const TG_PATH_TTL_SEC = 50 * 60;
@@ -173,19 +174,31 @@ function escapeHtml(str) {
  * 创建图片预览页面
  * 只使用同源 /file/:id 代理地址，避免 Bot Token 泄露到页面源码
  */
-function createPreviewPage(c, id) {
+async function createPreviewPage(c, id) {
     const safeIdHtml = escapeHtml(id);
     // JSON.stringify 保证安全嵌入 <script>
-    const idJs = JSON.stringify(String(id ?? ''));
+    const idJs = JSON.stringify(String(id ?? '')).replace(/</g, '\\u003c');
+    const { site } = await getSettings(c.env);
+    const siteName = escapeHtml(site.siteName || '鸭鸭图床');
+    let logoUrl = '/images/logo.svg';
+    try {
+        if (typeof site.logoUrl === 'string' && site.logoUrl.trim()) {
+            const logo = new URL(site.logoUrl.trim(), new URL('/', c.req.url));
+            if (['http:', 'https:'].includes(logo.protocol) && !logo.username && !logo.password) logoUrl = logo.href;
+        }
+    } catch { /* 配置无效时使用本地图标 */ }
+    const logoHtml = escapeHtml(logoUrl);
 
     const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <script data-early-theme>(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark-mode');}var p=localStorage.getItem('themePalette');if(p){document.documentElement.setAttribute('data-palette',p);}}catch(e){}})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片预览 - 鸭鸭图床</title>
+    <title>图片预览 - ${siteName}</title>
     <meta name="description" content="高质量图片在线预览">
-    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="${logoHtml}">
+    <link rel="stylesheet" href="/css/tokens.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         * {
@@ -195,51 +208,22 @@ function createPreviewPage(c, id) {
         }
         
         :root {
-            --primary-color: #4361ee;
-            --primary-dark: #3730a3;
-            --text-color: #ffffff;
-            --text-muted: rgba(255, 255, 255, 0.7);
-            --bg-dark: #000000;
-            --bg-overlay: rgba(0, 0, 0, 0.9);
-            --bg-panel: rgba(17, 25, 40, 0.9);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --success-color: #10b981;
-            --error-color: #ef4444;
-            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-            --radius: 16px;
-            --radius-sm: 8px;
+            --text-muted: var(--text-light);
+            --bg-panel: var(--glass-bg);
         }
         
         body {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            background: var(--bg-color);
             color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: var(--font-sans);
             overflow: hidden;
             height: 100vh;
+            height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
             user-select: none;
             position: relative;
-        }
-        
-        /* 动态背景效果 */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 25% 25%, rgba(67, 97, 238, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
-            z-index: 0;
-            animation: backgroundShift 20s ease-in-out infinite alternate;
-        }
-        
-        @keyframes backgroundShift {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            100% { transform: translate(-10px, -10px) rotate(1deg); }
         }
         
         .preview-container {
@@ -296,9 +280,7 @@ function createPreviewPage(c, id) {
             display: flex;
             gap: 12px;
             z-index: 1000;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: slideUp 0.6s ease-out 0.8s forwards;
+            opacity: 1;
         }
         
         @keyframes slideUp {
@@ -320,7 +302,7 @@ function createPreviewPage(c, id) {
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), opacity 160ms ease;
             backdrop-filter: blur(20px);
             position: relative;
             overflow: hidden;
@@ -357,13 +339,13 @@ function createPreviewPage(c, id) {
             width: 64px;
             height: 64px;
             font-size: 24px;
-            background: linear-gradient(45deg, var(--primary-color), var(--primary-dark));
+            background: var(--primary-color);
             border-color: var(--primary-color);
+            color: var(--bg-color);
         }
         
         .control-btn.large::before {
-            opacity: 1;
-            background: linear-gradient(45deg, var(--primary-dark), #6366f1);
+            display: none;
         }
         
         /* 信息面板 */
@@ -379,14 +361,19 @@ function createPreviewPage(c, id) {
             font-size: 14px;
             opacity: 0;
             transform: translateY(-20px) scale(0.95);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 180ms ease-out, transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+            visibility: hidden;
+            pointer-events: none;
             z-index: 1000;
             min-width: 200px;
+            max-width: min(420px, calc(100vw - 60px));
         }
         
         .info-panel.show {
             opacity: 1;
             transform: translateY(0) scale(1);
+            visibility: visible;
+            pointer-events: auto;
         }
         
         .info-header {
@@ -419,6 +406,10 @@ function createPreviewPage(c, id) {
         .info-value {
             color: var(--text-color);
             font-weight: 500;
+            min-width: 0;
+            max-width: 70%;
+            overflow-wrap: anywhere;
+            text-align: right;
         }
         
         /* 加载状态 */
@@ -437,7 +428,7 @@ function createPreviewPage(c, id) {
             border: 3px solid var(--border-color);
             border-top: 3px solid var(--primary-color);
             border-radius: 50%;
-            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
         
@@ -525,11 +516,15 @@ function createPreviewPage(c, id) {
             display: flex;
             align-items: center;
             gap: 8px;
-            color: var(--text-muted);
+            color: var(--text-color);
             font-size: 14px;
             font-weight: 500;
-            opacity: 0;
-            animation: fadeIn 0.6s ease-out 1s forwards;
+            text-decoration: none;
+            max-width: calc(100vw - 60px);
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
             z-index: 1000;
         }
         
@@ -537,17 +532,16 @@ function createPreviewPage(c, id) {
             to { opacity: 1; }
         }
         
-        .brand-icon {
-            width: 24px;
-            height: 24px;
-            background: var(--primary-color);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: white;
+        .brand-logo {
+            width: auto;
+            height: 32px;
+            max-width: 100px;
+            object-fit: contain;
+            flex-shrink: 0;
         }
+
+        .brand-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .brand:focus-visible, .control-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 4px; }
         
         /* 成功提示 */
         .toast {
@@ -591,7 +585,7 @@ function createPreviewPage(c, id) {
             }
             
             .info-panel {
-                top: 20px;
+                top: 100px;
                 left: 20px;
                 right: 20px;
                 font-size: 13px;
@@ -606,6 +600,7 @@ function createPreviewPage(c, id) {
                 top: 20px;
                 right: 20px;
                 font-size: 12px;
+                max-width: calc(100vw - 40px);
             }
             
             .preview-image {
@@ -622,7 +617,7 @@ function createPreviewPage(c, id) {
             }
             
             .info-panel {
-                top: 16px;
+                top: 96px;
                 left: 16px;
                 right: 16px;
             }
@@ -632,16 +627,22 @@ function createPreviewPage(c, id) {
                 right: 16px;
             }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            .preview-container, .preview-image, .control-btn, .info-panel, .hotkeys, .toast {
+                transition: none;
+                animation: none;
+            }
+            .preview-image, .preview-image:hover:not(.fullscreen) { transform: none; }
+        }
     </style>
 </head>
-<body>
+<body><script data-early-theme-body>if(document.documentElement.classList.contains('dark-mode'))document.body.classList.add('dark-mode');</script>
     <!-- 品牌标识 -->
-    <div class="brand">
-        <div class="brand-icon">
-            <i class="ri-image-line"></i>
-        </div>
-        鸭鸭图床
-    </div>
+    <a class="brand" href="/" aria-label="${siteName}">
+        <img class="brand-logo" id="previewBrandLogo" src="${logoHtml}" alt="" width="32" height="32">
+        <span class="brand-name">${siteName}</span>
+    </a>
 
     <!-- 主预览容器 -->
     <div class="preview-container" id="previewContainer">
@@ -650,7 +651,7 @@ function createPreviewPage(c, id) {
             <div class="loading-text">正在加载图片...</div>
         </div>
         
-        <img class="preview-image" id="previewImage" style="display: none;" />
+        <img class="preview-image" id="previewImage" alt="${safeIdHtml}" style="display: none;" />
         
         <div class="error" id="error" style="display: none;">
             <div class="error-icon">
@@ -706,6 +707,9 @@ function createPreviewPage(c, id) {
     <!-- 成功提示 -->
     <div class="toast" id="toast"></div>
 
+    <script src="/js/theme-manager.js"></script>
+    <script src="/js/palettes.js"></script>
+    <script src="/js/preview-appearance.js"></script>
     <script>
         // 同源代理，绝不内嵌 Telegram 直链 / Bot Token
         const fileId = ${idJs};
@@ -888,6 +892,7 @@ function createPreviewPage(c, id) {
 </body>
 </html>`;
 
+    c.header('Cache-Control', 'no-store');
     return c.html(html);
 }
 

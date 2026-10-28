@@ -11,7 +11,7 @@
 无限存储 · 安全可靠 · 克制现代 UI · 中英双语
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.1"><img src="https://img.shields.io/badge/release-v2.4.1-blue?style=flat-square" alt="v2.4.1"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.2"><img src="https://img.shields.io/badge/release-v2.4.2-blue?style=flat-square" alt="v2.4.2"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square" alt="Forks"></a>
@@ -267,6 +267,13 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 📈 更新日志
 
+### 🎨 [v2.4.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.2)（2026-10）
+
+- 🎨 图片预览页复用主站设计 tokens、明暗主题和配色管理器，移除写死的紫蓝背景；同源窗口间同步主题和配色变化
+- 🖼️ 右上角改为后台配置的 Logo 与站点名称，标题和 favicon 同步品牌；Logo 无法加载时回退本地图片
+- 📱 手机端信息面板避让品牌区域，保留全屏、下载及图片信息功能，支持减少动态效果偏好
+- ✅ 补充品牌安全输出与原生 Worker 预览 HTML 的浏览器回归测试；原始图片直链、上传及短链逻辑不变
+
 ### 🔧 [v2.4.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.1)（2026-10）
 
 - 🔧 修复短链请求在 Cloudflare Workers 中因不支持 `redirect: 'error'` 而立即失败的问题，改用 `manual` 并拒绝所有非成功响应，仍不跟随跳转
@@ -410,7 +417,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 如果这个项目对你有帮助，请点一个 ⭐ Star
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.4.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.1)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.4.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.4.2)
 
 Made with ❤️ · © 2024–2026 鸭鸭图床 (DuckImg)
 
