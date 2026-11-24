@@ -11,7 +11,7 @@
 原图直存 · Studio Gallery 界面 · 中英双语 · 零构建部署
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.3"><img src="https://img.shields.io/badge/release-v2.5.3-18181b?style=flat-square" alt="v2.5.3"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.4"><img src="https://img.shields.io/badge/release-v2.5.4-18181b?style=flat-square" alt="v2.5.4"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI&color=3f3f46" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Forks"></a>
@@ -248,6 +248,10 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 更新日志
 
+### [v2.5.4](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.4)（2026-11）
+
+- 统一顶栏右侧公告、上传、明暗切换开关、登录按钮与用户信息胶囊为 `30px` 一致高度基线与 `1px` 细边框风格，消除视觉高低落差
+
 ### [v2.5.3](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.3)（2026-11）
 
 - 修复「我的图片」从时间线视图切换到列表视图时未重绘扁平卡片导致列表卡片挤进多列网格的排版问题
@@ -375,7 +379,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 <div align="center">
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.3](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.3)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.4](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.4)
 
 © 2024–2026 鸭鸭图床 · DuckImg
 

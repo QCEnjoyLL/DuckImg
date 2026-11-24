@@ -500,36 +500,37 @@ body {
 }
 
 .header-action-btn {
-  width: 36px;
-  height: 36px;
-  border: 1px solid transparent;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  background: transparent;
+  background: var(--card-bg);
   color: var(--text-light);
-  font-size: 1.15rem;
+  font-size: 0.95rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 @media (hover: hover) {
   .header-action-btn:hover {
-    background: var(--fill-tertiary);
+    background: var(--card-bg-hover);
+    border-color: var(--border-strong);
     color: var(--text-color);
   }
 }
 
-/* Theme switch — crisp compact toggle */
+/* Theme switch — 30px unified toolbar height */
 .theme-toggle {
   position: relative !important;
-  width: 42px !important;
-  height: 24px !important;
-  min-width: 42px;
-  min-height: 24px;
+  width: 48px !important;
+  height: 30px !important;
+  min-width: 48px;
+  min-height: 30px;
   border-radius: 999px !important;
   background: var(--fill-secondary) !important;
   cursor: pointer;
@@ -555,17 +556,17 @@ body {
 
 .theme-toggle-icon {
   position: absolute !important;
-  top: 2px !important;
-  left: 2px !important;
-  width: 20px !important;
-  height: 20px !important;
+  top: 3px !important;
+  left: 3px !important;
+  width: 24px !important;
+  height: 24px !important;
   border-radius: 50% !important;
   background: #ffffff !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16) !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
-  font-size: 12px !important;
+  font-size: 13px !important;
   color: #b45309 !important;
   transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), background-color 0.2s ease, color 0.2s ease !important;
   transform: translateX(0) !important;
@@ -577,7 +578,7 @@ body {
 .theme-toggle-icon .ri-moon-line {
   position: absolute !important;
   transition: opacity 0.15s ease, transform 0.15s ease !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
 }
 
 .theme-toggle-icon .ri-sun-line {
@@ -623,17 +624,17 @@ body.dark-mode .theme-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0 14px;
+  gap: 5px;
+  padding: 0 11px;
   border-radius: var(--radius-sm);
   background: var(--primary-color);
   color: var(--text-on-primary, #ffffff) !important;
   text-decoration: none;
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   font-weight: 500;
   border: 1px solid transparent;
-  height: 34px;
-  min-height: 34px;
+  height: 30px;
+  min-height: 30px;
   line-height: 1;
   box-sizing: border-box;
   box-shadow: none !important;
@@ -642,7 +643,7 @@ body.dark-mode .theme-toggle {
 }
 
 .login-btn i {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 @media (hover: hover) {
@@ -660,17 +661,18 @@ body.dark-mode .theme-toggle {
 .user-dropdown-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 3px 10px 3px 4px;
+  gap: 6px;
+  padding: 0 9px 0 3px;
   border-radius: 999px;
   border: 1px solid var(--border-color);
   background: var(--card-bg);
   color: var(--text-color);
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   font-weight: 500;
-  min-height: 34px;
-  height: 34px;
+  min-height: 30px;
+  height: 30px;
+  box-sizing: border-box;
   transition: border-color 0.15s ease, background-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -683,8 +685,8 @@ body.dark-mode .theme-toggle {
 }
 
 .user-avatar {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--fill-secondary) !important;
   display: flex;
@@ -975,8 +977,8 @@ body.dk-scroll-lock {
   }
 
   .header-action-btn {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
   }
 
   /* Visually hidden while keeping accessible name */
@@ -994,8 +996,8 @@ body.dk-scroll-lock {
   }
 
   .login-btn {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     padding: 0;
     justify-content: center;
     border-radius: var(--radius-sm);
@@ -1006,7 +1008,7 @@ body.dk-scroll-lock {
   }
 
   .user-dropdown-btn {
-    padding: 3px 6px;
+    padding: 0 6px 0 3px;
     gap: 4px;
   }
 
