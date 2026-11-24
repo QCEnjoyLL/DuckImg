@@ -12,7 +12,7 @@
 
     window.addEventListener('storage', (event) => {
         if (event.key === 'themePalette' || event.key === null) {
-            window.DuckPalette?.apply(event.newValue || 'cobalt');
+            window.DuckPalette?.apply(event.newValue || 'studio');
         }
         if ((event.key === 'theme' && !event.newValue) || event.key === null) {
             const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

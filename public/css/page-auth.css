@@ -1,5 +1,5 @@
 /**
- * Auth page — restrained iOS login/register
+ * Auth page — Studio editorial login/register
  */
 
 body.auth-page .app-container {
@@ -8,13 +8,13 @@ body.auth-page .app-container {
 }
 
 body.auth-page .app-container main {
-  max-width: 420px;
+  max-width: 400px;
   margin: 0 auto;
-  padding: 32px 20px calc(48px + env(safe-area-inset-bottom, 0px));
+  padding: 32px 20px calc(48px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: calc(100dvh - 52px - env(safe-area-inset-top, 0px));
+  min-height: calc(100dvh - var(--header-height) - var(--safe-top));
 }
 
 .auth-page .header {
@@ -34,14 +34,18 @@ body.auth-page .app-container main {
 .auth-page .header-nav a {
   color: var(--text-light);
   text-decoration: none;
-  font-size: 0.9rem;
-  padding: 8px 12px;
-  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.auth-page .header-nav a:hover {
-  background: var(--fill-tertiary);
-  color: var(--text-color);
+@media (hover: hover) {
+  .auth-page .header-nav a:hover {
+    background: var(--fill-tertiary);
+    color: var(--text-color);
+  }
 }
 
 .auth-shell {
@@ -50,21 +54,24 @@ body.auth-page .app-container main {
 
 .auth-brand {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .auth-brand img {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   margin-bottom: 12px;
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
 }
 
 .auth-brand h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  margin: 0 0 6px;
+  font-size: 1.375rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  margin: 0 0 4px;
   color: var(--text-color);
   background: none !important;
   -webkit-text-fill-color: unset !important;
@@ -73,7 +80,7 @@ body.auth-page .app-container main {
 .auth-brand p {
   margin: 0;
   color: var(--text-light);
-  font-size: 0.95rem;
+  font-size: 0.875rem;
 }
 
 .auth-tabs {
@@ -82,39 +89,38 @@ body.auth-page .app-container main {
   gap: 4px;
   padding: 4px;
   background: var(--fill-tertiary);
-  border-radius: 12px;
-  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 16px;
 }
 
 .auth-tab {
   border: none;
   background: transparent;
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 0.95rem;
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-light);
   cursor: pointer;
   font-family: inherit;
-  min-height: 40px;
-  transition: background 0.15s ease, color 0.15s ease, transform 80ms ease-out;
-}
-
-.auth-tab:active {
-  transform: scale(0.98);
+  min-height: 36px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .auth-tab.active {
   background: var(--card-bg);
   color: var(--text-color);
+  font-weight: 600;
   box-shadow: var(--shadow-xs);
 }
 
 .auth-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 18px;
-  padding: 22px 20px;
+  border-radius: var(--radius-md);
+  padding: 24px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -129,12 +135,13 @@ body.auth-page .app-container main {
 .auth-error {
   display: none;
   margin-bottom: 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(255, 59, 48, 0.12);
-  color: #ff3b30;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--error-color) 25%, transparent);
+  background: color-mix(in srgb, var(--error-color) 10%, transparent);
+  color: var(--error-color);
+  font-size: 0.85rem;
+  line-height: 1.45;
 }
 
 .auth-error.show {
@@ -144,7 +151,7 @@ body.auth-page .app-container main {
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .auth-field label {
@@ -158,8 +165,8 @@ body.auth-page .app-container main {
 .auth-field input {
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   background: var(--bg-color);
   color: var(--text-color);
@@ -170,47 +177,50 @@ body.auth-page .app-container main {
 }
 
 .auth-field input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
 .auth-submit {
-  margin-top: 6px;
+  margin-top: 4px;
   width: 100%;
-  min-height: 46px;
+  min-height: 44px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--primary-color);
-  color: #fff;
-  font-size: 1rem;
+  color: var(--text-on-primary, #ffffff);
+  font-size: 0.9375rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 80ms ease-out;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 
-.auth-submit:hover {
-  opacity: 0.92;
-}
-
-.auth-submit:active {
-  transform: scale(0.98);
+@media (hover: hover) {
+  .auth-submit:hover {
+    background: var(--primary-hover, var(--primary-color));
+    opacity: 0.92;
+  }
 }
 
 .auth-link {
   display: block;
   text-align: center;
-  margin-top: 4px;
-  font-size: 0.875rem;
-  color: var(--primary-color);
+  margin-top: 2px;
+  font-size: 0.85rem;
+  color: var(--text-light);
   text-decoration: none;
 }
 
-.auth-link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .auth-link:hover {
+    color: var(--text-color);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }
 
-/* hide legacy flip-card if any leftover */
+/* Hide legacy flip-card if any leftover */
 .wrapper,
 .card-switch,
 .flip-card__inner,

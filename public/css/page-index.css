@@ -1,12 +1,10 @@
 /**
- * Home / upload page — single surface, wide dropzone
- * Overrides style.css card-in-card chrome for .upload-container
+ * Home / Upload Studio — clean gallery mat dropzone & structured results
  */
 
-/* wide content column — desktop only; mobile is full width via shell */
 @media (min-width: 769px) {
   .app-container main {
-    max-width: 960px !important;
+    max-width: 820px !important;
   }
 }
 
@@ -19,17 +17,17 @@
   .upload-container {
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 0 32px !important;
+    margin: 0 0 24px !important;
     padding: 0 !important;
   }
 
   .upload-header {
     padding: 0 4px;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
 
   .upload-title {
-    font-size: 1.5rem !important;
+    font-size: 1.45rem !important;
     flex-wrap: wrap;
   }
 
@@ -41,14 +39,14 @@
     text-align: center;
     white-space: normal !important;
     line-height: 1.4;
-    border-radius: 12px !important;
+    border-radius: var(--radius) !important;
   }
 
   .upload-area {
     width: 100% !important;
     max-width: 100% !important;
-    min-height: 280px !important;
-    padding: 40px 16px !important;
+    min-height: 260px !important;
+    padding: 36px 16px !important;
     box-sizing: border-box;
   }
 
@@ -62,12 +60,11 @@
   }
 }
 
-/* kill outer “card shell” — page bg shows through; dropzone is the only surface */
 .upload-container {
   max-width: 100% !important;
   width: 100% !important;
-  margin: 0 auto 40px !important;
-  padding: 8px 0 0 !important;
+  margin: 0 auto 36px !important;
+  padding: 6px 0 0 !important;
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -83,7 +80,7 @@ body.dark-mode .upload-container {
 
 .upload-header {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   padding: 0 8px;
 }
 
@@ -92,24 +89,25 @@ body.dark-mode .upload-container {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  font-size: clamp(1.65rem, 3.5vw, 2.15rem);
-  font-weight: 700;
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  font-weight: 650;
   letter-spacing: -0.03em;
   line-height: 1.15;
   color: var(--text-color);
   background: none !important;
   -webkit-text-fill-color: unset !important;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 .upload-title i {
-  color: var(--primary-color);
-  font-size: 1.1em;
+  color: var(--text-light);
+  font-size: 0.95em;
+  font-weight: 400;
 }
 
 .upload-subtitle {
   color: var(--text-light);
-  font-size: 1rem;
+  font-size: 0.925rem;
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -118,50 +116,56 @@ body.dark-mode .upload-container {
   display: inline-flex !important;
   align-items: center;
   gap: 6px;
-  margin-top: 14px !important;
-  padding: 8px 16px !important;
+  margin-top: 12px !important;
+  padding: 6px 14px !important;
   border-radius: 999px;
-  background: var(--fill-tertiary) !important;
+  background: var(--card-bg) !important;
   color: var(--text-light) !important;
-  font-size: 0.875rem !important;
+  font-size: 0.8125rem !important;
   font-weight: 500 !important;
+  font-variant-numeric: tabular-nums;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-xs);
 }
 
-/* 隐藏态必须能压过上面的 display:inline-flex !important（以及窄屏媒体查询里的 display:block !important）。
-   仅靠内联 style.display 是无效的——非 important 的内联声明永远输给作者 !important。
-   所以 JS 用 el.hidden 切换，这里兜住。 */
+.upload-quota a {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Keep [hidden] dominant over inline-flex !important */
 .upload-quota[hidden] {
   display: none !important;
 }
 
-/* ONE drop surface — frosted glass */
+/* Studio Mat Dropzone */
 .upload-area {
   position: relative;
   width: 100%;
   box-sizing: border-box;
-  border: 1.5px dashed color-mix(in srgb, var(--border-color) 85%, transparent) !important;
-  border-radius: 22px !important;
-  background: color-mix(in srgb, var(--card-bg) 52%, transparent) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  backdrop-filter: blur(22px) saturate(160%);
-  padding: 80px 40px !important;
-  min-height: 360px !important;
+  border: 1.5px dashed var(--border-strong) !important;
+  border-radius: var(--radius-lg) !important;
+  background-color: var(--card-bg) !important;
+  background-image: radial-gradient(var(--border-color) 1px, transparent 1px) !important;
+  background-size: 20px 20px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 64px 32px !important;
+  min-height: 320px !important;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   cursor: pointer;
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset,
-    var(--shadow-sm) !important;
+  box-shadow: var(--shadow-xs) !important;
   overflow: hidden;
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease !important;
+  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease !important;
   transform: none !important;
 }
 
-/* kill legacy gradient overlays / slide sheen from style.css */
 .upload-area::before,
 .upload-area::after {
   display: none !important;
@@ -169,81 +173,74 @@ body.dark-mode .upload-container {
 }
 
 body.dark-mode .upload-area {
-  background: color-mix(in srgb, var(--card-bg) 42%, transparent) !important;
-  border-color: color-mix(in srgb, var(--border-color) 90%, transparent) !important;
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
-    var(--shadow-sm) !important;
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-strong) !important;
+  box-shadow: var(--shadow-xs) !important;
 }
 
-.upload-area:hover,
-.upload-area.drag-over {
-  border-color: var(--primary-color) !important;
-  border-style: solid !important;
-  background: color-mix(in srgb, var(--primary-color) 10%, color-mix(in srgb, var(--card-bg) 48%, transparent)) !important;
-  transform: none !important;
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 32%, transparent) inset,
-    0 8px 28px color-mix(in srgb, var(--primary-color) 16%, transparent) !important;
-}
-
-body.dark-mode .upload-area:hover,
-body.dark-mode .upload-area.drag-over {
-  background: color-mix(in srgb, var(--primary-color) 14%, color-mix(in srgb, var(--card-bg) 38%, transparent)) !important;
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .upload-area,
-  body.dark-mode .upload-area,
-  .result-container,
-  body.dark-mode .result-container {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: var(--card-bg) !important;
+@media (hover: hover) {
+  .upload-area:hover {
+    border-color: var(--primary-color) !important;
+    border-style: solid !important;
+    background-color: var(--card-bg) !important;
+    box-shadow: 0 0 0 3px var(--primary-soft), var(--shadow-sm) !important;
+    transform: none !important;
   }
 }
 
+.upload-area.drag-over {
+  border-color: var(--primary-color) !important;
+  border-style: solid !important;
+  background-color: color-mix(in srgb, var(--primary-color) 5%, var(--card-bg)) !important;
+  box-shadow: 0 0 0 4px var(--primary-soft), var(--shadow) !important;
+  transform: none !important;
+}
+
 .upload-area:active {
-  transform: scale(0.995) !important;
+  transform: scale(0.996) !important;
 }
 
 .upload-icon {
-  width: 88px !important;
-  height: 88px !important;
-  margin: 0 auto 22px !important;
-  border-radius: 24px !important;
-  background: color-mix(in srgb, var(--card-bg) 55%, transparent) !important;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  width: 56px !important;
+  height: 56px !important;
+  margin: 0 auto 18px !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--bg-color) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--border-color);
   display: flex !important;
   align-items: center;
   justify-content: center;
-  font-size: 2.25rem !important;
-  color: var(--primary-color) !important;
+  font-size: 1.5rem !important;
+  color: var(--text-color) !important;
   flex-shrink: 0;
-  box-shadow: 0 1px 0 color-mix(in srgb, #fff 20%, transparent) inset !important;
+  box-shadow: var(--shadow-xs) !important;
   transform: none !important;
-  transition: background 0.15s ease, border-color 0.15s ease !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
 }
 
-.upload-area:hover .upload-icon {
-  transform: none !important;
-  box-shadow: 0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset !important;
-  background: color-mix(in srgb, var(--primary-color) 12%, transparent) !important;
-  border-color: color-mix(in srgb, var(--primary-color) 35%, transparent);
+@media (hover: hover) {
+  .upload-area:hover .upload-icon,
+  .upload-area.drag-over .upload-icon {
+    transform: none !important;
+    background: var(--primary-color) !important;
+    color: var(--text-on-primary, #ffffff) !important;
+    border-color: transparent;
+  }
 }
 
 .upload-text {
-  font-size: 1.2rem !important;
+  font-size: 1.0625rem !important;
   font-weight: 500;
   color: var(--text-color) !important;
-  margin: 0 0 14px !important;
-  letter-spacing: -0.01em;
+  margin: 0 0 10px !important;
+  letter-spacing: -0.015em;
 }
 
 .browse-text {
   color: var(--primary-color);
+  font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -253,26 +250,28 @@ body.dark-mode .upload-area.drag-over {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px 18px;
+  gap: 6px 18px;
   margin: 0;
-  color: var(--text-lighter);
-  font-size: 0.875rem;
+  color: var(--text-light);
+  font-size: 0.8125rem;
 }
 
 .upload-hint-item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .upload-hint kbd {
   display: inline-block;
-  padding: 2px 7px;
-  border-radius: 6px;
-  background: var(--fill-secondary);
-  font-size: 0.75rem;
-  font-family: inherit;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
   border: 1px solid var(--border-color);
+  box-shadow: 0 1px 0 var(--border-strong);
 }
 
 .file-input {
@@ -286,143 +285,150 @@ body.dark-mode .upload-area.drag-over {
 }
 
 .upload-status {
-  margin-top: 16px;
+  margin-top: 14px;
   min-height: 1.25rem;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--text-light);
   position: relative;
   z-index: 3;
   pointer-events: none;
 }
 
+/* ---- Moderation Dialog ---- */
 .upload-moderation-dialog {
   box-sizing: border-box;
-  width: min(460px, calc(100% - 32px));
+  width: min(440px, calc(100% - 32px));
   max-height: calc(100dvh - 48px);
   margin: auto;
-  padding: 28px;
+  padding: 24px;
   border: 1px solid var(--border-color);
-  border-top: 4px solid var(--error-color);
-  border-radius: 20px;
+  border-top: 3px solid var(--error-color);
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
   color: var(--text-color);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-lg);
   text-align: left;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .upload-moderation-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--scrim);
 }
 
 .upload-moderation-icon {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 16px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--error-color) 12%, transparent);
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--error-color) 11%, transparent);
   color: var(--error-color);
-  font-size: 26px;
+  font-size: 22px;
 }
 
 .upload-moderation-dialog h2 {
-  margin: 0 0 10px;
-  font-size: 1.25rem;
-  line-height: 1.4;
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.35;
   letter-spacing: -0.02em;
 }
 
 .upload-moderation-dialog p {
   color: var(--text-light);
-  font-size: 0.9rem;
-  line-height: 1.65;
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 
 .upload-moderation-files {
   max-height: 200px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  margin: 18px 0;
+  margin: 16px 0;
   padding: 0;
   list-style: none;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: var(--fill-tertiary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-color);
 }
 
 .upload-moderation-files li {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
+  gap: 3px;
+  padding: 10px 12px;
   overflow-wrap: anywhere;
 }
 
 .upload-moderation-files li + li { border-top: 1px solid var(--border-color); }
-.upload-moderation-files strong { font-size: 0.875rem; font-weight: 600; }
-.upload-moderation-files span { font-size: 0.8125rem; line-height: 1.5; color: var(--text-light); }
-.upload-moderation-dialog .upload-moderation-note { font-size: 0.8125rem; margin: 0 0 20px; }
+.upload-moderation-files strong { font-size: 0.85rem; font-weight: 600; }
+.upload-moderation-files span { font-size: 0.8rem; line-height: 1.5; color: var(--text-light); }
+.upload-moderation-dialog .upload-moderation-note { font-size: 0.8rem; margin: 0 0 18px; }
 
 .upload-moderation-confirm {
   width: 100%;
-  min-height: 44px;
+  min-height: 42px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--primary-color);
-  color: var(--text-on-primary, #fff);
+  color: var(--text-on-primary, #ffffff);
   font: inherit;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 150ms ease, transform 150ms ease-out;
 }
 
-.upload-moderation-confirm:active { transform: scale(0.98); }
-.upload-moderation-confirm:focus-visible { outline: 3px solid var(--text-color); outline-offset: 3px; }
+@media (hover: hover) {
+  .upload-moderation-confirm:hover {
+    opacity: 0.92;
+  }
+}
+
+.upload-moderation-confirm:active { transform: scale(0.96); }
+.upload-moderation-confirm:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
   .upload-moderation-confirm { transition: none; }
   .upload-moderation-confirm:active { transform: none; }
 }
 
-/* Result — same glass language as dropzone */
+/* ---- Result Surface ---- */
 .result-container {
-  margin-top: 24px !important;
+  margin-top: 20px !important;
   width: 100% !important;
   max-width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  background: color-mix(in srgb, var(--card-bg) 58%, transparent) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  backdrop-filter: blur(20px) saturate(150%);
-  border-radius: 22px !important;
-  border: 1px solid color-mix(in srgb, var(--border-color) 90%, transparent);
-  padding: 28px !important;
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 22%, transparent) inset,
-    var(--shadow-sm) !important;
+  background: var(--card-bg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--border-color);
+  padding: 24px !important;
+  box-shadow: var(--shadow-sm) !important;
   text-align: left;
   box-sizing: border-box;
   transition: none !important;
 }
 
 body.dark-mode .result-container {
-  background: color-mix(in srgb, var(--card-bg) 45%, transparent) !important;
+  background: var(--card-bg) !important;
 }
 
 .result-header {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .result-header h3,
 .result-container h3 {
-  font-size: 1.25rem !important;
+  font-size: 1.15rem !important;
   font-weight: 600;
   letter-spacing: -0.02em;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: var(--text-color) !important;
   display: flex;
   align-items: center;
@@ -443,58 +449,104 @@ body.dark-mode .result-container {
 
 .result-subtitle {
   color: var(--text-light);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin: 0;
   text-align: center;
 }
 
 .image-preview {
   position: relative;
-  border-radius: 14px;
+  border-radius: var(--radius);
   overflow: hidden;
-  background: var(--fill-tertiary);
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
   margin: 0 auto 20px;
   max-height: 360px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .image-preview img {
   max-width: 100%;
-  max-height: 360px;
+  max-height: 334px;
   object-fit: contain;
   display: block;
-  border-radius: 0;
+  border-radius: var(--radius-sm);
+  outline: 1px solid var(--img-outline);
+  outline-offset: -1px;
   box-shadow: none;
 }
 
 .image-preview-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.36);
+  color: #ffffff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
   opacity: 0;
-  transition: opacity 0.2s ease;
-  font-size: 0.875rem;
+  transition: opacity 0.16s ease;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
-.image-preview:hover .image-preview-overlay {
-  opacity: 1;
+@media (hover: hover) {
+  .image-preview:hover .image-preview-overlay {
+    opacity: 1;
+  }
 }
 
+/* Batch thumbnail strip */
+.image-list-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.image-item {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  background: var(--bg-color);
+  transition: border-color 0.15s ease;
+}
+
+@media (hover: hover) {
+  .image-item:hover {
+    transform: none;
+    border-color: var(--border-strong);
+    box-shadow: none;
+  }
+}
+
+.image-item.active {
+  border: 2px solid var(--primary-color);
+}
+
+.image-item img {
+  width: 100%;
+  height: 76px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Short-link section */
 .shortlink-controls {
   box-sizing: border-box;
-  margin: 0 0 24px;
-  padding: 16px;
+  margin: 0 0 20px;
+  padding: 14px 16px;
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--fill-tertiary);
+  border-radius: var(--radius);
+  background: var(--bg-color);
 }
 
 .shortlink-header {
@@ -502,57 +554,73 @@ body.dark-mode .result-container {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .shortlink-header h4 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.shortlink-header h4 i { color: var(--primary-color); }
-#generateShortLinks { min-height: 44px; }
+.shortlink-header h4 i { color: var(--text-light); }
+#generateShortLinks { min-height: 38px; border-radius: var(--radius-sm); }
 #generateShortLinks:disabled { opacity: 0.55; cursor: not-allowed; }
-#generateShortLinks:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 3px; }
+#generateShortLinks:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
 .shortlink-results[hidden] { display: none; }
 .shortlink-controls * { box-sizing: border-box; }
-.shortlink-results { width: 100%; max-width: none; margin: 16px 0 0; }
-.shortlink-results .link-item { margin: 0; padding: 12px; }
+.shortlink-results { width: 100%; max-width: none; margin: 14px 0 0; }
+.shortlink-results .link-item { margin: 0; padding: 0; }
 .shortlink-results input { width: 100%; }
 
 @media (max-width: 576px) {
   .shortlink-header .action-btn { width: auto; }
+  #generateShortLinks { min-height: 44px; }
 }
 
-.shortlink-status { margin: 6px 0 0; color: var(--text-light); font-size: 0.8125rem; line-height: 1.6; overflow-wrap: anywhere; }
+.shortlink-status {
+  margin: 6px 0 0;
+  color: var(--text-light);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
 .shortlink-status.is-error { color: var(--error-color); }
 
+.result-container > .link-group,
 .link-group {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 20px;
+  max-width: none;
+  margin: 0 0 20px;
+}
+
+.link-item {
+  margin-bottom: 0;
 }
 
 .link-item label {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-light);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
-/* Labels already contain an icon; the legacy mask duplicates it (Markdown has no mask). */
+/* Labels already contain an icon; keep ::before disabled */
 .link-item label::before {
   content: none;
   display: none;
 }
 
 .link-item label > i {
-  color: var(--primary-color);
+  color: var(--text-light);
   flex-shrink: 0;
 }
 
@@ -565,38 +633,50 @@ body.dark-mode .result-container {
 .copy-container input {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   background: var(--bg-color);
   color: var(--text-color);
-  font-size: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
   outline: none;
 }
 
+@media (max-width: 768px) {
+  .copy-container input {
+    font-size: 16px;
+  }
+}
+
 .copy-container input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
 .copy-btn {
   flex-shrink: 0;
   padding: 0 14px;
-  border-radius: 10px;
-  border: none;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
   background: var(--primary-color);
-  color: #fff;
-  font-size: 0.875rem;
+  color: var(--text-on-primary, #ffffff);
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  min-height: 44px;
+  gap: 5px;
+  min-height: 38px;
+  box-shadow: none !important;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 
-.copy-btn:hover {
-  opacity: 0.92;
+@media (hover: hover) {
+  .copy-btn:hover {
+    background: var(--primary-hover, var(--primary-color));
+    opacity: 0.92;
+  }
 }
 
 .result-actions {
@@ -604,37 +684,46 @@ body.dark-mode .result-container {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
+  padding-top: 4px;
 }
 
 .action-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 10px 16px;
-  border-radius: 999px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   background: var(--card-bg);
   color: var(--text-color);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  min-height: 40px;
-  transition: background 0.15s ease, transform 100ms ease-out;
+  min-height: 38px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.action-btn:hover {
-  background: var(--fill-tertiary);
+@media (hover: hover) {
+  .action-btn:hover {
+    background: var(--fill-tertiary);
+    border-color: var(--border-strong);
+  }
 }
 
 .action-btn-primary {
   background: var(--primary-color);
   border-color: transparent;
-  color: #fff;
+  color: var(--text-on-primary, #ffffff);
 }
 
-.action-btn-primary:hover {
-  background: var(--primary-dark);
-  opacity: 1;
+@media (hover: hover) {
+  .action-btn-primary:hover {
+    background: var(--primary-hover, var(--primary-color));
+    border-color: transparent;
+    opacity: 0.92;
+  }
 }
 
 .action-btn-secondary,
@@ -652,15 +741,19 @@ body.dark-mode .result-container {
   }
 
   .upload-area {
-    padding: 52px 18px !important;
-    min-height: 280px !important;
-    border-radius: 16px !important;
+    padding: 44px 16px !important;
+    min-height: 260px !important;
+    border-radius: var(--radius) !important;
   }
 
   .upload-icon {
-    width: 68px !important;
-    height: 68px !important;
-    font-size: 1.85rem !important;
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 1.35rem !important;
+  }
+
+  .result-container {
+    padding: 18px 14px !important;
   }
 
   .copy-container {
@@ -669,6 +762,7 @@ body.dark-mode .result-container {
 
   .copy-btn {
     width: 100%;
+    min-height: 44px;
     justify-content: center;
   }
 
@@ -678,6 +772,7 @@ body.dark-mode .result-container {
 
   .action-btn {
     width: 100%;
+    min-height: 42px;
     justify-content: center;
   }
 }

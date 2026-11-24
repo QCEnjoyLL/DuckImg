@@ -73,8 +73,9 @@
 
     function showEmptyToast(msg) {
         const t = document.createElement('div');
+        t.setAttribute('role', 'status');
         t.textContent = msg;
-        t.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#374151;color:#fff;padding:10px 18px;border-radius:8px;z-index:100000;font-size:0.9rem;box-shadow:0 6px 20px rgba(0,0,0,0.3);';
+        t.style.cssText = 'position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--card-bg,#151518);color:var(--text-color,#f3f3f2);border:1px solid var(--border-color,rgba(255,255,255,0.12));padding:9px 16px;border-radius:10px;z-index:100000;font-size:0.875rem;font-weight:500;box-shadow:var(--shadow-md,0 8px 24px rgba(0,0,0,0.16));';
         document.body.appendChild(t);
         setTimeout(() => t.remove(), 1800);
     }
@@ -83,32 +84,42 @@
         if (document.getElementById('announcementOverlay')) return; // 避免重复
         const overlay = document.createElement('div');
         overlay.id = 'announcementOverlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'annModalTitle');
         overlay.style.cssText = `
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            position: fixed; inset: 0; background: var(--scrim, rgba(10,10,12,0.5));
             display: flex; align-items: center; justify-content: center;
-            z-index: 99999; padding: 20px;
+            z-index: 99999; padding: 20px; overscroll-behavior: contain;
         `;
 
         const contentHtml = escapeHtml(a.content).replace(/\n/g, '<br>');
 
         overlay.innerHTML = `
-            <div style="position:relative;background:#fff;color:#1f2937;border-radius:14px;max-width:460px;width:100%;padding:28px;box-shadow:0 20px 50px rgba(0,0,0,0.3);font-family:-apple-system,Segoe UI,Roboto,sans-serif;">
-                <button id="annClose" title="关闭" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.5rem;line-height:1;color:#9ca3af;cursor:pointer;">&times;</button>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-right:24px;">
-                    <i class="ri-notification-3-line" style="color:#4361ee;font-size:1.4rem;"></i>
-                    <h3 style="margin:0;font-size:1.2rem;color:#4361ee;">${escapeHtml(a.title) || '公告'}</h3>
+            <div style="position:relative;background:var(--card-bg,#fff);color:var(--text-color,#141413);border:1px solid var(--border-color,rgba(20,20,19,0.09));border-radius:14px;max-width:440px;width:100%;padding:24px;box-shadow:var(--shadow-lg,0 16px 40px rgba(0,0,0,0.18));font-family:var(--font-sans,system-ui,sans-serif);">
+                <button type="button" id="annClose" title="关闭" aria-label="关闭公告" style="position:absolute;top:14px;right:14px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;border-radius:8px;font-size:1.25rem;line-height:1;color:var(--text-light,#62625e);cursor:pointer;">&times;</button>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-right:36px;">
+                    <i class="ri-notification-3-line" aria-hidden="true" style="color:var(--primary-color,#18181b);font-size:1.2rem;"></i>
+                    <h3 id="annModalTitle" style="margin:0;font-size:1.05rem;font-weight:600;letter-spacing:-0.015em;color:var(--text-color,#141413);">${escapeHtml(a.title) || '公告'}</h3>
                 </div>
-                <div style="font-size:0.95rem;line-height:1.7;color:#444;max-height:50vh;overflow:auto;">${contentHtml}</div>
-                <div style="display:flex;gap:10px;margin-top:22px;">
-                    <button id="annToday" style="flex:1;padding:0.7rem;background:#eef2ff;color:#4361ee;border:1px solid #c7d2fe;border-radius:8px;font-size:0.95rem;font-weight:500;cursor:pointer;">今日关闭</button>
-                    <button id="annNever" style="flex:1;padding:0.7rem;background:linear-gradient(135deg,#4361ee,#3730a3);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:500;cursor:pointer;">不再弹出</button>
+                <div style="font-size:0.9rem;line-height:1.65;color:var(--text-light,#5c5c58);max-height:50vh;overflow-y:auto;overscroll-behavior:contain;">${contentHtml}</div>
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button type="button" id="annToday" style="flex:1;min-height:40px;padding:0 14px;background:var(--fill-tertiary,rgba(20,20,19,0.05));color:var(--text-color,#141413);border:1px solid var(--border-color,rgba(20,20,19,0.09));border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">今日关闭</button>
+                    <button type="button" id="annNever" style="flex:1;min-height:40px;padding:0 14px;background:var(--primary-color,#18181b);color:var(--text-on-primary,#fff);border:1px solid transparent;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">不再弹出</button>
                 </div>
             </div>
         `;
 
         document.body.appendChild(overlay);
 
-        const close = () => overlay.remove();
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') close();
+        };
+        const close = () => {
+            document.removeEventListener('keydown', onKeyDown);
+            overlay.remove();
+        };
+        document.addEventListener('keydown', onKeyDown);
         overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
         document.getElementById('annClose').addEventListener('click', close);
         document.getElementById('annToday').addEventListener('click', () => {

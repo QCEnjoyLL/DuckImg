@@ -1,88 +1,96 @@
 /**
- * DuckImg design tokens — restrained iOS-like system
- * Load after style.css so these override legacy variables.
+ * DuckImg Design Tokens — Studio Gallery System
+ * Load after style.css so these override legacy variables cleanly.
  */
 
 :root {
-  /* Brand accent — muted indigo, not neon */
-  --primary-color: #3b82f6;
-  --primary-light: #60a5fa;
-  --primary-dark: #2563eb;
-  --primary-light-rgb: 96, 165, 250;
-  --primary-dark-rgb: 37, 99, 235;
-  --primary-gradient: linear-gradient(180deg, #60a5fa, #2563eb);
+  /* Brand / Primary Action — Obsidian ink in light mode (Studio default) */
+  --primary-color: #18181b;
+  --primary-light: #3f3f46;
+  --primary-dark: #09090b;
+  --primary-hover: #27272a;
+  --text-on-primary: #ffffff;
+  --primary-light-rgb: 24, 24, 27;
+  --primary-dark-rgb: 24, 24, 27;
+  --primary-soft: rgba(24, 24, 27, 0.07);
+  --primary-gradient: linear-gradient(180deg, #27272a, #18181b);
   --primary-soft-glow: 0 0 0 transparent;
 
-  --secondary-color: #6366f1;
-  --secondary-light: #818cf8;
-  --secondary-dark: #4f46e5;
-  --accent-color: #3b82f6;
-  --accent-light: #60a5fa;
-  --accent-dark: #2563eb;
-  --success-color: #34c759;
-  --success-light: #30d158;
-  --warning-color: #ff9f0a;
-  --warning-light: #ffb340;
-  --error-color: #ff3b30;
-  --error-light: #ff6961;
+  --secondary-color: #52525b;
+  --secondary-light: #71717a;
+  --secondary-dark: #3f3f46;
+  --accent-color: #18181b;
+  --accent-light: #3f3f46;
+  --accent-dark: #09090b;
 
-  /* Light surfaces (Apple-ish greys) */
-  --text-color: #1d1d1f;
-  --text-light: #6e6e73;
-  --text-lighter: #86868b;
-  --bg-color: #f5f5f7;
+  /* Semantic Status — accessible on light surfaces */
+  --success-color: #15803d;
+  --success-light: #22c55e;
+  --warning-color: #b45309;
+  --warning-light: #f59e0b;
+  --error-color: #dc2626;
+  --error-light: #ef4444;
+
+  /* Light Studio Surfaces (warm neutral stone, gallery canvas) */
+  --text-color: #141413;
+  --text-light: #5c5c58;
+  --text-lighter: #757570;
+  --bg-color: #f7f7f6;
+  --sidebar-bg: #f1f1ef;
   --card-bg: #ffffff;
-  --card-bg-hover: #f0f0f2;
-  --border-color: rgba(0, 0, 0, 0.08);
-  --divider-color: rgba(0, 0, 0, 0.06);
-  --fill-tertiary: rgba(120, 120, 128, 0.12);
-  --fill-secondary: rgba(120, 120, 128, 0.16);
-  --fill-primary: rgba(120, 120, 128, 0.2);
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.5);
-  --scrim: rgba(0, 0, 0, 0.28);
+  --card-bg-hover: #f2f2f0;
+  --border-color: rgba(20, 20, 19, 0.09);
+  --border-strong: rgba(20, 20, 19, 0.17);
+  --divider-color: rgba(20, 20, 19, 0.06);
+  --fill-tertiary: rgba(20, 20, 19, 0.045);
+  --fill-secondary: rgba(20, 20, 19, 0.08);
+  --fill-primary: rgba(20, 20, 19, 0.13);
+  --glass-bg: rgba(247, 247, 246, 0.84);
+  --glass-border: rgba(20, 20, 19, 0.08);
+  --scrim: rgba(10, 10, 12, 0.44);
+  --img-outline: rgba(0, 0, 0, 0.09);
 
-  /* Dark surfaces */
-  --dark-bg: #000000;
-  --dark-card-bg: #1c1c1e;
-  --dark-card-bg-hover: #2c2c2e;
-  --dark-text: #f5f5f7;
-  --dark-text-light: #a1a1a6;
-  --dark-text-lighter: #6e6e73;
-  --dark-border: rgba(255, 255, 255, 0.1);
-  --dark-divider: rgba(255, 255, 255, 0.08);
-  --dark-glass-bg: rgba(28, 28, 30, 0.78);
+  /* Dark fallback tokens (also driven by html.dark-mode / palettes.js) */
+  --dark-bg: #0c0c0e;
+  --dark-card-bg: #151518;
+  --dark-card-bg-hover: #1e1e22;
+  --dark-text: #f3f3f2;
+  --dark-text-light: #9e9e98;
+  --dark-text-lighter: #767671;
+  --dark-border: rgba(255, 255, 255, 0.09);
+  --dark-divider: rgba(255, 255, 255, 0.06);
+  --dark-glass-bg: rgba(12, 12, 14, 0.84);
   --dark-glass-border: rgba(255, 255, 255, 0.08);
 
-  /* Radius */
+  /* Radius — crisp Studio geometry */
   --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius: 14px;
-  --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-md: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
-  /* Shadows — whisper only */
+  /* Shadows — quiet layered elevation */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.16);
   --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --shadow-colored: var(--shadow-sm);
   --shadow-colored-lg: var(--shadow);
 
-  /* Motion: calm, critically damped feel via CSS fallbacks */
-  --transition-bounce: 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-  --transition-fast: 0.15s cubic-bezier(0.32, 0.72, 0, 1);
-  --transition: 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  --transition-slow: 0.45s cubic-bezier(0.32, 0.72, 0, 1);
-  --transition-ultra-slow: 0.55s cubic-bezier(0.32, 0.72, 0, 1);
+  /* Motion */
+  --transition-bounce: 0.3s cubic-bezier(0.2, 0, 0, 1);
+  --transition-fast: 0.15s cubic-bezier(0.2, 0, 0, 1);
+  --transition: 0.25s cubic-bezier(0.2, 0, 0, 1);
+  --transition-slow: 0.35s cubic-bezier(0.2, 0, 0, 1);
+  --transition-ultra-slow: 0.45s cubic-bezier(0.2, 0, 0, 1);
 
   /* Layout */
-  --container-width: 980px;
+  --container-width: 1120px;
   --spacing-3xs: 2px;
   --spacing-2xs: 4px;
   --spacing-xs: 8px;
@@ -95,9 +103,9 @@
   --spacing-3xl: 96px;
 
   /* Shell */
-  --menu-width: 260px;
-  --menu-collapsed-width: 72px;
-  --header-height: 52px;
+  --menu-width: 244px;
+  --menu-collapsed-width: 68px;
+  --header-height: 54px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
@@ -114,11 +122,13 @@
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
     "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scroll-padding-block-start: calc(var(--header-height) + 16px);
 }
 
 body {
@@ -133,29 +143,76 @@ body {
   overflow-x: hidden;
 }
 
-/* dark tokens on html so html+body+shell share one paint surface */
+/* Dark tokens declared on html so inline palette variables on html inherit cleanly into body */
 html.dark-mode,
-body.dark-mode {
-  background: var(--dark-bg) !important;
-  color: var(--dark-text);
-  --bg-color: #000000;
-  --card-bg: #1c1c1e;
-  --card-bg-hover: #2c2c2e;
-  --text-color: #f5f5f7;
-  --text-light: #a1a1a6;
-  --text-lighter: #6e6e73;
-  --border-color: rgba(255, 255, 255, 0.1);
-  --divider-color: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(28, 28, 30, 0.78);
+html:has(> body.dark-mode) {
+  --primary-color: #f4f4f5;
+  --primary-light: #ffffff;
+  --primary-dark: #e4e4e7;
+  --primary-hover: #ffffff;
+  --text-on-primary: #111113;
+  --primary-light-rgb: 244, 244, 245;
+  --primary-dark-rgb: 244, 244, 245;
+  --primary-soft: rgba(255, 255, 255, 0.11);
+  --primary-gradient: linear-gradient(180deg, #ffffff, #e4e4e7);
+
+  --accent-color: #f4f4f5;
+  --accent-light: #ffffff;
+  --accent-dark: #d4d4d8;
+
+  --success-color: #4ade80;
+  --success-light: #86efac;
+  --warning-color: #fbbf24;
+  --warning-light: #fde68a;
+  --error-color: #f87171;
+  --error-light: #fca5a5;
+
+  --bg-color: #0c0c0e;
+  --dark-bg: #0c0c0e;
+  --sidebar-bg: #101012;
+  --card-bg: #151518;
+  --dark-card-bg: #151518;
+  --card-bg-hover: #1e1e22;
+  --dark-card-bg-hover: #1e1e22;
+  --text-color: #f3f3f2;
+  --dark-text: #f3f3f2;
+  --text-light: #9e9e98;
+  --dark-text-light: #9e9e98;
+  --text-lighter: #7a7a75;
+  --dark-text-lighter: #7a7a75;
+  --border-color: rgba(255, 255, 255, 0.09);
+  --dark-border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.17);
+  --divider-color: rgba(255, 255, 255, 0.06);
+  --dark-divider: rgba(255, 255, 255, 0.06);
+  --glass-bg: rgba(12, 12, 14, 0.84);
+  --dark-glass-bg: rgba(12, 12, 14, 0.84);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --fill-tertiary: rgba(120, 120, 128, 0.24);
-  --fill-secondary: rgba(120, 120, 128, 0.28);
-  --fill-primary: rgba(120, 120, 128, 0.36);
-  --scrim: rgba(0, 0, 0, 0.5);
+  --fill-tertiary: rgba(255, 255, 255, 0.055);
+  --fill-secondary: rgba(255, 255, 255, 0.09);
+  --fill-primary: rgba(255, 255, 255, 0.14);
+  --scrim: rgba(0, 0, 0, 0.62);
+  --img-outline: rgba(255, 255, 255, 0.1);
 }
 
-.dark-mode-transition {
+html.dark-mode,
+body.dark-mode {
+  background: var(--bg-color) !important;
+  color: var(--text-color);
+}
+
+/* Suppress all transitions during theme switch to prevent color smearing */
+.dark-mode-transition,
+.dark-mode-transition *,
+.dark-mode-transition *::before,
+.dark-mode-transition *::after {
   transition: none !important;
+}
+
+/* Focus visibility — keyboard accessible everywhere */
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
 /* Typography helpers */
@@ -185,19 +242,25 @@ body.dark-mode {
   color: var(--text-light);
 }
 
-/* Instant press feedback (apple-design §1) */
-.dk-press:active,
-button:active:not(:disabled),
-.menu-item:active,
-.action-btn:active,
-.copy-btn:active,
-.login-btn:active,
-.header-action-btn:active {
-  transform: scale(0.97);
-  transition: transform 100ms ease-out;
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-/* Touch targets & inputs never zoom-trap on iOS */
+/* Tactile press feedback (strictly 0.96, 150ms, never on disabled controls) */
+@media (prefers-reduced-motion: no-preference) {
+  .dk-press:not(:disabled):active,
+  button:not(:disabled):active,
+  .menu-item:active,
+  .action-btn:not(:disabled):active,
+  .copy-btn:not(:disabled):active,
+  .login-btn:active,
+  .header-action-btn:not(:disabled):active {
+    transform: scale(0.96);
+    transition: transform 150ms ease-out;
+  }
+}
+
+/* Inputs & controls keep 16px base on touch to avoid iOS Safari auto-zoom */
 input,
 textarea,
 select,
@@ -219,10 +282,11 @@ button {
 
 @media (prefers-reduced-transparency: reduce) {
   :root {
-    --glass-bg: #ffffff;
-    --dark-glass-bg: #1c1c1e;
+    --glass-bg: #f7f7f6;
+    --dark-glass-bg: #151518;
   }
+  html.dark-mode,
   body.dark-mode {
-    --glass-bg: #1c1c1e;
+    --glass-bg: #151518;
   }
 }

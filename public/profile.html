@@ -9,116 +9,106 @@
     <title>用户资料 - 鸭鸭图床 | 免费图床</title>
     <meta name="description" content="管理您的鸭鸭图床个人资料和设置">
     <meta name="keywords" content="用户资料,个人设置,头像管理,鸭鸭图床">
-    <meta name="theme-color" content="#4361ee">
+    <meta name="theme-color" content="#f7f7f6" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)">
     <link rel="stylesheet" href="./css/style.css">
     <link rel="stylesheet" href="./css/tokens.css">
-<link rel="stylesheet" href="./css/menu-system.css">
+    <link rel="stylesheet" href="./css/menu-system.css">
     <link rel="stylesheet" href="./css/header-modern.css">
     <link rel="stylesheet" href="./css/shell.css">
     <link rel="stylesheet" href="./css/palettes.css">
     <link rel="stylesheet" href="./css/page-common.css">
     <link rel="icon" type="image/svg+xml" href="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAJajWouI76K5xQqwB9UMxwJevLAe-rRAAIsHQAChVFwVcRunuaWzrrIPAQ.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- 引入图标库 -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         .profile-container {
-            max-width: 1000px;
-            margin: 2rem auto;
-            padding: 1rem;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 1.5rem 1.25rem 2.5rem;
         }
 
         .profile-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-        }
-
-        body.dark-mode .profile-header {
-            background: var(--dark-card-bg);
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: transparent;
+            box-shadow: none;
+            border-radius: 0;
         }
 
         .profile-title {
-            font-size: 1.8rem;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            position: relative;
-            display: inline-block;
+            margin: 0 0 0.25rem;
+            font-size: clamp(1.375rem, 2.2vw, 1.75rem);
+            font-weight: 650;
+            letter-spacing: -0.025em;
+            line-height: 1.2;
+            color: var(--text-color);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .profile-title::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 50px;
-            height: 3px;
-            background: var(--primary-gradient);
-            border-radius: 3px;
+        .profile-title i {
+            color: var(--text-light);
+            font-weight: 400;
+        }
+
+        .profile-header p {
+            margin: 0;
+            font-size: 0.875rem;
+            color: var(--text-light);
         }
 
         .profile-content {
             display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 2rem;
+            grid-template-columns: 320px minmax(0, 1fr);
+            gap: 1.25rem;
+            align-items: start;
         }
 
-        .profile-sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
+        @media (max-width: 900px) {
+            .profile-content {
+                grid-template-columns: 1fr;
+            }
         }
 
+        .profile-sidebar,
         .profile-main {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1.25rem;
+            min-width: 0;
         }
 
         .profile-card {
             background: var(--card-bg);
-            border-radius: var(--radius);
-            padding: 2rem;
-            box-shadow: var(--shadow);
-            transition: all var(--transition);
-        }
-
-        body.dark-mode .profile-card {
-            background: var(--dark-card-bg);
-        }
-
-        .profile-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg, 14px);
+            padding: 1.35rem;
+            box-shadow: var(--shadow-xs);
+            min-width: 0;
         }
 
         .profile-card h3 {
-            margin: 0 0 1.5rem 0;
-            color: var(--primary-color);
-            font-size: 1.2rem;
+            margin: 0 0 1rem;
+            color: var(--text-color);
+            font-size: 1rem;
             font-weight: 600;
+            letter-spacing: -0.015em;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        body.dark-mode .profile-card h3 {
-            color: var(--primary-light);
+        .profile-card h3 i {
+            color: var(--text-light);
+            font-weight: 400;
         }
 
         .avatar-section {
@@ -128,39 +118,38 @@
         .avatar-upload-area {
             position: relative;
             display: inline-block;
-            margin-bottom: 1rem;
+            margin-bottom: 0.85rem;
         }
 
         .avatar-preview {
-            width: 120px;
-            height: 120px;
+            width: 104px;
+            height: 104px;
             border-radius: 50%;
-            background: var(--fill-secondary);
+            background: var(--fill-tertiary);
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--text-light);
-            font-size: 48px;
+            font-size: 40px;
             cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            transition: border-color var(--transition-fast, 140ms ease), box-shadow var(--transition-fast, 140ms ease);
             overflow: hidden;
             position: relative;
-            border: 3px solid var(--border-color);
+            border: 1px solid var(--border-strong, var(--border-color));
             box-shadow: var(--shadow-xs);
-        }
-
-        body.dark-mode .avatar-preview {
-            border-color: var(--border-color);
-            background: var(--fill-secondary);
         }
 
         .avatar-preview:has(img) {
             background: transparent;
         }
 
-        .avatar-preview:hover {
-            transform: scale(1.02);
-            box-shadow: var(--shadow-sm);
+        @media (hover: hover) {
+            .avatar-preview:hover {
+                border-color: var(--primary-color);
+            }
+            .avatar-preview:hover .avatar-overlay {
+                opacity: 1;
+            }
         }
 
         .avatar-preview img {
@@ -174,28 +163,21 @@
 
         .avatar-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.45);
+            inset: 0;
+            background: rgba(12, 12, 14, 0.52);
             border-radius: 50%;
             opacity: 0;
-            transition: opacity 0.15s ease;
+            transition: opacity var(--transition-fast, 140ms ease);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 13px;
+            color: #ffffff;
+            font-size: 12px;
             font-weight: 500;
         }
 
-        .avatar-preview:hover .avatar-overlay {
-            opacity: 1;
-        }
-
         .avatar-actions {
-            margin-top: 1rem;
+            margin-top: 0.85rem;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -205,20 +187,16 @@
         }
 
         .avatar-hint {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-color);
             margin: 0;
             font-weight: 500;
         }
 
         .avatar-tips {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--text-light);
             margin: 0;
-        }
-
-        body.dark-mode .avatar-tips {
-            color: var(--text-light);
         }
 
         .avatar-url-row {
@@ -230,34 +208,39 @@
         .avatar-url-row input {
             flex: 1;
             min-width: 0;
-            padding: 10px 12px;
-            border-radius: 10px;
+            min-height: 38px;
+            padding: 6px 10px;
+            border-radius: var(--radius-sm, 8px);
             border: 1px solid var(--border-color);
             background: var(--bg-color);
             color: var(--text-color);
-            font-size: 16px;
+            font-size: 0.875rem;
             font-family: inherit;
             outline: none;
+            box-sizing: border-box;
         }
 
-        .avatar-url-row input:focus {
+        .avatar-url-row input:focus,
+        .sec-input:focus {
+            outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px var(--primary-soft, rgba(59,130,246,.15));
+            box-shadow: 0 0 0 3px var(--primary-soft);
         }
 
         .avatar-url-row button,
         .avatar-file-btn {
             flex-shrink: 0;
-            min-height: 40px;
+            min-height: 38px;
             padding: 0 14px;
-            border-radius: 999px;
-            border: none;
+            border-radius: var(--radius-sm, 8px);
+            border: 1px solid transparent;
             background: var(--primary-color);
-            color: #fff;
-            font-size: 0.85rem;
+            color: var(--text-on-primary, #ffffff);
+            font-size: 0.84rem;
             font-weight: 500;
             font-family: inherit;
             cursor: pointer;
+            transition: background var(--transition-fast, 140ms ease), border-color var(--transition-fast, 140ms ease);
         }
 
         .avatar-file-btn {
@@ -267,12 +250,14 @@
             border: 1px solid var(--border-color);
         }
 
-        .avatar-file-btn:hover {
-            background: var(--fill-secondary);
-        }
-
-        .avatar-url-row button:hover {
-            opacity: 0.92;
+        @media (hover: hover) {
+            .avatar-file-btn:hover {
+                background: var(--fill-secondary);
+                border-color: var(--border-strong, var(--border-color));
+            }
+            .avatar-url-row button:hover {
+                background: var(--primary-hover, var(--primary-color));
+            }
         }
 
         .info-item {
@@ -280,29 +265,29 @@
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
-            padding: 0.85rem 1rem;
-            background: var(--bg-secondary, rgba(99, 102, 241, 0.06));
-            border-radius: var(--radius-sm);
-            margin-bottom: 0.75rem;
-            transition: background var(--transition);
+            padding: 0.78rem 0.9rem;
+            background: var(--fill-quaternary, var(--bg-secondary));
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm, 8px);
+            margin-bottom: 0.65rem;
+            transition: background var(--transition-fast, 140ms ease);
         }
 
-        body.dark-mode .info-item {
-            background: rgba(255, 255, 255, 0.05);
+        .info-item:last-child {
+            margin-bottom: 0;
         }
 
-        .info-item:hover {
-            background: rgba(67, 97, 238, 0.08);
-        }
-
-        body.dark-mode .info-item:hover {
-            background: rgba(255, 255, 255, 0.08);
+        @media (hover: hover) {
+            .info-item:hover {
+                background: var(--fill-tertiary);
+            }
         }
 
         .info-item label {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.45rem;
+            font-size: 0.85rem;
             font-weight: 500;
             color: var(--text-light);
             margin: 0;
@@ -310,6 +295,7 @@
         }
 
         .info-item span {
+            font-size: 0.875rem;
             font-weight: 600;
             color: var(--text-color);
             text-align: right;
@@ -317,10 +303,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             min-width: 0;
-        }
-
-        body.dark-mode .info-item span {
-            color: var(--dark-text);
+            font-variant-numeric: tabular-nums;
         }
 
         .stats-grid {
@@ -337,168 +320,173 @@
             justify-content: center;
             width: 100%;
             min-width: 0;
-            min-height: 132px;
+            min-height: 112px;
             text-align: center;
-            padding: 1.1rem 0.5rem;
+            padding: 1rem 0.65rem;
             box-sizing: border-box;
-            background: var(--fill-tertiary);
-            border-radius: var(--radius);
+            background: var(--fill-quaternary, var(--bg-secondary));
+            border-radius: var(--radius-md, 10px);
             border: 1px solid var(--border-color);
-            transition: background 0.15s ease, transform 100ms ease-out;
+            transition: background var(--transition-fast, 140ms ease);
         }
 
-        body.dark-mode .stat-item {
-            background: var(--fill-tertiary);
-            border-color: var(--dark-border);
-        }
-
-        .stat-item:hover {
-            background: var(--fill-secondary);
-        }
-
-        .stat-item:active {
-            transform: scale(0.98);
+        @media (hover: hover) {
+            .stat-item:hover {
+                background: var(--fill-tertiary);
+            }
         }
 
         .stat-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: var(--primary-color);
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm, 8px);
+            background: var(--fill-tertiary);
+            border: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 20px;
-            margin: 0 auto 0.75rem;
+            color: var(--text-color);
+            font-size: 1rem;
+            margin: 0 auto 0.6rem;
             flex-shrink: 0;
-            box-shadow: none;
         }
 
         .stat-value {
             font-size: 1.15rem;
             font-weight: 700;
             color: var(--text-color);
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.25rem;
             white-space: nowrap;
             max-width: 100%;
             letter-spacing: -0.02em;
-        }
-
-        body.dark-mode .stat-value {
-            color: var(--dark-text);
+            font-variant-numeric: tabular-nums;
         }
 
         .stat-label {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--text-light);
             white-space: nowrap;
-        }
-
-        body.dark-mode .stat-label {
-            color: var(--dark-text-light);
         }
 
         .account-actions {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.65rem;
         }
 
-        /* 账户操作按钮：柔和实心，一看就是按钮（深浅色都清晰） */
         .action-btn {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            min-height: 44px;
-            padding: 0 1.2rem;
-            border: 1px solid rgba(79, 70, 229, 0.32);
-            border-radius: var(--radius-sm);
-            background: rgba(79, 70, 229, 0.12);
-            color: #4f46e5;
+            min-height: 40px;
+            padding: 0 1.05rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm, 8px);
+            background: var(--fill-tertiary);
+            color: var(--text-color);
             text-decoration: none;
             cursor: pointer;
-            font-size: 0.95rem;
-            transition: all var(--transition);
-            font-weight: 600;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+            transition: background var(--transition-fast, 140ms ease), border-color var(--transition-fast, 140ms ease), color var(--transition-fast, 140ms ease);
         }
 
-        body.dark-mode .action-btn {
-            background: rgba(129, 140, 248, 0.15);
-            border-color: rgba(129, 140, 248, 0.4);
-            color: #c7d2fe;
+        @media (hover: hover) {
+            .action-btn:hover {
+                background: var(--fill-secondary);
+                border-color: var(--border-strong, var(--border-color));
+            }
         }
 
-        .action-btn:hover {
-            background: rgba(79, 70, 229, 0.22);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-
-        body.dark-mode .action-btn:hover {
-            background: rgba(129, 140, 248, 0.28);
-        }
-
-        /* 主操作实心蓝：安全表单（更新密码/发送验证码/确认） + 返回图片管理 */
         .security-form .action-btn,
         .profile-actions .action-btn {
-            border: none;
-            color: #fff;
-            background: linear-gradient(135deg, #4f46e5, #4361ee);
-        }
-        .security-form .action-btn { width: 100%; }
-        .security-form .action-btn:hover,
-        .profile-actions .action-btn:hover {
-            filter: brightness(1.08);
-            color: #fff;
-            background: linear-gradient(135deg, #4f46e5, #4361ee);
+            border-color: transparent;
+            color: var(--text-on-primary, #ffffff);
+            background: var(--primary-color);
         }
 
-        /* 危险操作：退出登录 */
+        .security-form .action-btn {
+            width: 100%;
+        }
+
+        @media (hover: hover) {
+            .security-form .action-btn:hover,
+            .profile-actions .action-btn:hover {
+                background: var(--primary-hover, var(--primary-color));
+                color: var(--text-on-primary, #ffffff);
+            }
+        }
+
         .action-btn.danger {
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #ef4444;
-        }
-        .action-btn.danger:hover {
-            background: #ef4444;
-            border-color: #ef4444;
-            color: #fff;
+            background: color-mix(in srgb, var(--error-color) 8%, transparent);
+            border: 1px solid color-mix(in srgb, var(--error-color) 28%, transparent);
+            color: var(--error-color);
         }
 
-        /* 账户安全表单 */
-        .security-form { display: flex; flex-direction: column; gap: 0.6rem; }
+        @media (hover: hover) {
+            .action-btn.danger:hover {
+                background: var(--error-color);
+                border-color: var(--error-color);
+                color: #ffffff;
+            }
+        }
+
+        .security-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
         .sec-input {
-            padding: 0.7rem 0.9rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);
-            background: var(--bg-color); color: var(--text-color); font-size: 0.95rem;
+            min-height: 40px;
+            padding: 0.5rem 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm, 8px);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 0.875rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            width: 100%;
         }
-        body.dark-mode .sec-input { background: var(--dark-bg); border-color: var(--dark-border); color: var(--dark-text); }
-        .security-block { margin-bottom: 1.5rem; }
-        .security-block:last-child { margin-bottom: 0; }
-        .security-block h4 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: var(--text-color); }
-        body.dark-mode .security-block h4 { color: var(--dark-text); }
-        #emailCodeRow { display: none; flex-direction: column; gap: 0.6rem; }
 
-        /* 响应式设计 */
+        .security-block {
+            margin-bottom: 1.25rem;
+        }
+
+        .security-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .security-block h4 {
+            margin: 0 0 0.65rem;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        #emailCodeRow {
+            display: none;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
         @media (max-width: 768px) {
-            .profile-content {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .profile-header {
-                padding: 1rem;
-            }
-
-            .profile-title {
-                font-size: 1.5rem;
+            .profile-container {
+                padding: 1rem 0.75rem 2rem;
             }
 
             .avatar-preview {
-                width: 100px;
-                height: 100px;
-                font-size: 40px;
+                width: 92px;
+                height: 92px;
+                font-size: 36px;
+            }
+
+            .avatar-url-row input,
+            .sec-input {
+                font-size: 16px;
             }
 
             .stats-grid {
@@ -620,7 +608,7 @@
             </a>
         </div>
         <div class="menu-footer">
-            &copy; 2025 鸭鸭图床
+            &copy; 2026 鸭鸭图床
         </div>
     </div>
 
@@ -857,7 +845,7 @@
         </main>
 
         <footer class="footer">
-            <p>&copy; 2024-2025 鸭鸭图床. 基于 <a href="https://telegram.org" target="_blank">Telegram</a> 提供技术支持</p>
+            <p>&copy; 2024-2026 鸭鸭图床. 基于 <a href="https://telegram.org" target="_blank">Telegram</a> 提供技术支持</p>
         </footer>
     </div>
 

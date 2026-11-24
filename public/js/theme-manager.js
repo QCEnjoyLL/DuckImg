@@ -41,20 +41,27 @@ class ThemeManager {
     // 应用主题
     applyTheme(theme) {
         this.theme = theme;
+        const root = document.documentElement;
+        root.classList.add('dark-mode-transition');
         
         if (theme === 'dark') {
-            document.documentElement.classList.add('dark-mode');
+            root.classList.add('dark-mode');
             document.body.classList.add('dark-mode');
         } else {
-            document.documentElement.classList.remove('dark-mode');
+            root.classList.remove('dark-mode');
             document.body.classList.remove('dark-mode');
         }
         
         // 更新所有主题切换开关的状态
         this.updateToggleSwitches(theme === 'dark');
         
-        // 触发自定义事件
+        // 触发自定义事件（允许调色板等同步更新后再恢复过渡）
         window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
+
+        void root.offsetHeight;
+        requestAnimationFrame(() => {
+            root.classList.remove('dark-mode-transition');
+        });
     }
 
     // 切换主题

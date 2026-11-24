@@ -8,8 +8,8 @@
     <meta name="mobile-web-app-capable" content="yes">
     <title>登录/注册 - 鸭鸭图床</title>
     <meta name="description" content="登录或注册鸭鸭图床，管理您的图片">
-    <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f7f7f6" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)">
     <link rel="stylesheet" href="./css/style.css">
     <link rel="stylesheet" href="./css/tokens.css">
     <link rel="stylesheet" href="./css/shell.css">
@@ -54,8 +54,8 @@
                 </div>
 
                 <div class="auth-tabs" role="tablist">
-                    <button type="button" class="auth-tab active" id="tabLogin" data-panel="loginPanel" data-i18n="auth.login">登录</button>
-                    <button type="button" class="auth-tab" id="tabRegister" data-panel="registerPanel" data-i18n="auth.register">注册</button>
+                    <button type="button" class="auth-tab active" id="tabLogin" role="tab" aria-selected="true" data-panel="loginPanel" data-i18n="auth.login">登录</button>
+                    <button type="button" class="auth-tab" id="tabRegister" role="tab" aria-selected="false" data-panel="registerPanel" data-i18n="auth.register">注册</button>
                 </div>
 
                 <div class="auth-card">
@@ -98,7 +98,7 @@
         </main>
 
         <footer class="footer">
-            <p>&copy; 2024-2025 鸭鸭图床 · 基于 <a href="https://telegram.org" target="_blank">Telegram</a></p>
+            <p>&copy; 2024–2026 鸭鸭图床 · 基于 <a href="https://telegram.org" target="_blank">Telegram</a></p>
         </footer>
     </div>
 
@@ -123,6 +123,8 @@
                 const isReg = which === 'register';
                 tabLogin.classList.toggle('active', !isReg);
                 tabRegister.classList.toggle('active', isReg);
+                tabLogin.setAttribute('aria-selected', String(!isReg));
+                tabRegister.setAttribute('aria-selected', String(isReg));
                 loginPanel.classList.toggle('active', !isReg);
                 registerPanel.classList.toggle('active', isReg);
                 if (authToggle) authToggle.checked = isReg;

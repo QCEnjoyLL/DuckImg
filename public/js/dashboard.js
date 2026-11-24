@@ -1512,7 +1512,7 @@ function renderTagFilters() {
     let filtersHtml = '<span class="filter-label">' + tt('gallery.tags.label','标签:') + '</span>';
 
     // 添加"全部"选项
-    filtersHtml += `<span class="image-tag ${currentTagFilter === '' ? 'active' : ''}" data-tag=""></span>`;
+    filtersHtml += `<span class="image-tag ${currentTagFilter === '' ? 'active' : ''}" data-tag="">${tt('common.all', '全部')}</span>`;
 
     // 添加标签选项
     topTags.forEach(tag => {

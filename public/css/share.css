@@ -1,5 +1,5 @@
 /* 
- * 分享功能样式 - 鸭鸭图床
+ * 分享功能样式 - Studio Gallery
  */
 
 /* 分享菜单 */
@@ -7,22 +7,18 @@
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
+  transform: translate(-50%, -50%) scale(0.96);
   background-color: var(--card-bg);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: var(--shadow-lg);
   width: 90%;
   max-width: 400px;
   z-index: 1000;
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body.dark-mode .share-menu {
-  background-color: var(--dark-card-bg);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  transition: opacity var(--transition-fast, 140ms ease), transform var(--transition-fast, 140ms ease), visibility var(--transition-fast, 140ms ease);
 }
 
 .share-menu.active {
@@ -36,60 +32,46 @@ body.dark-mode .share-menu {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
+  padding: 0.9rem 1.25rem;
   border-bottom: 1px solid var(--border-color);
 }
 
-body.dark-mode .share-menu-header {
-  border-bottom-color: var(--dark-border);
-}
-
 .share-menu-header h4 {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
+  letter-spacing: -0.015em;
   color: var(--text-color);
   margin: 0;
-}
-
-body.dark-mode .share-menu-header h4 {
-  color: var(--dark-text);
 }
 
 .share-menu-close {
   background: none;
   border: none;
   color: var(--text-light);
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 30px;
   height: 30px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
+  border-radius: var(--radius-sm, 8px);
+  transition: background-color var(--transition-fast, 140ms ease), color var(--transition-fast, 140ms ease);
 }
 
-body.dark-mode .share-menu-close {
-  color: var(--dark-text-light);
-}
-
-.share-menu-close:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: var(--text-color);
-}
-
-body.dark-mode .share-menu-close:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--dark-text);
+@media (hover: hover) {
+  .share-menu-close:hover {
+    background-color: var(--fill-tertiary);
+    color: var(--text-color);
+  }
 }
 
 /* 分享菜单内容 */
 .share-menu-content {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 1.5rem;
+  gap: 0.65rem;
+  padding: 1.15rem;
 }
 
 /* 分享菜单项 */
@@ -97,39 +79,30 @@ body.dark-mode .share-menu-close:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  border-radius: var(--radius);
+  gap: 0.45rem;
+  padding: 0.85rem 0.5rem;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color var(--transition-fast, 140ms ease), border-color var(--transition-fast, 140ms ease);
 }
 
-.share-menu-item:hover {
-  background-color: rgba(var(--primary-light-rgb), 0.1);
-  transform: translateY(-3px);
-}
-
-body.dark-mode .share-menu-item:hover {
-  background-color: rgba(var(--primary-light-rgb), 0.15);
+@media (hover: hover) {
+  .share-menu-item:hover {
+    background-color: var(--fill-tertiary);
+    border-color: var(--border-color);
+  }
 }
 
 .share-menu-item i {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   color: var(--primary-color);
 }
 
-body.dark-mode .share-menu-item i {
-  color: var(--primary-light);
-}
-
 .share-menu-item span {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: var(--text-color);
   font-weight: 500;
-}
-
-body.dark-mode .share-menu-item span {
-  color: var(--dark-text);
 }
 
 /* 平台特定颜色 */
@@ -156,18 +129,20 @@ body.dark-mode .share-menu-item span {
 /* Toast提示 */
 .share-toast {
   position: fixed;
-  bottom: 2rem;
+  bottom: 1.5rem;
   left: 50%;
-  transform: translateX(-50%) translateY(1rem);
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 2rem;
-  font-size: 0.95rem;
+  transform: translateX(-50%) translateY(0.75rem);
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  padding: 0.6rem 1.15rem;
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.875rem;
   font-weight: 500;
   z-index: 1001;
   opacity: 0;
-  transition: all 0.3s ease;
+  transition: opacity var(--transition-fast, 140ms ease), transform var(--transition-fast, 140ms ease);
 }
 
 .share-toast.active {

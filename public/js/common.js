@@ -86,48 +86,51 @@ function initNotifications() {
             
             .notification {
                 position: fixed;
-                top: 20px;
+                top: 66px;
                 right: 20px;
                 z-index: 10000;
                 background: var(--card-bg);
-                border-radius: 8px;
-                box-shadow: var(--shadow-lg);
-                animation: slideInRight 0.3s ease;
-                padding: 1rem;
-                min-width: 300px;
-                max-width: 400px;
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                box-shadow: var(--shadow-md);
+                animation: slideInRight 0.22s cubic-bezier(0.2, 0, 0, 1);
+                padding: 11px 14px;
+                min-width: 260px;
+                max-width: min(380px, calc(100vw - 32px));
+                font-size: 0.875rem;
             }
             
             body.dark-mode .notification {
-                background: var(--dark-card-bg);
+                background: var(--card-bg);
             }
             
             .notification-success {
-                border-left: 4px solid #10b981;
+                border-left: 3px solid var(--success-color);
             }
             
             .notification-error {
-                border-left: 4px solid #ef4444;
+                border-left: 3px solid var(--error-color);
             }
             
             .notification-warning {
-                border-left: 4px solid #f59e0b;
+                border-left: 3px solid var(--warning-color);
             }
             
             .notification-info {
-                border-left: 4px solid #3b82f6;
+                border-left: 3px solid var(--primary-color);
             }
             
             .notification-content {
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
+                gap: 10px;
                 font-weight: 500;
                 color: var(--text-color);
+                line-height: 1.4;
             }
             
             body.dark-mode .notification-content {
-                color: var(--dark-text);
+                color: var(--text-color);
             }
             
             .notification-close {
@@ -136,22 +139,19 @@ function initNotifications() {
                 color: var(--text-light);
                 cursor: pointer;
                 margin-left: auto;
-                padding: 0.25rem;
-                border-radius: 4px;
-                transition: all 0.2s ease;
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
+                transition: background-color 0.15s ease, color 0.15s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                flex-shrink: 0;
             }
             
             .notification-close:hover {
-                background: rgba(0, 0, 0, 0.1);
+                background: var(--fill-tertiary);
                 color: var(--text-color);
-            }
-            
-            body.dark-mode .notification-close:hover {
-                background: rgba(255, 255, 255, 0.1);
-                color: var(--dark-text);
             }
             
             .loading-spinner {
