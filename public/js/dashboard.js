@@ -261,14 +261,25 @@ function updateViewMode() {
 
     // 更新图片网格类名
     imageGrid.className = 'image-grid';
+    const imagesToRender = showOnlyFavorites
+        ? currentImages.filter(img => favoriteImages.has(img.id))
+        : currentImages;
+
     if (currentViewMode === 'list') {
         imageGrid.classList.add('list-view');
+        if (currentImages.length > 0) {
+            renderImages(imagesToRender);
+        }
     } else if (currentViewMode === 'timeline') {
         imageGrid.classList.add('timeline-view');
-        renderTimelineView();
+        if (currentImages.length > 0) {
+            renderTimelineView();
+        }
     } else {
         // 默认网格视图，重新渲染图片
-        renderImages(currentImages);
+        if (currentImages.length > 0) {
+            renderImages(imagesToRender);
+        }
     }
 }
 
@@ -792,7 +803,10 @@ function collectAllTags(images) {
 }
 
 // 更新统计信息
+let latestStatsData = null;
+
 function updateStatistics(data) {
+    latestStatsData = data || null;
     // 更新状态卡片
     document.getElementById('totalImages').textContent = data.totalImages;
     document.getElementById('totalSize').textContent = formatFileSize(data.totalSize);
@@ -962,22 +976,26 @@ function initCharts() {
         }
     });
 
-    // 初始化存储使用情况图表
+    // 初始化格式分布图表
     const storageUsageCtx = document.getElementById('storageUsageChart').getContext('2d');
     storageUsageChart = new Chart(storageUsageCtx, {
         type: 'doughnut',
         data: {
-            labels: ['图片', '其他文件'],
+            labels: [],
             datasets: [{
-                data: [0, 0],
+                data: [],
                 backgroundColor: [
                     '#3b82f6',
-                    '#8b5cf6'
+                    '#10b981',
+                    '#f59e0b',
+                    '#8b5cf6',
+                    '#ec4899',
+                    '#64748b'
                 ],
-                borderColor: isDarkMode ? '#1f2937' : '#ffffff',
-                borderWidth: 3,
-                hoverOffset: 10,
-                borderRadius: 5
+                borderColor: isDarkMode ? '#18181b' : '#ffffff',
+                borderWidth: 2,
+                hoverOffset: 8,
+                borderRadius: 4
             }]
         },
         options: {
@@ -986,45 +1004,47 @@ function initCharts() {
             animation: {
                 animateRotate: true,
                 animateScale: true,
-                duration: 1500,
+                duration: 800,
                 easing: 'easeOutQuart'
             },
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 20,
+                        padding: 16,
                         usePointStyle: true,
                         pointStyle: 'circle',
                         font: {
-                            size: 13
+                            size: 12
                         }
                     }
                 },
                 tooltip: {
-                    backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                    titleColor: isDarkMode ? '#f3f4f6' : '#1f2937',
-                    bodyColor: isDarkMode ? '#f3f4f6' : '#1f2937',
-                    borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+                    backgroundColor: isDarkMode ? 'rgba(24, 24, 27, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+                    titleColor: isDarkMode ? '#f4f4f5' : '#18181b',
+                    bodyColor: isDarkMode ? '#f4f4f5' : '#18181b',
+                    borderColor: isDarkMode ? '#27272a' : '#e4e4e7',
                     borderWidth: 1,
-                    padding: 12,
+                    padding: 10,
                     cornerRadius: 8,
                     titleFont: {
-                        size: 14,
-                        weight: 'bold'
+                        size: 13,
+                        weight: '600'
                     },
                     bodyFont: {
-                        size: 13
+                        size: 12
                     },
                     callbacks: {
                         label: function(context) {
-                            const value = context.raw;
-                            return context.label + ': ' + formatFileSize(value);
+                            const count = Number(context.raw) || 0;
+                            const total = (context.dataset.data || []).reduce((s, n) => s + (Number(n) || 0), 0);
+                            const pct = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+                            return `${context.label}: ${count} 张 (${pct}%)`;
                         }
                     }
                 }
             },
-            cutout: '75%'
+            cutout: '72%'
         }
     });
 
@@ -1041,13 +1061,13 @@ function initCharts() {
 
 // 更新图表数据
 function updateCharts() {
-    if (!uploadTrendChart || !storageUsageChart || currentImages.length === 0) return;
+    if (!uploadTrendChart || !storageUsageChart) return;
+    if (!latestStatsData && currentImages.length === 0) return;
 
-    // 处理上传趋势数据
+    // 处理上传趋势数据（优先使用后端全量 30 天 trend，兜底当前页）
     const dateMap = new Map();
     const now = new Date();
 
-    // 创建过去30天的日期标签
     const labels = [];
     const data = [];
     const dayKeys = []; // full YYYY-MM-DD for lookup
@@ -1060,49 +1080,82 @@ function updateCharts() {
         const d = String(date.getDate()).padStart(2, '0');
         const dateStr = `${y}-${m}-${d}`;
         dayKeys.push(dateStr);
-        // show M/D without leading zero clutter
         labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
         dateMap.set(dateStr, 0);
     }
 
-    // 统计每天的上传数量
-    currentImages.forEach(img => {
-        const date = new Date(img.uploadTime);
-        if (Number.isNaN(date.getTime())) return;
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        const dateStr = `${y}-${m}-${d}`;
+    if (latestStatsData && Array.isArray(latestStatsData.trend)) {
+        latestStatsData.trend.forEach(item => {
+            if (item && item.day && dateMap.has(item.day)) {
+                dateMap.set(item.day, Number(item.count) || 0);
+            }
+        });
+    } else {
+        currentImages.forEach(img => {
+            const date = new Date(img.uploadTime);
+            if (Number.isNaN(date.getTime())) return;
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
 
-        if (dateMap.has(dateStr)) {
-            dateMap.set(dateStr, dateMap.get(dateStr) + 1);
-        }
-    });
+            if (dateMap.has(dateStr)) {
+                dateMap.set(dateStr, dateMap.get(dateStr) + 1);
+            }
+        });
+    }
 
-    // 填充数据数组
     dayKeys.forEach((key) => {
         data.push(dateMap.get(key) || 0);
     });
 
-    // 更新上传趋势图表
     uploadTrendChart.data.labels = labels;
     uploadTrendChart.data.datasets[0].data = data;
-    // denser points when 30 days — keep small
     uploadTrendChart.data.datasets[0].pointRadius = 2;
     uploadTrendChart.data.datasets[0].pointHoverRadius = 5;
     uploadTrendChart.update();
 
-    // 更新存储使用情况图表
-    let imageSize = 0;
-    currentImages.forEach(img => {
-        imageSize += img.fileSize || 0;
+    // 更新格式分布图表（优先使用后端全量 types，兜底当前页扩展名）
+    const typeCounts = new Map();
+    const normalizeExt = (raw) => {
+        const ext = String(raw || '').toLowerCase().replace(/^\./, '').trim();
+        if (!ext || ext === 'other') return '其他';
+        if (ext === 'jpeg' || ext === 'jpg') return 'JPG';
+        if (ext === 'webp') return 'WebP';
+        return ext.toUpperCase();
+    };
+
+    if (latestStatsData && Array.isArray(latestStatsData.types) && latestStatsData.types.length > 0) {
+        latestStatsData.types.forEach(item => {
+            const label = normalizeExt(item && item.ext);
+            const count = Number(item && item.count) || 0;
+            if (count > 0) typeCounts.set(label, (typeCounts.get(label) || 0) + count);
+        });
+    } else {
+        currentImages.forEach(img => {
+            const name = String(img.fileName || img.id || '');
+            const m = name.match(/\.([a-zA-Z0-9]+)$/);
+            const label = normalizeExt(m ? m[1] : 'other');
+            typeCounts.set(label, (typeCounts.get(label) || 0) + 1);
+        });
+    }
+
+    const sortedTypes = Array.from(typeCounts.entries()).sort((a, b) => b[1] - a[1]);
+    const finalTypes = [];
+    let otherSum = 0;
+    sortedTypes.forEach(([label, count], idx) => {
+        if (label === '其他' || idx >= 5) {
+            otherSum += count;
+        } else {
+            finalTypes.push([label, count]);
+        }
     });
+    if (otherSum > 0) finalTypes.push(['其他', otherSum]);
 
-    // 假设总存储空间为1GB，或者从API获取
-    const totalStorage = 1024 * 1024 * 1024; // 1GB
-    const otherSize = Math.max(0, totalStorage - imageSize);
-
-    storageUsageChart.data.datasets[0].data = [imageSize, otherSize];
+    const palette = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'];
+    storageUsageChart.data.labels = finalTypes.map(([label]) => label);
+    storageUsageChart.data.datasets[0].data = finalTypes.map(([, count]) => count);
+    storageUsageChart.data.datasets[0].backgroundColor = finalTypes.map((_, i) => palette[i % palette.length]);
     storageUsageChart.update();
 }
 

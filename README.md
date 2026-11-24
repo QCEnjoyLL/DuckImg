@@ -11,7 +11,7 @@
 原图直存 · Studio Gallery 界面 · 中英双语 · 零构建部署
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.2"><img src="https://img.shields.io/badge/release-v2.5.2-18181b?style=flat-square" alt="v2.5.2"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.3"><img src="https://img.shields.io/badge/release-v2.5.3-18181b?style=flat-square" alt="v2.5.3"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI&color=3f3f46" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Forks"></a>
@@ -248,6 +248,12 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 更新日志
 
+### [v2.5.3](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.3)（2026-11）
+
+- 修复「我的图片」从时间线视图切换到列表视图时未重绘扁平卡片导致列表卡片挤进多列网格的排版问题
+- 修复数据统计面板移除假想 1GB「其他文件」扣减算法，改用后端 `/api/images` 返回的全量真实图片格式分布（`types`）与全量 30 天上传趋势（`trend`）
+- 修复移动端顶栏点击 Logo 触发旧版旋转且不恢复、未登录露出半个「鸭」字标题及未登录右侧登录按钮偏大的细节问题
+
 ### [v2.5.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.2)（2026-11）
 
 - 修复统计面板「平均大小」卡片及收藏卡片文件大小使用不存在的 `ri-file-size-line` 图标类名导致图标空白的问题，分别替换为 `ri-scales-3-line` 与 `ri-database-2-line`
@@ -369,7 +375,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 <div align="center">
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.2)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.3](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.3)
 
 © 2024–2026 鸭鸭图床 · DuckImg
 

@@ -447,6 +447,14 @@ body {
   width: 26px;
   object-fit: contain;
   border-radius: 7px;
+  margin-right: 0;
+  transition: none;
+}
+
+.logo:hover .logo-img,
+.logo:hover img {
+  transform: none;
+  filter: none;
 }
 
 .logo h1 {
@@ -457,6 +465,12 @@ body {
   -webkit-text-fill-color: unset !important;
   color: var(--text-color) !important;
   margin: 0;
+}
+
+.logo h1::after,
+.logo:hover h1::after {
+  display: none;
+  content: none;
 }
 
 /* Eliminate duplicate brand header when desktop sidebar is visible */
@@ -955,9 +969,14 @@ body.dk-scroll-lock {
     max-width: 42vw;
   }
 
+  /* 移动端带侧边栏的页面顶栏统一只显示 Logo 图标，避免登录/未登录宽度差异截断半个字 */
+  body:has(#sideMenu) .header .logo h1 {
+    display: none;
+  }
+
   .header-action-btn {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
   }
 
   /* Visually hidden while keeping accessible name */
@@ -975,11 +994,15 @@ body.dk-scroll-lock {
   }
 
   .login-btn {
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     padding: 0;
     justify-content: center;
     border-radius: var(--radius-sm);
+  }
+
+  .login-btn i {
+    font-size: 0.9rem;
   }
 
   .user-dropdown-btn {
