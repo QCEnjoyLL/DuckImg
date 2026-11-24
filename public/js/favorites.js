@@ -320,7 +320,7 @@ function createImageCard(image) {
                         <span>${favoriteDate}</span>
                     </div>
                     <div class="favorite-size">
-                        <i class="ri-file-size-line"></i>
+                        <i class="ri-database-2-line"></i>
                         <span>${fileSize}</span>
                     </div>
                 </div>

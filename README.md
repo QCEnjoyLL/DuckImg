@@ -11,7 +11,7 @@
 原图直存 · Studio Gallery 界面 · 中英双语 · 零构建部署
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.1"><img src="https://img.shields.io/badge/release-v2.5.1-18181b?style=flat-square" alt="v2.5.1"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.2"><img src="https://img.shields.io/badge/release-v2.5.2-18181b?style=flat-square" alt="v2.5.2"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI&color=3f3f46" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Forks"></a>
@@ -248,6 +248,10 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 更新日志
 
+### [v2.5.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.2)（2026-11）
+
+- 修复统计面板「平均大小」卡片及收藏卡片文件大小使用不存在的 `ri-file-size-line` 图标类名导致图标空白的问题，分别替换为 `ri-scales-3-line` 与 `ri-database-2-line`
+
 ### [v2.5.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.1)（2026-11）
 
 - 新增 `.github/workflows/deploy.yml`：推送 `v*` 标签或手动触发 `workflow_dispatch` 时先执行 `npm run check`，通过后自动调用 Wrangler 部署至 Cloudflare Workers，并附带版本标签与提交说明
@@ -365,7 +369,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 <div align="center">
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.1](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.1)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.2](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.2)
 
 © 2024–2026 鸭鸭图床 · DuckImg
 
