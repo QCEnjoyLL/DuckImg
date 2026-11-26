@@ -316,6 +316,21 @@ body.dark-mode .upload-area {
   background: var(--scrim);
 }
 
+/* 桌面端按侧边栏实际占位偏移，使审核弹窗与主内容区/上传框保持水平居中对齐 */
+@media (min-width: 769px) {
+  body:has(.app-container.menu-expanded) .upload-moderation-dialog {
+    inset-inline-start: var(--menu-width);
+    inset-inline-end: 0;
+    width: min(440px, calc(100vw - var(--menu-width) - 32px));
+  }
+
+  body:has(.app-container.menu-collapsed) .upload-moderation-dialog {
+    inset-inline-start: var(--menu-collapsed-width);
+    inset-inline-end: 0;
+    width: min(440px, calc(100vw - var(--menu-collapsed-width) - 32px));
+  }
+}
+
 .upload-moderation-icon {
   display: grid;
   place-items: center;

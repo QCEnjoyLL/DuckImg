@@ -11,7 +11,7 @@
 原图直存 · Studio Gallery 界面 · 中英双语 · 零构建部署
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.6"><img src="https://img.shields.io/badge/release-v2.5.6-18181b?style=flat-square" alt="v2.5.6"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.7"><img src="https://img.shields.io/badge/release-v2.5.7-18181b?style=flat-square" alt="v2.5.7"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI&color=3f3f46" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Forks"></a>
@@ -248,6 +248,14 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 更新日志
 
+### [v2.5.7](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.7)（2026-11）
+
+- **上传与访问全链路提速**：
+  - 上传完成后异步预热当前边缘节点的 Cache API（`warmImageEdgeCache`），传完立刻预览/访问零回源 Telegram
+  - 图片访问 `/file/:id` 并行查询元数据、封禁集合与边缘缓存，并将 `getFile` 路径回写 D1 改为后台 `waitUntil` 异步执行，消除串行阻塞
+  - 上传接口前置限流/用户/配置查询并行执行，多图上传由逐张串行升级为 3 路受控并发（保持原顺序与原子配额校验）
+- **审核拦截弹窗视觉居中**：桌面端按左侧边栏展开/折叠宽度对齐主内容区，使审核弹窗相对上传框精确水平居中
+
 ### [v2.5.6](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.6)（2026-11）
 
 - 修复管理后台 `admin.js` 中 `syncNsfwMethodHints` 定义在 `initSettingButtons` 局部作用域导致加载配置时报 `syncNsfwMethodHints is not defined` 的问题
@@ -388,7 +396,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 <div align="center">
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.6](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.6)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.7](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.7)
 
 © 2024–2026 鸭鸭图床 · DuckImg
 

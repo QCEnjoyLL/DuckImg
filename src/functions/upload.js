@@ -3,6 +3,7 @@ import { isAdmin, getUserById, getUserByName } from "./utils/users";
 import { getSettings } from "./utils/settings";
 import { moderateImage } from "./utils/nsfw";
 import { checkRateLimit } from "./utils/ratelimit";
+import { warmImageEdgeCache } from "./file/[id]";
 import {
   dbDeleteImage,
   dbReleaseUploadSlot,
@@ -14,6 +15,7 @@ import {
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const MAX_REQUEST_FILE_BYTES = 40 * 1024 * 1024;
 const MAX_FILES_PER_REQUEST = 20;
+const UPLOAD_CONCURRENCY = 3;
 const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'avif', 'heic', 'heif']);
 const ALLOWED_MIME = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp',
@@ -75,20 +77,24 @@ export async function upload(c) {
     return c.json({ error: '请先登录后再上传' }, 401);
   }
 
-  // 突发限流：每用户每分钟 20 次上传请求（前端批量多文件同属 1 次请求，正常使用无感）。
-  // 每日总量由 dailyUploadLimit 管；这里管的是速度，防止脚本瞬时打满 TG Bot 配额殃及全站。
-  const burst = await checkRateLimit(env, `up:${userId}`, { limit: 20, windowSec: 60 });
-  if (!burst.allowed) {
-    return c.json({ error: `上传过于频繁，请 ${burst.retryAfterSec} 秒后再试` }, 429);
-  }
-
   try {
+    // 并行完成突发限流、用户信息与站点配置读取，省去串行 D1 往返。
+    // 突发限流：每用户每分钟 20 次上传请求（前端批量多文件同属 1 次请求，正常使用无感）。
+    // 每日总量由 dailyUploadLimit 管；这里管的是速度，防止脚本瞬时打满 TG Bot 配额殃及全站。
+    const [burst, userById, settings] = await Promise.all([
+      checkRateLimit(env, `up:${userId}`, { limit: 20, windowSec: 60 }),
+      getUserById(env, userId),
+      getSettings(env),
+    ]);
+    if (!burst.allowed) {
+      return c.json({ error: `上传过于频繁，请 ${burst.retryAfterSec} 秒后再试` }, 429);
+    }
+
     // token 里有 id 就按 id 查（1 次查询）；旧 token 回退用户名兼容链
-    const user = (await getUserById(env, userId)) || (await getUserByName(env, tokenUser.username));
+    const user = userById || (await getUserByName(env, tokenUser.username));
     if (!user) return c.json({ error: '用户不存在' }, 404);
     if (user.status === 'banned') return c.json({ error: '该账户已被封禁，无法上传' }, 403);
 
-    const settings = await getSettings(env);
     const admin = isAdmin(user.username, env);
 
     if (!admin && settings.requireEmailVerify && !user.emailVerified) {
@@ -106,8 +112,8 @@ export async function upload(c) {
 
     const formData = await c.req.formData();
 
-    const files = formData.getAll('file');
-    if (!files || files.length === 0) throw new Error('未上传文件');
+    const files = formData.getAll('file').filter(Boolean);
+    if (!files.length) throw new Error('未上传文件');
     if (files.length > MAX_FILES_PER_REQUEST) {
       return c.json({ error: `单次最多上传 ${MAX_FILES_PER_REQUEST} 个文件` }, 413);
     }
@@ -116,65 +122,58 @@ export async function upload(c) {
       return c.json({ error: '单次上传文件总大小不能超过 40MB' }, 413);
     }
 
-    const origin = env.SITE_URL || new URL(c.req.url).origin;
-    const uploadResults = [];
+    const reqOrigin = new URL(c.req.url).origin;
+    const origin = env.SITE_URL || reqOrigin;
+    const orderedResults = new Array(files.length);
+    let quotaExhausted = false;
 
-    for (const uploadFile of files) {
-      if (!uploadFile) continue;
+    const processSingleFile = async (uploadFile) => {
+      if (quotaExhausted) return null;
 
       const fileName = String(uploadFile.name || 'unnamed').trim();
       if (!fileName || fileName.length > 180 || /[\u0000-\u001f\u007f]/.test(fileName)) {
-        uploadResults.push({
+        return {
           error: '文件名长度需为 1–180 个字符且不能包含控制字符',
           blocked: true,
           fileName: fileName.slice(0, 180),
-        });
-        continue;
+        };
       }
       const fileExtension = (fileName.split('.').pop() || '').toLowerCase();
 
       if (typeof uploadFile.size === 'number' && uploadFile.size > MAX_UPLOAD_BYTES) {
-        uploadResults.push({
+        return {
           error: `文件超过大小限制（最大 ${Math.floor(MAX_UPLOAD_BYTES / 1024 / 1024)}MB）`,
           blocked: true,
           fileName,
-        });
-        continue;
+        };
       }
 
       if (!isAllowedImage(uploadFile, fileExtension)) {
-        uploadResults.push({
+        return {
           error: '仅支持图片格式：jpg/png/gif/webp/bmp/svg/ico/avif',
           blocked: true,
           fileName,
-        });
-        continue;
+        };
       }
 
       if (!(await hasMatchingImageSignature(uploadFile, fileExtension))) {
-        uploadResults.push({
+        return {
           error: '文件内容与图片扩展名不匹配',
           blocked: true,
           fileName,
-        });
-        continue;
+        };
       }
 
       if (settings.allowSvg === false &&
           (uploadFile.type === 'image/svg+xml' || fileExtension === 'svg')) {
-        uploadResults.push({ error: '本站已禁止上传 SVG 图片', blocked: true, fileName });
-        continue;
+        return { error: '本站已禁止上传 SVG 图片', blocked: true, fileName };
       }
 
+      if (quotaExhausted) return null;
       const slot = await dbReserveUploadSlot(env, userId, dateKey, effectiveLimit);
       if (!slot.allowed) {
-        return c.json({
-          error: effectiveLimit === 0
-            ? '该账户已被禁止上传'
-            : `已达每日上传上限（${effectiveLimit} 张），请明天再试`,
-          limitReached: true,
-          results: uploadResults,
-        }, 403);
+        quotaExhausted = true;
+        return null;
       }
 
       const shouldModerate = !admin && settings.nsfw && settings.nsfw.enabled;
@@ -203,8 +202,7 @@ export async function upload(c) {
       const [result, preVerdict] = await Promise.all([telegramPromise, fileModerationPromise]);
       if (!result.success) {
         await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
-        uploadResults.push({ error: result.error || '上传到存储失败', fileName, blocked: true });
-        continue;
+        return { error: result.error || '上传到存储失败', fileName, blocked: true };
       }
 
       // Telegram 已实际接收文件；若后续补偿删除失败则保留配额，防止反复制造孤儿文件。
@@ -215,13 +213,11 @@ export async function upload(c) {
           const rolledBack = await deleteTelegramMessage(env, messageId);
           if (rolledBack) await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
         }
-        uploadResults.push({ error: '获取文件 ID 失败', fileName, blocked: true });
-        continue;
+        return { error: '获取文件 ID 失败', fileName, blocked: true };
       }
 
       const fileKey = `${fileId}.${fileExtension}`;
       const timestamp = Date.now();
-      const mimeType = String(uploadFile.type || '').toLowerCase();
 
       // 只豁免后端按实时用户名确认的管理员，不信任前端或 JWT 中的 role。
       if (shouldModerate) {
@@ -232,24 +228,21 @@ export async function upload(c) {
           if (verdict && verdict.error && settings.nsfw.failurePolicy === 'block') {
             const removed = messageId ? await deleteTelegramMessage(env, messageId) : false;
             if (removed) await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
-            uploadResults.push({ error: '内容审核服务异常，已按站点策略拦截', blocked: true, fileName });
-            continue;
+            return { error: '内容审核服务异常，已按站点策略拦截', blocked: true, fileName };
           }
           if (verdict && verdict.flagged) {
             const removed = messageId ? await deleteTelegramMessage(env, messageId) : false;
             if (removed) {
               await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
             }
-            uploadResults.push({ error: '图片未通过内容审核，已被拦截', blocked: true, fileName });
-            continue;
+            return { error: '图片未通过内容审核，已被拦截', blocked: true, fileName };
           }
         } catch (e) {
           console.warn('鉴黄调用异常:', e);
           if (settings.nsfw.failurePolicy === 'block') {
             const removed = messageId ? await deleteTelegramMessage(env, messageId) : false;
             if (removed) await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
-            uploadResults.push({ error: '内容审核服务异常，已按站点策略拦截', blocked: true, fileName });
-            continue;
+            return { error: '内容审核服务异常，已按站点策略拦截', blocked: true, fileName };
           }
         }
       }
@@ -275,16 +268,45 @@ export async function upload(c) {
         const rolledBack = await deleteTelegramMessage(env, messageId);
         if (rolledBack) {
           await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
-          uploadResults.push({ error: '图库索引写入失败，已回滚本次上传', fileName, blocked: true });
-          continue;
+          return { error: '图库索引写入失败，已回滚本次上传', fileName, blocked: true };
         }
       }
 
-      uploadResults.push({
+      // 异步预热当前边缘节点的 Cache API，使传完立刻预览/访问零回源 Telegram
+      if (listed) {
+        warmImageEdgeCache(c, fileKey, reqOrigin, uploadFile);
+      }
+
+      return {
         src: `/file/${fileKey}`,
         listed,
         ...(listed ? {} : { warning: '图片已上传到 Telegram，但图库索引写入失败，直链仍可用' }),
-      });
+      };
+    };
+
+    // 多图上传采用受控并发（最多 3 路），单图零额外调度开销，保留原文件顺序。
+    if (files.length === 1) {
+      orderedResults[0] = await processSingleFile(files[0]);
+    } else {
+      let nextIndex = 0;
+      const workerCount = Math.min(UPLOAD_CONCURRENCY, files.length);
+      await Promise.all(Array.from({ length: workerCount }, async () => {
+        while (nextIndex < files.length && !quotaExhausted) {
+          const idx = nextIndex++;
+          orderedResults[idx] = await processSingleFile(files[idx]);
+        }
+      }));
+    }
+
+    const uploadResults = orderedResults.filter(Boolean);
+    if (quotaExhausted) {
+      return c.json({
+        error: effectiveLimit === 0
+          ? '该账户已被禁止上传'
+          : `已达每日上传上限（${effectiveLimit} 张），请明天再试`,
+        limitReached: true,
+        results: uploadResults,
+      }, 403);
     }
 
     if (!uploadResults.length) {

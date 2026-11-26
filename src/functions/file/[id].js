@@ -5,11 +5,33 @@ import { getSettings } from '../utils/settings';
 
 // Telegram getFile 返回的 file_path 约 1 小时失效；缓存 50 分钟
 const TG_PATH_TTL_SEC = 50 * 60;
+const EDGE_CACHE_VERSION = '_ct=3';
+const IMAGE_CACHE_CONTROL = 'public, max-age=86400, stale-while-revalidate=604800';
+const IMAGE_MIME_MAP = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+  gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+  bmp: 'image/bmp', avif: 'image/avif', ico: 'image/x-icon',
+  heic: 'image/heic', heif: 'image/heif',
+};
+
+function scheduleWaitUntil(c, taskFactory) {
+  try {
+    if (c && c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+      c.executionCtx.waitUntil(Promise.resolve().then(taskFactory).catch(() => {}));
+      return true;
+    }
+  } catch { /* Hono 测试上下文无 ExecutionContext */ }
+  return false;
+}
+
+function buildEdgeCacheKey(id, origin) {
+  return new Request(new URL(`/file/${id}?${EDGE_CACHE_VERSION}`, origin), { method: 'GET' });
+}
 
 /**
  * 清除某张图片的边缘缓存。
  *
- * 必须与 proxyFile() 里构造的 cacheKey 完全一致（pathname + '?_ct=3'）。
+ * 必须与 proxyFile() / warmImageEdgeCache() 构造的 cacheKey 完全一致（pathname + '?_ct=3'）。
  * 删除图片时若不清这个缓存，直链会继续从边缘吐图，直到缓存过期为止 ——
  * 用户会以为"删掉了"，实际外部仍能访问。
  *
@@ -17,13 +39,41 @@ const TG_PATH_TTL_SEC = 50 * 60;
  * 这是修改响应头/缓存语义后清理陈旧缓存的正确做法。
  */
 export async function purgeImageEdgeCache(id, origin) {
-  if (!id || typeof caches === 'undefined') return;
+  if (!id || typeof caches === 'undefined' || !caches.default) return;
   try {
-    const key = new Request(new URL(`/file/${id}?_ct=3`, origin), { method: 'GET' });
+    const key = buildEdgeCacheKey(id, origin);
     await caches.default.delete(key);
   } catch (e) {
     console.warn('清除图片边缘缓存失败（忽略）:', id, e && e.message);
   }
+}
+
+/**
+ * 上传成功后异步预热当前边缘节点缓存，使上传完成后的首次预览/访问免去 getFile 与 Telegram 回源。
+ * SVG 不写入边缘缓存（与 proxyFile 策略一致，始终按附件安全语义处理）。
+ */
+export function warmImageEdgeCache(c, id, origin, uploadFile) {
+  if (!id || !origin || !uploadFile || typeof uploadFile.slice !== 'function') return;
+  if (typeof caches === 'undefined' || !caches.default) return;
+  const lowerId = String(id).toLowerCase();
+  const ext = (lowerId.split('.').pop() || '').toLowerCase();
+  const fileType = String(uploadFile.type || '').toLowerCase();
+  const contentType = IMAGE_MIME_MAP[ext] || (fileType.startsWith('image/') ? fileType : 'application/octet-stream');
+  if (lowerId.endsWith('.svg') || contentType.includes('svg')) return;
+
+  scheduleWaitUntil(c, () => {
+    const cacheKey = buildEdgeCacheKey(id, origin);
+    const headers = new Headers({
+      'Content-Type': contentType,
+      'Cache-Control': IMAGE_CACHE_CONTROL,
+      'Content-Disposition': 'inline',
+    });
+    if (typeof uploadFile.size === 'number' && Number.isFinite(uploadFile.size)) {
+      headers.set('Content-Length', String(uploadFile.size));
+    }
+    const cachedRes = new Response(uploadFile.slice(), { status: 200, headers });
+    return caches.default.put(cacheKey, cachedRes);
+  });
 }
 // isolate 内内存缓存，避免同 isolate 重复 KV/API
 const _tgPathMem = new Map(); // fileId -> { path, exp }
@@ -95,44 +145,50 @@ export async function fileHandler(c) {
     const isPreview = url.searchParams.get('preview') === 'true';
 
     try {
-        // 屏蔽检查：必须在边缘缓存命中前做，避免屏蔽后仍吐出缓存图。
-        // 【重要】meta.blocked 是 D1 里可靠的一列，必须**无条件**检查。
-        // 曾经把它套在 `banned.size > 0` 里，导致站点当前没有封禁用户时，
-        // blocked=1 的图片会照常对外提供（封禁形同虚设）。
-        // 管理员凭 ?t= 短时票放行。
-        let blockedMeta = null;
-        try {
-            blockedMeta = await getImageMetaCached(env, id);
-        } catch { /* 元数据读取失败则不据此拦截，避免误伤可用性 */ }
+        // 边缘 Cache API：仅缓存「纯展示」路径；?preview=true / ?download=true / ?t= 管理员令牌不走缓存
+        const canUseEdgeCache = !isPreview && !isDownload && !url.searchParams.has('t');
+        const cacheKey = canUseEdgeCache
+            ? new Request(new URL(`${url.pathname}?${EDGE_CACHE_VERSION}`, url.origin), { method: 'GET' })
+            : null;
+        const edgeCachePromise = (cacheKey && typeof caches !== 'undefined' && caches.default)
+            ? Promise.resolve().then(() => caches.default.match(cacheKey)).catch(() => null)
+            : Promise.resolve(null);
+
+        // 并行查询图片元数据、用户封禁集合与边缘缓存，减少串行往返；
+        // 安全边界不变：命中边缘缓存后仍必须先通过下方屏蔽/封禁校验才会返回。
+        const [blockedMeta, banned, cachedResponse] = await Promise.all([
+            getImageMetaCached(env, id).catch(() => null),
+            getBannedSet(env).catch(() => new Set()),
+            edgeCachePromise,
+        ]);
+
+        const discardCachedBody = () => {
+            try {
+                if (cachedResponse && cachedResponse.body) cachedResponse.body.cancel();
+            } catch {}
+        };
 
         if (blockedMeta && blockedMeta.blocked) {
-            if (!(await isAdminViewer(c, env))) return blockedImagePage(c);
-        } else {
-            // 用户级封禁走「尽力而为」的封禁集合；集合为空时跳过，零额外开销
-            const banned = await getBannedSet(env);
-            if (banned.size > 0 && blockedMeta && blockedMeta.userId
-                && banned.has(String(blockedMeta.userId))
-                && !(await isAdminViewer(c, env))) {
+            if (!(await isAdminViewer(c, env))) {
+                discardCachedBody();
                 return blockedImagePage(c);
             }
+        } else if (banned.size > 0 && blockedMeta && blockedMeta.userId
+            && banned.has(String(blockedMeta.userId))
+            && !(await isAdminViewer(c, env))) {
+            discardCachedBody();
+            return blockedImagePage(c);
         }
 
         // 预览页不需要拉 Telegram，直接出 HTML
         if (isPreview) {
+            discardCachedBody();
             return createPreviewPage(c, id);
         }
 
-        // 边缘 Cache API：命中则零 Telegram / 零 getFile（仍经过上方封禁检查）
-        // 仅缓存「纯展示」路径；?download=true / ?t= 管理员令牌不走缓存
-        const canUseEdgeCache = !isDownload && !url.searchParams.has('t');
-        // cache key 带版本：避免沿用旧的 application/octet-stream 缓存。
-        // 本次从 _ct=2 提到 _ct=3，同时作废旧的「一年 immutable」缓存条目。
-        const cacheKey = new Request(new URL(url.pathname + '?_ct=3', url.origin), { method: 'GET' });
-        if (canUseEdgeCache) {
-            try {
-                const hit = await caches.default.match(cacheKey);
-                if (hit) return hit;
-            } catch { /* Cache API 不可用时降级 */ }
+        // 边缘 Cache API：命中则零 Telegram / 零 getFile（已通过上方封禁检查）
+        if (cachedResponse) {
+            return cachedResponse;
         }
 
         let fileUrl = null;
@@ -140,7 +196,7 @@ export async function fileHandler(c) {
         // 通过 Telegram Bot API 上传的文件（长 file_id 或带扩展名）
         if (id.length > 30 || id.includes('.')) {
             const fileId = id.split('.')[0];
-            const filePath = await getFilePath(env, fileId);
+            const filePath = await getFilePath(env, fileId, c);
             if (filePath) {
                 fileUrl = `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${filePath}`;
             }
@@ -901,7 +957,7 @@ async function createPreviewPage(c, id) {
  * 三级缓存：isolate 内存 → KV(50min TTL) → Telegram getFile API。
  * file_path 约 1h 失效，故 KV TTL 取 50min。
  */
-async function getFilePath(env, fileId) {
+async function getFilePath(env, fileId, c) {
     if (!fileId) return null;
     const now = Date.now();
 
@@ -930,9 +986,10 @@ async function getFilePath(env, fileId) {
         if (responseData.ok && responseData.result && responseData.result.file_path) {
             const path = responseData.result.file_path;
             _tgPathMem.set(fileId, { path, exp: now + TG_PATH_TTL_SEC * 1000 });
-            try {
-                await kvPut(env, kvKey, path, { expirationTtl: TG_PATH_TTL_SEC });
-            } catch { /* ignore */ }
+            // 异步回写 D1 缓存，不阻塞当前首图下载响应（无 ExecutionContext 的测试环境退回同步写入）
+            if (!scheduleWaitUntil(c, () => kvPut(env, kvKey, path, { expirationTtl: TG_PATH_TTL_SEC }))) {
+                try { await kvPut(env, kvKey, path, { expirationTtl: TG_PATH_TTL_SEC }); } catch { /* ignore */ }
+            }
             return path;
         }
         console.error('getFile 响应数据错误:', responseData);
@@ -968,19 +1025,13 @@ async function proxyFile(c, fileUrl, opts = {}) {
     // 而删除只能清 Cloudflare 边缘缓存，清不掉别人浏览器里的副本。
     // 所以这里用有限 TTL + stale-while-revalidate：热度不变时依旧零回源，
     // 同时避免"删了图片，别人浏览器还留一年"。
-    headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+    headers.set('Cache-Control', IMAGE_CACHE_CONTROL);
 
     // Content-Type：Telegram 常返回 application/octet-stream，优先用我们 URL 里的扩展名
     const reqId = (c.req.param('id') || '').toLowerCase();
     const extFromId = (reqId.split('.').pop() || '').toLowerCase();
     const extFromUrl = (fileUrl.split('.').pop() || '').toLowerCase().split('?')[0];
-    const mimeMap = {
-        jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
-        gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
-        bmp: 'image/bmp', avif: 'image/avif', ico: 'image/x-icon',
-        heic: 'image/heic', heif: 'image/heif',
-    };
-    const mimeFromExt = mimeMap[extFromId] || mimeMap[extFromUrl];
+    const mimeFromExt = IMAGE_MIME_MAP[extFromId] || IMAGE_MIME_MAP[extFromUrl];
     const upstreamType = (headers.get('Content-Type') || '').toLowerCase();
     const upstreamIsGeneric = !upstreamType || upstreamType.includes('octet-stream') || upstreamType === 'application/download';
     if (mimeFromExt && (upstreamIsGeneric || !upstreamType.startsWith('image/'))) {
@@ -1007,11 +1058,11 @@ async function proxyFile(c, fileUrl, opts = {}) {
     });
 
     // 边缘缓存：异步写入，不挡响应
-    if (cacheKey && response.ok && !isSvg) {
+    if (cacheKey && response.ok && !isSvg && typeof caches !== 'undefined' && caches.default) {
         try {
             const toCache = out.clone();
             // Cache API 要求 Response 可缓存：确保 Cache-Control 允许
-            c.executionCtx.waitUntil(caches.default.put(cacheKey, toCache));
+            scheduleWaitUntil(c, () => caches.default.put(cacheKey, toCache));
         } catch { /* ignore */ }
     }
 
