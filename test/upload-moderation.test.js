@@ -141,3 +141,68 @@ describe('administrator NSFW exemption on the upload endpoint', () => {
     }
   });
 });
+
+describe('multipart direct-upload moderation (POST_FILE)', () => {
+  beforeEach(async () => {
+    resetSettingsCacheForTests();
+    await kvPut(env, 'config:settings', {
+      nsfw: {
+        enabled: true,
+        apiUrl: MODERATION_URL,
+        method: 'POST_FILE',
+        imageParam: 'file',
+        scorePath: 'data.nsfw',
+        threshold: 0.8,
+        failurePolicy: 'block',
+      },
+    });
+    upstream = vi.fn(async (url, init) => {
+      new Request(url, init);
+      if (url === MODERATION_URL) {
+        return Response.json({ code: 200, msg: 'success', data: { nsfw: score } }, { status: moderationStatus });
+      }
+      if (url === 'https://api.telegram.org/bottest-only-bot-token/sendDocument') {
+        return Response.json({ ok: true, result: { message_id: 123, document: { file_id: fileId } } });
+      }
+      if (url === 'https://api.telegram.org/bottest-only-bot-token/deleteMessage') {
+        return Response.json({ ok: true, result: true });
+      }
+      throw new Error('Unexpected outbound request');
+    });
+    vi.stubGlobal('fetch', upstream);
+  });
+
+  it('sends multipart FormData directly and rejects flagged images while rolling back Telegram/quota', async () => {
+    score = 0.95;
+    const day = new Date().toISOString().slice(0, 10);
+    const before = await dbGetUploadCount(env, user.id, day);
+    const response = await uploadAs(user);
+    expect(await response.json()).toMatchObject([{ blocked: true, error: '图片未通过内容审核，已被拦截' }]);
+    const calls = moderationCalls();
+    expect(calls).toHaveLength(1);
+    const [, init] = calls[0];
+    expect(init.method).toBe('POST');
+    expect(init.body).toBeInstanceOf(FormData);
+    expect(init.body.get('file')).toBeInstanceOf(File);
+    expect(deletionCalls()).toHaveLength(1);
+    expect(await dbGetImage(env, `${fileId}.png`)).toBeNull();
+    expect(await dbGetUploadCount(env, user.id, day)).toBe(before);
+  });
+
+  it('accepts safe images in POST_FILE mode without rollback', async () => {
+    score = 0.05;
+    const response = await uploadAs(user);
+    expect(await response.json()).toEqual([{ src: `/file/${fileId}.png`, listed: true }]);
+    expect(moderationCalls()).toHaveLength(1);
+    expect(deletionCalls()).toHaveLength(0);
+    expect((await dbGetImage(env, `${fileId}.png`)).userId).toBe(user.id);
+  });
+
+  it('skips POST_FILE moderation for real administrators', async () => {
+    score = 0.99;
+    const response = await uploadAs(admin, { role: 'user' });
+    expect(response.status).toBe(200);
+    expect(moderationCalls()).toHaveLength(0);
+    expect(deletionCalls()).toHaveLength(0);
+  });
+});

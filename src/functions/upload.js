@@ -177,13 +177,30 @@ export async function upload(c) {
         }, 403);
       }
 
+      const shouldModerate = !admin && settings.nsfw && settings.nsfw.enabled;
+      const isFileModeration = shouldModerate
+        && String(settings.nsfw.method || 'POST').toUpperCase() === 'POST_FILE';
+
       const telegramFormData = new FormData();
       telegramFormData.append('chat_id', env.TG_Chat_ID);
       const caption = `👤 ${user.username} · ${fileName}`;
       telegramFormData.append('caption', caption.length > 1000 ? caption.slice(0, 1000) : caption);
       telegramFormData.append('document', uploadFile);
 
-      const result = await sendToTelegram(telegramFormData, 'sendDocument', env);
+      // 文件直传鉴黄（POST_FILE）无需等 Telegram 返回 file_id，可与 sendDocument 并行执行，省去回源拉图延迟。
+      const telegramPromise = sendToTelegram(telegramFormData, 'sendDocument', env);
+      const fileModerationPromise = isFileModeration
+        ? moderateImage(
+            null,
+            settings,
+            new File([uploadFile.slice()], fileName, { type: uploadFile.type || 'application/octet-stream' }),
+          ).catch((e) => {
+            console.warn('鉴黄调用异常:', e);
+            return { flagged: false, score: null, error: '鉴黄服务调用失败' };
+          })
+        : Promise.resolve(null);
+
+      const [result, preVerdict] = await Promise.all([telegramPromise, fileModerationPromise]);
       if (!result.success) {
         await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});
         uploadResults.push({ error: result.error || '上传到存储失败', fileName, blocked: true });
@@ -207,9 +224,11 @@ export async function upload(c) {
       const mimeType = String(uploadFile.type || '').toLowerCase();
 
       // 只豁免后端按实时用户名确认的管理员，不信任前端或 JWT 中的 role。
-      if (!admin && settings.nsfw && settings.nsfw.enabled) {
+      if (shouldModerate) {
         try {
-          const verdict = await moderateImage(`${origin}/file/${fileKey}`, settings);
+          const verdict = isFileModeration
+            ? preVerdict
+            : await moderateImage(`${origin}/file/${fileKey}`, settings);
           if (verdict && verdict.error && settings.nsfw.failurePolicy === 'block') {
             const removed = messageId ? await deleteTelegramMessage(env, messageId) : false;
             if (removed) await dbReleaseUploadSlot(env, userId, dateKey).catch(() => {});

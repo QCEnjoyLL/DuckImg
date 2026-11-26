@@ -11,7 +11,7 @@
 原图直存 · Studio Gallery 界面 · 中英双语 · 零构建部署
 
 <p>
-  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.4"><img src="https://img.shields.io/badge/release-v2.5.4-18181b?style=flat-square" alt="v2.5.4"></a>
+  <a href="https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.5"><img src="https://img.shields.io/badge/release-v2.5.5-18181b?style=flat-square" alt="v2.5.5"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/QCEnjoyLL/DuckImg/ci.yml?branch=main&style=flat-square&label=CI&color=3f3f46" alt="CI"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/stargazers"><img src="https://img.shields.io/github/stars/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Stars"></a>
   <a href="https://github.com/QCEnjoyLL/DuckImg/network/members"><img src="https://img.shields.io/github/forks/QCEnjoyLL/DuckImg?style=flat-square&color=52525b" alt="Forks"></a>
@@ -248,6 +248,11 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 ## 更新日志
 
+### [v2.5.5](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.5)（2026-11）
+
+- **图片鉴黄支持 Multipart 文件直传与并行审核（`POST_FILE`）**：后台新增 `POST (Multipart 文件直传)` 选项（适配自建 `nsfw-detector` `/api/upload_check`），Worker 将图片直传鉴黄接口并与 Telegram `sendDocument` 并行执行，省去鉴黄服回源拉图链路，同时保持严格同步拦截与回滚；所有鉴黄请求新增 15s 超时保护
+- **修复暗色模式文本选中不可见问题**：将全站 `::selection` 配色由写死的 `var(--primary-light)` + `white` 改为 `var(--primary-color)` + `var(--text-on-primary)`，解决静墨暗色白底白字及其他暗色配色选中文字对比度过低的问题
+
 ### [v2.5.4](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.4)（2026-11）
 
 - 统一顶栏右侧公告、上传、明暗切换开关、登录按钮与用户信息胶囊为 `30px` 一致高度基线与 `1px` 细边框风格，消除视觉高低落差
@@ -379,7 +384,7 @@ curl "http://localhost:8787/__scheduled?cron=37+19+*+*+*"
 
 <div align="center">
 
-[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.4](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.4)
+[Issues](https://github.com/QCEnjoyLL/DuckImg/issues) · [Releases](https://github.com/QCEnjoyLL/DuckImg/releases) · [v2.5.5](https://github.com/QCEnjoyLL/DuckImg/releases/tag/v2.5.5)
 
 © 2024–2026 鸭鸭图床 · DuckImg
 

@@ -645,15 +645,17 @@ async function loadSettings() {
         // 鉴黄密钥只允许使用 Cloudflare Secrets。
         document.getElementById('nsfwEnabled').checked = !!settings.nsfw.enabled;
         document.getElementById('nsfwApiUrl').value = settings.nsfw.apiUrl || '';
-        document.getElementById('nsfwMethod').value = settings.nsfw.method || 'POST';
+        const nsfwMethod = settings.nsfw.method || 'POST';
+        document.getElementById('nsfwMethod').value = nsfwMethod;
         document.getElementById('nsfwApiKey').value = '';
         document.getElementById('nsfwApiKey').placeholder = settings.nsfw.apiKeySet ? 'Secret 已配置' : 'Secret 未配置';
         document.getElementById('nsfwExtraParams').value = '';
         document.getElementById('nsfwExtraParams').placeholder = settings.nsfw.extraParamsSet ? 'Secret 已配置' : 'Secret 未配置';
-        document.getElementById('nsfwImageParam').value = settings.nsfw.imageParam || 'url';
+        document.getElementById('nsfwImageParam').value = settings.nsfw.imageParam || (nsfwMethod === 'POST_FILE' ? 'file' : 'url');
         document.getElementById('nsfwScorePath').value = settings.nsfw.scorePath || 'score';
         document.getElementById('nsfwThreshold').value = settings.nsfw.threshold ?? 0.8;
         document.getElementById('nsfwFailurePolicy').value = settings.nsfw.failurePolicy === 'block' ? 'block' : 'allow';
+        syncNsfwMethodHints();
 
         // 邮件配置
         const email = settings.email || {};
@@ -766,13 +768,39 @@ function initSettingButtons() {
         }, '设置已保存');
     });
 
+    function syncNsfwMethodHints() {
+        const method = document.getElementById('nsfwMethod').value;
+        const paramInput = document.getElementById('nsfwImageParam');
+        const paramLabel = document.getElementById('nsfwImageParamLabel');
+        if (method === 'POST_FILE') {
+            if (paramLabel) paramLabel.textContent = '图片文件字段名';
+            paramInput.placeholder = 'file';
+        } else {
+            if (paramLabel) paramLabel.textContent = '图片URL字段名';
+            paramInput.placeholder = 'url';
+        }
+    }
+
+    document.getElementById('nsfwMethod').addEventListener('change', () => {
+        const method = document.getElementById('nsfwMethod').value;
+        const paramInput = document.getElementById('nsfwImageParam');
+        const current = paramInput.value.trim();
+        if (method === 'POST_FILE' && (!current || current === 'url')) {
+            paramInput.value = 'file';
+        } else if (method !== 'POST_FILE' && (!current || current === 'file')) {
+            paramInput.value = 'url';
+        }
+        syncNsfwMethodHints();
+    });
+
     document.getElementById('saveNsfw').addEventListener('click', () => {
+        const method = document.getElementById('nsfwMethod').value;
         saveSettings({
             nsfw: {
                 enabled: document.getElementById('nsfwEnabled').checked,
                 apiUrl: document.getElementById('nsfwApiUrl').value.trim(),
-                method: document.getElementById('nsfwMethod').value,
-                imageParam: document.getElementById('nsfwImageParam').value.trim() || 'url',
+                method,
+                imageParam: document.getElementById('nsfwImageParam').value.trim() || (method === 'POST_FILE' ? 'file' : 'url'),
                 scorePath: document.getElementById('nsfwScorePath').value.trim() || 'score',
                 threshold: parseFloat(document.getElementById('nsfwThreshold').value || '0.8'),
                 failurePolicy: document.getElementById('nsfwFailurePolicy').value,

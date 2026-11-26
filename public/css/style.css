@@ -171,8 +171,8 @@ a.animated-link:hover::after {
 
 /* 文本选择样式 */
 ::selection {
-    background-color: var(--primary-light);
-    color: white;
+    background-color: var(--primary-color);
+    color: var(--text-on-primary, #ffffff);
 }
 
 /* 头部 */

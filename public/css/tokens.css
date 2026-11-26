@@ -215,6 +215,12 @@ body.dark-mode {
   outline-offset: 2px;
 }
 
+/* Text selection — always paired with theme's accessible on-primary ink */
+::selection {
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+}
+
 /* Typography helpers */
 .dk-display {
   font-size: clamp(1.75rem, 4vw, 2.5rem);

@@ -68,7 +68,7 @@ const SETTINGS_KEY = 'config:settings';
 const BACKUP_FREQS = ['off', 'daily', 'weekly', 'monthly'];
 const EMAIL_PROVIDERS = ['resend', 'smtp'];
 const SMTP_ENCRYPTIONS = ['ssl', 'starttls', 'none'];
-const NSFW_METHODS = ['GET', 'POST'];
+const NSFW_METHODS = ['GET', 'POST', 'POST_FILE'];
 const NSFW_FAILURE_POLICIES = ['allow', 'block'];
 
 export class SettingsValidationError extends Error {
