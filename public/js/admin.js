@@ -711,6 +711,21 @@ async function loadSettings() {
     }
 }
 
+// 根据鉴黄请求方式同步字段名标签与占位提示
+function syncNsfwMethodHints() {
+    const methodEl = document.getElementById('nsfwMethod');
+    const paramInput = document.getElementById('nsfwImageParam');
+    const paramLabel = document.getElementById('nsfwImageParamLabel');
+    if (!methodEl || !paramInput) return;
+    if (methodEl.value === 'POST_FILE') {
+        if (paramLabel) paramLabel.textContent = '图片文件字段名';
+        paramInput.placeholder = 'file';
+    } else {
+        if (paramLabel) paramLabel.textContent = '图片URL字段名';
+        paramInput.placeholder = 'url';
+    }
+}
+
 // 根据发信方式显隐字段
 function toggleEmailFields() {
     const provider = document.getElementById('emailProvider').value;
@@ -767,19 +782,6 @@ function initSettingButtons() {
             allowSvg: document.getElementById('allowSvg').checked,
         }, '设置已保存');
     });
-
-    function syncNsfwMethodHints() {
-        const method = document.getElementById('nsfwMethod').value;
-        const paramInput = document.getElementById('nsfwImageParam');
-        const paramLabel = document.getElementById('nsfwImageParamLabel');
-        if (method === 'POST_FILE') {
-            if (paramLabel) paramLabel.textContent = '图片文件字段名';
-            paramInput.placeholder = 'file';
-        } else {
-            if (paramLabel) paramLabel.textContent = '图片URL字段名';
-            paramInput.placeholder = 'url';
-        }
-    }
 
     document.getElementById('nsfwMethod').addEventListener('change', () => {
         const method = document.getElementById('nsfwMethod').value;
